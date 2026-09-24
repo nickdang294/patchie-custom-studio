@@ -3,10 +3,10 @@ import { serviceDb, jsonError } from '@/lib/supabase';
 const starter = {
   products: [{ id:'base-offwhite', sku:'BASE-OFFWHITE', product_type:'shirt', name:'Áo thun oversized', color:'Off-white', hex:'#f5f1e8', image_url:'/assets/blank-tee.webp', view_images:{front:'/assets/blank-tee.webp'}, sizes:['S','M','L','XL'], price:null }],
   patches: [
-    { id:'patch-pink', name:'Mũ xanh lá', image_url:'/assets/patch-pink-cap.webp', width_cm:4, height_cm:4, price:null, quote:'nhỏ xíu mà có võ', patch_group:'Best Seller' },
-    { id:'patch-black', name:'Mặt nạ xanh', image_url:'/assets/patch-black-green.webp', width_cm:4, height_cm:4, price:null, quote:'bí ẩn một chút mới vui', patch_group:'Limited' },
-    { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal' },
-    { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal' }
+    { id:'patch-pink', name:'Mũ xanh lá', image_url:'/assets/patch-pink-cap.webp', width_cm:4, height_cm:4, price:null, quote:'nhỏ xíu mà có võ', patch_group:'Best Seller', patch_groups:['Best Seller'] },
+    { id:'patch-black', name:'Mặt nạ xanh', image_url:'/assets/patch-black-green.webp', width_cm:4, height_cm:4, price:null, quote:'bí ẩn một chút mới vui', patch_group:'Limited', patch_groups:['Limited'] },
+    { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
+    { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
   settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.' }
 };

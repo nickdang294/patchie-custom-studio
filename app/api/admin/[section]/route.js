@@ -30,6 +30,14 @@ export async function POST(request,{params}) {
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
   if(section==='settings') {for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}return Response.json({ok:true});}
   if(section==='designs') {const {id,status}=b;if(!['new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
+  if(section==='patch-groups') {
+    const ids=Array.isArray(b.ids)?b.ids.filter(Boolean):[],incoming=(Array.isArray(b.patch_groups)?b.patch_groups:String(b.patch_groups||b.patch_group||'').split(',')).map(x=>String(x).trim()).filter(Boolean);
+    if(!ids.length||!incoming.length)return jsonError('Chọn patch và group cần thêm.');
+    const {data,error:readError}=await db.from('patches').select('id,patch_group,patch_groups').in('id',ids);if(readError)return jsonError(readError.message,500);
+    const updates=(data||[]).map(p=>{const groups=Array.from(new Set([...(Array.isArray(p.patch_groups)&&p.patch_groups.length?p.patch_groups:[p.patch_group||'Best Seller']),...incoming].map(x=>String(x).trim()).filter(Boolean)));return db.from('patches').update({patch_groups:groups,patch_group:groups[0]||'Best Seller'}).eq('id',p.id);});
+    const results=await Promise.all(updates);const failed=results.find(r=>r.error);if(failed)return jsonError(failed.error.message,500);
+    return Response.json({ok:true,count:ids.length});
+  }
   if(['products','patches'].includes(section)) {const item=b;const {id,...rest}=item;const {data,error}=await db.from(section).upsert(id?{id,...rest}:rest).select().single();if(error)return jsonError(error.message,500);return Response.json({item:data});}
   return jsonError('Không tìm thấy mục quản trị.',404);
 }

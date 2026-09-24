@@ -23,6 +23,7 @@ create table if not exists public.patches (
   width_cm numeric(5,2) not null default 1,
   height_cm numeric(5,2) not null default 1,
   patch_group text not null default 'Best Seller',
+  patch_groups text[] not null default array['Best Seller'],
   quote text not null default '',
   price integer,
   active boolean not null default true,
@@ -70,6 +71,7 @@ begin
 end $$;
 alter table public.patches add column if not exists quote text not null default '';
 alter table public.patches add column if not exists patch_group text not null default 'Best Seller';
+alter table public.patches add column if not exists patch_groups text[] not null default array['Best Seller'];
 alter table public.designs add column if not exists customer_phone text not null default '';
 alter table public.designs add column if not exists shipping_address text not null default '';
 alter table public.designs add column if not exists product_price integer not null default 0;
@@ -105,13 +107,16 @@ on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mi
 insert into public.products (id,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
 values ('base-offwhite','BASE-OFFWHITE','shirt','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
 on conflict (id) do nothing;
-insert into public.patches (id,name,image_url,width_cm,height_cm,patch_group,active,sort_order) values
-('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',4,4,'Best Seller',true,10),
-('patch-black','Mặt nạ xanh','/assets/patch-black-green.webp',4,4,'Limited',true,20),
-('patch-red','Mũ vàng','/assets/patch-red-white.webp',4,4,'Seasonal',true,30),
-('patch-yellow','Mũ xanh dương','/assets/patch-yellow-blue.webp',4,4,'Cute Animal',true,40)
+insert into public.patches (id,name,image_url,width_cm,height_cm,patch_group,patch_groups,active,sort_order) values
+('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',4,4,'Best Seller',array['Best Seller'],true,10),
+('patch-black','Mặt nạ xanh','/assets/patch-black-green.webp',4,4,'Limited',array['Limited'],true,20),
+('patch-red','Mũ vàng','/assets/patch-red-white.webp',4,4,'Seasonal',array['Seasonal'],true,30),
+('patch-yellow','Mũ xanh dương','/assets/patch-yellow-blue.webp',4,4,'Cute Animal',array['Cute Animal'],true,40)
 on conflict (id) do nothing;
 update public.patches set patch_group = 'Best Seller' where patch_group is null or patch_group = '';
+update public.patches
+set patch_groups = array[coalesce(nullif(patch_group,''),'Best Seller')]
+where patch_groups is null or array_length(patch_groups,1) is null;
 update public.patches set quote = 'nhỏ xíu mà có võ' where id='patch-pink' and quote='';
 update public.patches set quote = 'bí ẩn một chút mới vui' where id='patch-black' and quote='';
 update public.patches set quote = 'đội mood vui lên áo' where id='patch-red' and quote='';
