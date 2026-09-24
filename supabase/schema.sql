@@ -4,6 +4,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.products (
   id text primary key default ('base-' || replace(gen_random_uuid()::text,'-','')),
   sku text,
+  product_type text not null default 'shirt' check (product_type in ('shirt','bag')),
   name text not null,
   color text not null,
   hex text not null default '#f5f1e8',
@@ -56,7 +57,16 @@ create index if not exists designs_created_at_idx on public.designs(created_at d
 create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
+alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'products_product_type_check'
+  ) then
+    alter table public.products add constraint products_product_type_check check (product_type in ('shirt','bag'));
+  end if;
+end $$;
 alter table public.patches add column if not exists quote text not null default '';
 alter table public.designs add column if not exists customer_phone text not null default '';
 alter table public.designs add column if not exists shipping_address text not null default '';
@@ -68,6 +78,9 @@ where view_images = '{}'::jsonb or view_images is null;
 update public.products
 set sku = 'BASE-OFFWHITE'
 where id = 'base-offwhite' and sku is null;
+update public.products
+set product_type = 'shirt'
+where product_type is null;
 
 alter table public.products enable row level security;
 alter table public.patches enable row level security;
@@ -87,8 +100,8 @@ insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('design-mockups','design-mockups',false,3145728,array['image/png'])
 on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png'];
 
-insert into public.products (id,sku,name,color,hex,image_url,view_images,sizes,active)
-values ('base-offwhite','BASE-OFFWHITE','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
+insert into public.products (id,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
+values ('base-offwhite','BASE-OFFWHITE','shirt','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
 on conflict (id) do nothing;
 insert into public.patches (id,name,image_url,width_cm,height_cm,active,sort_order) values
 ('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',4,4,true,10),

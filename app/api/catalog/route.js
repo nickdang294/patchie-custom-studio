@@ -1,7 +1,7 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
 
 const starter = {
-  products: [{ id:'base-offwhite', sku:'BASE-OFFWHITE', name:'Áo thun oversized', color:'Off-white', hex:'#f5f1e8', image_url:'/assets/blank-tee.webp', view_images:{front:'/assets/blank-tee.webp'}, sizes:['S','M','L','XL'], price:null }],
+  products: [{ id:'base-offwhite', sku:'BASE-OFFWHITE', product_type:'shirt', name:'Áo thun oversized', color:'Off-white', hex:'#f5f1e8', image_url:'/assets/blank-tee.webp', view_images:{front:'/assets/blank-tee.webp'}, sizes:['S','M','L','XL'], price:null }],
   patches: [
     { id:'patch-pink', name:'Mũ xanh lá', image_url:'/assets/patch-pink-cap.webp', width_cm:4, height_cm:4, price:null, quote:'nhỏ xíu mà có võ' },
     { id:'patch-black', name:'Mặt nạ xanh', image_url:'/assets/patch-black-green.webp', width_cm:4, height_cm:4, price:null, quote:'bí ẩn một chút mới vui' },

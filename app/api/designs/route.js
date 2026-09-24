@@ -1,6 +1,6 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
 
-const ALLOWED_VIEWS=['front','left_sleeve','right_sleeve','back'];
+const VIEW_SETS={shirt:['front','left_sleeve','right_sleeve','back'],bag:['front','back']};
 
 export async function POST(request) {
   let form;
@@ -15,12 +15,13 @@ export async function POST(request) {
     const db=serviceDb();
     const patchIds=[...new Set(patches.map(x=>String(x.patchId||'')).filter(Boolean))].slice(0,12);
     const [{data:product},{data:validPatches}] = await Promise.all([
-      db.from('products').select('id,sizes,price').eq('id',productId).eq('active',true).maybeSingle(),
+      db.from('products').select('id,sizes,price,product_type').eq('id',productId).eq('active',true).maybeSingle(),
       db.from('patches').select('id,name,price').in('id',patchIds).eq('active',true)
     ]);
-    if (!product || !(product.sizes||[]).includes(size)) return jsonError('Mẫu áo hoặc size vừa thay đổi. Tải lại trang nhé.');
+    if (!product || !(product.sizes||[]).includes(size)) return jsonError('Sản phẩm base hoặc size vừa thay đổi. Tải lại trang nhé.');
     if (!validPatches || validPatches.length!==patchIds.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
-    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=ALLOWED_VIEWS.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
+    const allowedViews=VIEW_SETS[product.product_type||'shirt']||VIEW_SETS.shirt;
+    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0);
     const id='PCH-'+crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();
     const path=`${id}.png`;
