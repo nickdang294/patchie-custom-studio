@@ -27,7 +27,7 @@ const PRODUCT_GROUPS=[
   {value:'bag',label:'Túi Tote'}
 ];
 const productGroupLabel=value=>PRODUCT_GROUPS.find(g=>g.value===value)?.label||'Sản phẩm';
-const productBaseKey=p=>`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
+const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
 
 const VIEW_REFERENCE_CM={
   front:{width:62.5,height:62.5},

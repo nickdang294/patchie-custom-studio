@@ -38,7 +38,16 @@ export async function POST(request,{params}) {
     const results=await Promise.all(updates);const failed=results.find(r=>r.error);if(failed)return jsonError(failed.error.message,500);
     return Response.json({ok:true,count:ids.length});
   }
-  if(['products','patches'].includes(section)) {const item=b;const {id,...rest}=item;const {data,error}=await db.from(section).upsert(id?{id,...rest}:rest).select().single();if(error)return jsonError(error.message,500);return Response.json({item:data});}
+  if(['products','patches'].includes(section)) {
+    const item=b;const {id,...rest}=item;
+    let result=await db.from(section).upsert(id?{id,...rest}:rest).select().single();
+    // Keep older projects usable until the one-line base_key migration is run.
+    if(result.error&&section==='products'&&/base_key/i.test(result.error.message)){
+      const legacy={...rest};delete legacy.base_key;
+      result=await db.from(section).upsert(id?{id,...legacy}:legacy).select().single();
+    }
+    if(result.error)return jsonError(result.error.message,500);return Response.json({item:result.data});
+  }
   return jsonError('Không tìm thấy mục quản trị.',404);
 }
 

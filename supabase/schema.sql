@@ -3,6 +3,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.products (
   id text primary key default ('base-' || replace(gen_random_uuid()::text,'-','')),
+  base_key text,
   sku text,
   product_type text not null default 'shirt' check (product_type in ('shirt','bag')),
   name text not null,
@@ -59,6 +60,7 @@ create index if not exists designs_created_at_idx on public.designs(created_at d
 create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
+alter table public.products add column if not exists base_key text;
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
 do $$
@@ -83,6 +85,9 @@ update public.products
 set sku = 'BASE-OFFWHITE'
 where id = 'base-offwhite' and sku is null;
 update public.products
+set base_key = product_type || '::' || lower(trim(name))
+where base_key is null or base_key = '';
+update public.products
 set product_type = 'shirt'
 where product_type is null;
 
@@ -104,8 +109,8 @@ insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('design-mockups','design-mockups',false,3145728,array['image/png'])
 on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png'];
 
-insert into public.products (id,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
-values ('base-offwhite','BASE-OFFWHITE','shirt','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
+insert into public.products (id,base_key,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
+values ('base-offwhite','shirt::áo thun oversized','BASE-OFFWHITE','shirt','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
 on conflict (id) do nothing;
 insert into public.patches (id,name,image_url,width_cm,height_cm,patch_group,patch_groups,active,sort_order) values
 ('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',4,4,'Best Seller',array['Best Seller'],true,10),
