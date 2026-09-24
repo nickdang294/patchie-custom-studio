@@ -16,8 +16,12 @@ const VIEWS=[
   {id:'back',label:'Lưng áo',short:'Lưng'}
 ];
 
-const TEE_REFERENCE_WIDTH_CM=62.5;
-const TEE_REFERENCE_HEIGHT_CM=62.5;
+const VIEW_REFERENCE_CM={
+  front:{width:62.5,height:62.5},
+  back:{width:62.5,height:62.5},
+  left_sleeve:{width:24,height:24},
+  right_sleeve:{width:24,height:24}
+};
 const clampPatchPercent=value=>Math.max(.8,Math.min(35,value));
 const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],price:null};
 
@@ -32,7 +36,8 @@ export default function Home(){
   const activeImage=viewImages[activeView]||viewImages.front||product?.image_url||defaultProduct.image_url;
   const activePlaced=placed.filter(x=>(x.view||'front')===activeView);
   const show=s=>{setToast(s);setTimeout(()=>setToast(''),2600)};
-  const patchPreviewStyle=p=>({width:`${clampPatchPercent((Number(p?.width_cm||4)/TEE_REFERENCE_WIDTH_CM)*100)}%`,height:`${clampPatchPercent((Number(p?.height_cm||4)/TEE_REFERENCE_HEIGHT_CM)*100)}%`,maxWidth:'none',maxHeight:'none'});
+  const patchSizePercent=(p,view=activeView)=>{const ref=VIEW_REFERENCE_CM[view]||VIEW_REFERENCE_CM.front;return {width:clampPatchPercent((Number(p?.width_cm||4)/ref.width)*100),height:clampPatchPercent((Number(p?.height_cm||4)/ref.height)*100)};};
+  const patchPreviewStyle=p=>{const s=patchSizePercent(p);return {width:`${s.width}%`,height:`${s.height}%`,maxWidth:'none',maxHeight:'none'};};
   const patchLabel=p=>`${Number(p?.width_cm||4).toFixed(1).replace('.0','')} × ${Number(p?.height_cm||4).toFixed(1).replace('.0','')} cm`;
   const viewName=id=>VIEWS.find(v=>v.id===id)?.label||'Mặt trước';
   const money=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))?`${new Intl.NumberFormat('vi-VN').format(Number(v))}đ`:'Chưa set';
@@ -63,7 +68,7 @@ export default function Home(){
       for(const item of placed.filter(x=>(x.view||'front')===view.id)){
         const p=catalog.patches.find(x=>x.id===item.patchId);if(!p)continue;
         const im=await draw(p.image_url);
-        const w=clampPatchPercent((Number(p.width_cm||4)/TEE_REFERENCE_WIDTH_CM)*100)*6,h=clampPatchPercent((Number(p.height_cm||4)/TEE_REFERENCE_HEIGHT_CM)*100)*6;
+        const size=patchSizePercent(p,view.id),w=size.width*6,h=size.height*6;
         ctx.drawImage(im,cell.x+item.x*600-w/2,cell.y+item.y*600-h/2,w,h);
       }
     }
