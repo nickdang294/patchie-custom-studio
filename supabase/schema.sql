@@ -3,10 +3,12 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.products (
   id text primary key default ('base-' || replace(gen_random_uuid()::text,'-','')),
+  sku text,
   name text not null,
   color text not null,
   hex text not null default '#f5f1e8',
   image_url text not null default '/assets/blank-tee.webp',
+  view_images jsonb not null default '{}'::jsonb,
   sizes text[] not null default array['S','M','L','XL'],
   price integer,
   active boolean not null default true,
@@ -47,6 +49,16 @@ create table if not exists public.designs (
 
 create index if not exists designs_created_at_idx on public.designs(created_at desc);
 create index if not exists designs_expires_at_idx on public.designs(expires_at);
+
+alter table public.products add column if not exists sku text;
+alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+update public.products
+set view_images = jsonb_build_object('front', image_url)
+where view_images = '{}'::jsonb or view_images is null;
+update public.products
+set sku = 'BASE-OFFWHITE'
+where id = 'base-offwhite' and sku is null;
+
 alter table public.products enable row level security;
 alter table public.patches enable row level security;
 alter table public.settings enable row level security;
@@ -65,14 +77,14 @@ insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('design-mockups','design-mockups',false,3145728,array['image/png'])
 on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png'];
 
-insert into public.products (id,name,color,hex,image_url,sizes,active)
-values ('base-offwhite','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp',array['S','M','L','XL'],true)
+insert into public.products (id,sku,name,color,hex,image_url,view_images,sizes,active)
+values ('base-offwhite','BASE-OFFWHITE','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
 on conflict (id) do nothing;
 insert into public.patches (id,name,image_url,width_cm,height_cm,active,sort_order) values
-('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',1,1,true,10),
-('patch-black','Mặt nạ xanh','/assets/patch-black-green.webp',1,1,true,20),
-('patch-red','Mũ vàng','/assets/patch-red-white.webp',1,1,true,30),
-('patch-yellow','Mũ xanh dương','/assets/patch-yellow-blue.webp',1,1,true,40)
+('patch-pink','Mũ xanh lá','/assets/patch-pink-cap.webp',4,4,true,10),
+('patch-black','Mặt nạ xanh','/assets/patch-black-green.webp',4,4,true,20),
+('patch-red','Mũ vàng','/assets/patch-red-white.webp',4,4,true,30),
+('patch-yellow','Mũ xanh dương','/assets/patch-yellow-blue.webp',4,4,true,40)
 on conflict (id) do nothing;
 insert into public.settings(key,value) values
 ('messengerUrl','""'::jsonb),

@@ -1,5 +1,7 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
 
+const ALLOWED_VIEWS=['front','left_sleeve','right_sleeve','back'];
+
 export async function POST(request) {
   let form;
   try { form=await request.formData(); } catch { return jsonError('Dữ liệu gửi lên không hợp lệ.'); }
@@ -7,17 +9,18 @@ export async function POST(request) {
   const productId=String(form.get('productId')||'').slice(0,80), note=String(form.get('note')||'').trim().slice(0,1200);
   let patches; try { patches=JSON.parse(form.get('patches')||'[]'); } catch { return jsonError('Danh sách patch không hợp lệ.'); }
   const mockup=form.get('mockup');
-  if (!name || !size || !productId || !Array.isArray(patches) || !patches.length || patches.length>6 || form.get('consent')!=='true') return jsonError('Nhập tên, chọn size và patch, rồi xác nhận quyền riêng tư.');
+  if (!name || !size || !productId || !Array.isArray(patches) || !patches.length || patches.length>12 || form.get('consent')!=='true') return jsonError('Nhập tên, chọn size và patch, rồi xác nhận quyền riêng tư.');
   if (!(mockup instanceof File) || mockup.type!=='image/png' || mockup.size>3_000_000) return jsonError('Mockup PNG không hợp lệ hoặc lớn hơn 3 MB.');
   try {
     const db=serviceDb();
+    const patchIds=[...new Set(patches.map(x=>String(x.patchId||'')).filter(Boolean))].slice(0,12);
     const [{data:product},{data:validPatches}] = await Promise.all([
       db.from('products').select('id,sizes').eq('id',productId).eq('active',true).maybeSingle(),
-      db.from('patches').select('id,name').in('id',patches.map(x=>String(x.patchId||'')).slice(0,6)).eq('active',true)
+      db.from('patches').select('id,name').in('id',patchIds).eq('active',true)
     ]);
     if (!product || !(product.sizes||[]).includes(size)) return jsonError('Mẫu áo hoặc size vừa thay đổi. Tải lại trang nhé.');
-    if (!validPatches || validPatches.length!==patches.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
-    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId);return {id:p.id,name:p.name,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
+    if (!validPatches || validPatches.length!==patchIds.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
+    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=ALLOWED_VIEWS.includes(x.view)?x.view:'front';return {id:p.id,name:p.name,view,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const id='PCH-'+crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();
     const path=`${id}.png`;
     const {error:upErr}=await db.storage.from('design-mockups').upload(path, mockup, {contentType:'image/png',upsert:false});
