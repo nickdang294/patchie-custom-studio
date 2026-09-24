@@ -8,7 +8,7 @@ export async function GET(request,{params}) {
   if(section==='products'||section==='patches') {const {data,error}=await db.from(section).select('*').order(section==='patches'?'sort_order':'created_at');if(error)return jsonError(error.message,500);return Response.json({items:data});}
   if(section==='designs'||section==='summary') {
     const status=url.searchParams.get('status'), q=url.searchParams.get('q');
-    let query=db.from('designs').select('*,products(name)').order('created_at',{ascending:false}).limit(100);
+    let query=db.from('designs').select('*,products(name,price)').order('created_at',{ascending:false}).limit(100);
     if(status)query=query.eq('status',status);if(q)query=query.or(`id.ilike.%${q}%,customer_name.ilike.%${q}%`);
     const {data,error}=await query;if(error)return jsonError(error.message,500);
     if(section==='summary') {const counts={new:0,review:0,confirmed:0,completed:0,closed:0};(data||[]).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);return Response.json({...counts,catalog:(await db.from('products').select('id',{count:'exact',head:true})).count+(await db.from('patches').select('id',{count:'exact',head:true})).count,recent:data.slice(0,8)});}

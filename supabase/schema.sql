@@ -39,6 +39,8 @@ create table if not exists public.designs (
   size text not null,
   mode text not null check (mode in ('diy','shop')),
   product_id text references public.products(id) on delete set null,
+  product_price integer not null default 0,
+  total_price integer not null default 0,
   patches jsonb not null default '[]'::jsonb,
   note text not null default '',
   image_path text not null,
@@ -52,6 +54,8 @@ create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+alter table public.designs add column if not exists product_price integer not null default 0;
+alter table public.designs add column if not exists total_price integer not null default 0;
 update public.products
 set view_images = jsonb_build_object('front', image_url)
 where view_images = '{}'::jsonb or view_images is null;
