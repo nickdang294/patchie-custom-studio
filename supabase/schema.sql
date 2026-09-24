@@ -36,6 +36,8 @@ create table if not exists public.settings (
 create table if not exists public.designs (
   id text primary key,
   customer_name text not null,
+  customer_phone text not null default '',
+  shipping_address text not null default '',
   size text not null,
   mode text not null check (mode in ('diy','shop')),
   product_id text references public.products(id) on delete set null,
@@ -54,6 +56,8 @@ create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+alter table public.designs add column if not exists customer_phone text not null default '';
+alter table public.designs add column if not exists shipping_address text not null default '';
 alter table public.designs add column if not exists product_price integer not null default 0;
 alter table public.designs add column if not exists total_price integer not null default 0;
 update public.products
