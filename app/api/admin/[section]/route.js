@@ -5,7 +5,7 @@ export async function GET(request,{params}) {
   const {section}=await params, db=serviceDb(), url=new URL(request.url);
   if(section==='bootstrap') return Response.json({email:auth.user.email});
   if(section==='settings') {const {data,error}=await db.from('settings').select('key,value');if(error)return jsonError(error.message,500);return Response.json({settings:Object.fromEntries(data.map(x=>[x.key,x.value]))});}
-  if(section==='products'||section==='patches') {const {data,error}=await db.from(section).select('*').order(section==='patches'?'sort_order':'created_at');if(error)return jsonError(error.message,500);return Response.json({items:data});}
+  if(section==='products'||section==='patches') {let query=db.from(section).select('*');query=section==='patches'?query.order('patch_group').order('sort_order'):query.order('created_at');const {data,error}=await query;if(error)return jsonError(error.message,500);return Response.json({items:data});}
   if(section==='designs'||section==='summary') {
     const status=url.searchParams.get('status'), q=url.searchParams.get('q');
     let query=db.from('designs').select('*,products(name,price)').order('created_at',{ascending:false}).limit(100);
