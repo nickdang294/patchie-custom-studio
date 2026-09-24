@@ -20,7 +20,7 @@ export async function POST(request) {
     ]);
     if (!product || !(product.sizes||[]).includes(size)) return jsonError('Mẫu áo hoặc size vừa thay đổi. Tải lại trang nhé.');
     if (!validPatches || validPatches.length!==patchIds.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
-    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=ALLOWED_VIEWS.includes(x.view)?x.view:'front';return {id:p.id,name:p.name,price:Number(p.price)||0,view,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
+    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=ALLOWED_VIEWS.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0);
     const id='PCH-'+crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();
     const path=`${id}.png`;
