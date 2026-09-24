@@ -21,6 +21,7 @@ create table if not exists public.patches (
   image_url text not null,
   width_cm numeric(5,2) not null default 1,
   height_cm numeric(5,2) not null default 1,
+  quote text not null default '',
   price integer,
   active boolean not null default true,
   sort_order integer not null default 100,
@@ -56,6 +57,7 @@ create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+alter table public.patches add column if not exists quote text not null default '';
 alter table public.designs add column if not exists customer_phone text not null default '';
 alter table public.designs add column if not exists shipping_address text not null default '';
 alter table public.designs add column if not exists product_price integer not null default 0;
@@ -94,6 +96,10 @@ insert into public.patches (id,name,image_url,width_cm,height_cm,active,sort_ord
 ('patch-red','Mũ vàng','/assets/patch-red-white.webp',4,4,true,30),
 ('patch-yellow','Mũ xanh dương','/assets/patch-yellow-blue.webp',4,4,true,40)
 on conflict (id) do nothing;
+update public.patches set quote = 'nhỏ xíu mà có võ' where id='patch-pink' and quote='';
+update public.patches set quote = 'bí ẩn một chút mới vui' where id='patch-black' and quote='';
+update public.patches set quote = 'đội mood vui lên áo' where id='patch-red' and quote='';
+update public.patches set quote = 'hôm nay hơi đáng yêu' where id='patch-yellow' and quote='';
 insert into public.settings(key,value) values
 ('messengerUrl','""'::jsonb),
 ('sizes','["S","M","L","XL"]'::jsonb),

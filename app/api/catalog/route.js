@@ -3,10 +3,10 @@ import { serviceDb, jsonError } from '@/lib/supabase';
 const starter = {
   products: [{ id:'base-offwhite', sku:'BASE-OFFWHITE', name:'Áo thun oversized', color:'Off-white', hex:'#f5f1e8', image_url:'/assets/blank-tee.webp', view_images:{front:'/assets/blank-tee.webp'}, sizes:['S','M','L','XL'], price:null }],
   patches: [
-    { id:'patch-pink', name:'Mũ xanh lá', image_url:'/assets/patch-pink-cap.webp', width_cm:4, height_cm:4, price:null },
-    { id:'patch-black', name:'Mặt nạ xanh', image_url:'/assets/patch-black-green.webp', width_cm:4, height_cm:4, price:null },
-    { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null },
-    { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null }
+    { id:'patch-pink', name:'Mũ xanh lá', image_url:'/assets/patch-pink-cap.webp', width_cm:4, height_cm:4, price:null, quote:'nhỏ xíu mà có võ' },
+    { id:'patch-black', name:'Mặt nạ xanh', image_url:'/assets/patch-black-green.webp', width_cm:4, height_cm:4, price:null, quote:'bí ẩn một chút mới vui' },
+    { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo' },
+    { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu' }
   ],
   settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.' }
 };
