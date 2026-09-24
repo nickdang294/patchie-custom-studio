@@ -1,5 +1,10 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
 
+// The catalog is edited from the admin dashboard, so never serve a stale
+// cached response to the storefront after a save.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const starter = {
   products: [{ id:'base-offwhite', sku:'BASE-OFFWHITE', product_type:'shirt', name:'Áo thun oversized', color:'Off-white', hex:'#f5f1e8', image_url:'/assets/blank-tee.webp', view_images:{front:'/assets/blank-tee.webp'}, sizes:['S','M','L','XL'], price:null }],
   patches: [
@@ -8,7 +13,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.' }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{} }
 };
 
 export async function GET() {
@@ -21,7 +26,21 @@ export async function GET() {
     ]);
     if (pErr || paErr || sErr) throw new Error('Database chưa được khởi tạo. Chạy supabase/schema.sql trước.');
     const config = Object.fromEntries((settings||[]).map(x=>[x.key,x.value]));
-    return Response.json({products:products||[],patches:patches||[],settings:{messengerUrl:config.messengerUrl||'',sizes:config.sizes||['S','M','L','XL'],privacyText:config.privacyText||''}});
+    return Response.json(
+      {
+        products:products||[],
+        patches:patches||[],
+        settings:{
+          messengerUrl:config.messengerUrl||'',
+          sizes:config.sizes||['S','M','L','XL'],
+          privacyText:config.privacyText||'',
+          // Brand & content is stored in the existing settings table as JSON.
+          // It must be forwarded here or the storefront can only show defaults.
+          brand:config.brand||{}
+        }
+      },
+      {headers:{'Cache-Control':'no-store, max-age=0'}}
+    );
   } catch (e) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) return Response.json(starter);
     return jsonError(e.message||'Không tải được danh mục.',503);
