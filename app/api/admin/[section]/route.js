@@ -5,6 +5,7 @@ export async function GET(request,{params}) {
   const {section}=await params, db=serviceDb(), url=new URL(request.url);
   if(section==='bootstrap') return Response.json({email:auth.user.email});
   if(section==='settings') {const {data,error}=await db.from('settings').select('key,value');if(error)return jsonError(error.message,500);return Response.json({settings:Object.fromEntries(data.map(x=>[x.key,x.value]))});}
+  if(section==='patch-orders') {const {data,error}=await db.from('patch_orders').select('*,patch_order_items(*)').order('created_at',{ascending:false}).limit(200);if(error)return jsonError(error.message,500);return Response.json({items:data||[]});}
   if(section==='products'||section==='patches') {let query=db.from(section).select('*');query=section==='patches'?query.order('patch_group').order('sort_order'):query.order('created_at');const {data,error}=await query;if(error)return jsonError(error.message,500);return Response.json({items:data});}
   if(section==='designs'||section==='summary') {
     const status=url.searchParams.get('status'), q=url.searchParams.get('q');
@@ -30,6 +31,7 @@ export async function POST(request,{params}) {
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
   if(section==='settings') {for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}return Response.json({ok:true});}
   if(section==='designs') {const {id,status}=b;if(!['new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
+  if(section==='patch-orders') {const {id,status}=b;if(!id||!['new','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái đơn không hợp lệ.');const {error}=await db.from('patch_orders').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
   if(section==='patch-groups') {
     const ids=Array.isArray(b.ids)?b.ids.filter(Boolean):[],incoming=(Array.isArray(b.patch_groups)?b.patch_groups:String(b.patch_groups||b.patch_group||'').split(',')).map(x=>String(x).trim()).filter(Boolean);
     if(!ids.length||!incoming.length)return jsonError('Chọn patch và group cần thêm.');
