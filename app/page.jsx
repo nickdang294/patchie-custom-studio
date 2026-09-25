@@ -52,7 +52,7 @@ export default function Home(){
   // New four-step flow: ignore legacy step labels unless the new keys exist.
   // This prevents previously saved “step 1/2/3” values from moving the labels
   // back to the old patch-first layout.
-  Object.assign(brand,{stepBaseDesktop:savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||BRAND_DEFAULTS.stepOrderMobile});
+  Object.assign(brand,{step1Title:'Sản phẩm base',stepBaseDesktop:savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||BRAND_DEFAULTS.stepOrderMobile});
   const selectedBaseKey=productBaseKey(product);
   const colorVariants=catalog.products.filter(p=>productBaseKey(p)===selectedBaseKey);
   const activeViews=viewsForProduct(product);
