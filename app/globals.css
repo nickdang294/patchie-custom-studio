@@ -104,6 +104,26 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .admin-footer-link{padding:8px 10px;font-size:9px}
 }
 
+/* Keep the public page switcher available while users scroll.  The same
+   treatment is shared by Custom Studio and Patch Market so navigation never
+   disappears on long mockup, library, or checkout pages. */
+.shell>.topbar,
+.market-shell>.market-topbar{
+  position:sticky;
+  top:0;
+  z-index:70;
+  background:var(--paper);
+  box-shadow:0 8px 22px rgba(48,40,55,.06);
+}
+
+@media(max-width:700px){
+  .shell>.topbar,
+  .market-shell>.market-topbar{
+    top:0;
+    box-shadow:0 6px 16px rgba(48,40,55,.07);
+  }
+}
+
 /* Unified admin orders and direct navigation between Studio and Patch Market admin. */
 .admin-nav-market{display:block;margin-top:auto;padding:11px 12px;border-radius:10px;background:#f0eaff;color:#51427b;font-size:11px;font-weight:850}
 .admin-heading-links{display:flex;align-items:center;gap:8px}.admin-heading-links a{white-space:nowrap}
