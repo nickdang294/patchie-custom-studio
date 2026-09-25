@@ -236,14 +236,20 @@ export default function Home(){
     if(!order)return;
     const messengerUrl=catalog.settings.messengerUrl;
     if(!messengerUrl){show('Shop chưa cài link Messenger trong admin.');return;}
-    // Open the tab from the click event first so mobile browsers do not block it.
-    window.open(messengerUrl,'_blank','noopener,noreferrer');
+    // Reserve the new tab during the click event, then copy the message before
+    // navigating it. This keeps clipboard permission and popup behaviour reliable
+    // on both desktop and mobile browsers.
+    const messengerTab=window.open('about:blank','_blank');
     try{
       await navigator.clipboard.writeText(order.message);
       setCopied(true);
-      show('Đã copy toàn bộ nội dung đơn. Dán vào Messenger gửi shop nha!');
+      if(messengerTab)messengerTab.location.href=messengerUrl;
+      else window.open(messengerUrl,'_blank','noopener,noreferrer');
+      show('Đã copy nguyên tin nhắn đơn hàng. Dán vào Messenger gửi shop nha!');
     }catch{
-      show('Messenger đã mở. Bạn copy nội dung đơn thủ công giúp mình nhé.');
+      if(messengerTab)messengerTab.location.href=messengerUrl;
+      else window.open(messengerUrl,'_blank','noopener,noreferrer');
+      show('Messenger đã mở. Bạn copy nguyên nội dung đơn thủ công giúp mình nhé.');
     }
   }
   const MiniPreview=()=> <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v=>{const shirt=(product?.view_images||{})[v.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url,inView=placed.filter(x=>(x.view||'front')===v.id);return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label}/>{inView.map((item,i)=>{const p=catalog.patches.find(x=>x.id===item.patchId),s=patchSizePercent(p,v.id);return p?<span key={item.uid} className="mini-placed" style={{left:`${item.x*100}%`,top:`${item.y*100}%`,width:`${s.width}%`,height:`${s.height}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`}}><img src={p.image_url} alt={p.name}/></span>:null})}<em>{v.short}</em></div>})}</div></div>;
