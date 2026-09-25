@@ -115,4 +115,15 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .copy-hint{display:flex;align-items:center;justify-content:flex-end;gap:5px;color:#7b6a9c;font-size:10px;font-weight:900;margin-top:2px}.copy-hint span{color:#fa8e7e;font-size:18px;line-height:1;animation:copy-point 1s ease-in-out infinite}@keyframes copy-point{0%,100%{transform:translate(0,0)}50%{transform:translate(3px,-2px)}}
 .messenger-reveal{display:flex;align-items:center;gap:7px;margin-top:9px;padding:8px;border-radius:10px;background:#eaf3ff;color:#315b89}.messenger-reveal>span{font-size:16px}.messenger-reveal b{font-size:10px;line-height:1.25;flex:1}.order-code-row .messenger-btn,.messenger-reveal .messenger-btn{border:0;border-radius:9px;padding:8px 10px;background:#0084ff;color:#fff;font-size:10px;font-weight:900;white-space:nowrap}
 .order-messenger-modal .cute-card{border-color:#cfe1ff}.order-messenger-modal .cute-spark{background:#d6e9ff;color:#315b89}
+
+@media(max-width:700px){
+  /* Decorative spark in the order panel is hidden on touch screens to avoid accidental taps. */
+  .request .spark{display:none}
+  .mobile-patch-dock{padding:9px 10px 7px;margin-bottom:6px}
+  .mobile-dock-kicker{margin:0 0 2px!important;line-height:1.2}
+  .mobile-patch-dock .pretty-select-field{margin:2px 0 6px}
+  .mobile-patch-strip{padding:0 0 5px;margin:0}
+  .mobile-patch-dock:after{content:'Chọn patch - custom\A Bấm hoàn tất đơn khi bạn thấy okila';white-space:pre;display:block;margin:5px 2px 0;color:var(--muted);font-size:10px;line-height:1.45}
+  .finish-custom.finish-disabled{background:#d8d4cd!important;color:#8d8982!important;box-shadow:none;cursor:not-allowed;opacity:1}
+}
 @media(max-width:700px){.order-progress-card{padding:10px}.order-progress-card b{font-size:10px}.order-progress-card small{font-size:8px}.copy-hint{font-size:9px}.messenger-reveal{align-items:flex-start}.messenger-reveal b{font-size:9px}.order-code-row button{font-size:9px;padding:8px 9px}}
