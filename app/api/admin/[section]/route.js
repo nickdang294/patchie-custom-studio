@@ -12,8 +12,8 @@ export async function GET(request,{params}) {
     let query=db.from('designs').select('*,products(name,price)').order('created_at',{ascending:false}).limit(100);
     if(status)query=query.eq('status',status);if(q)query=query.or(`id.ilike.%${q}%,customer_name.ilike.%${q}%`);
     const {data,error}=await query;if(error)return jsonError(error.message,500);
-    if(section==='summary') {const counts={new:0,review:0,confirmed:0,completed:0,closed:0};(data||[]).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);return Response.json({...counts,catalog:(await db.from('products').select('id',{count:'exact',head:true})).count+(await db.from('patches').select('id',{count:'exact',head:true})).count,recent:data.slice(0,8)});}
-    const items=await Promise.all((data||[]).map(async d=>{const {data:file}=await db.storage.from('design-mockups').createSignedUrl(d.image_path,300);return {...d,imageUrl:file?.signedUrl||''};}));
+    if(section==='summary') {const counts={processing:0,new:0,review:0,confirmed:0,completed:0,closed:0};(data||[]).forEach(x=>counts[x.status]=(counts[x.status]||0)+1);return Response.json({...counts,catalog:(await db.from('products').select('id',{count:'exact',head:true})).count+(await db.from('patches').select('id',{count:'exact',head:true})).count,recent:data.slice(0,8)});}
+    const items=await Promise.all((data||[]).map(async d=>{const {data:file}=d.image_path?await db.storage.from('design-mockups').createSignedUrl(d.image_path,300):{data:null};return {...d,imageUrl:file?.signedUrl||''};}));
     return Response.json({items});
   }
   return jsonError('Không tìm thấy mục quản trị.',404);
@@ -30,7 +30,7 @@ export async function POST(request,{params}) {
   }
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
   if(section==='settings') {for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}return Response.json({ok:true});}
-  if(section==='designs') {const {id,status}=b;if(!['new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
+  if(section==='designs') {const {id,status}=b;if(!['processing','new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
   if(section==='patch-orders') {const {id,status}=b;if(!id||!['new','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái đơn không hợp lệ.');const {error}=await db.from('patch_orders').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
   if(section==='patch-groups') {
     const ids=Array.isArray(b.ids)?b.ids.filter(Boolean):[],incoming=(Array.isArray(b.patch_groups)?b.patch_groups:String(b.patch_groups||b.patch_group||'').split(',')).map(x=>String(x).trim()).filter(Boolean);

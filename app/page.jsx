@@ -56,7 +56,7 @@ const StudioFooter=()=> <footer className="studio-footer"><div><span>Patchie · 
 
 export default function Home(){
   const [catalog,setCatalog]=useState({products:[defaultProduct],patches:STARTER,settings:{sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',brand:BRAND_DEFAULTS}});
-  const [chosen,setChosen]=useState(STARTER[0].id),[activePatchGroup,setActivePatchGroup]=useState('all'),[placed,setPlaced]=useState([]),[history,setHistory]=useState([]),[selectedUid,setSelectedUid]=useState(''),[activeView,setActiveView]=useState('front'),[flowDone,setFlowDone]=useState(false),[stageZoom,setStageZoom]=useState({scale:1,x:0,y:0}),[trashActive,setTrashActive]=useState(false),[trashHot,setTrashHot]=useState(false),[mode,setMode]=useState('shop'),[productId,setProductId]=useState(defaultProduct.id),[productSheetGroup,setProductSheetGroup]=useState(defaultProduct.product_type),[size,setSize]=useState(''),[name,setName]=useState(''),[phone,setPhone]=useState(''),[draftOrderCode,setDraftOrderCode]=useState(''),[address,setAddress]=useState(''),[note,setNote]=useState(''),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[orderProgress,setOrderProgress]=useState(''),[toast,setToast]=useState(''),[order,setOrder]=useState(null),[copied,setCopied]=useState(false),[messengerPrompt,setMessengerPrompt]=useState(false),[quotePatch,setQuotePatch]=useState(''),[celebrate,setCelebrate]=useState(false),[undoAsk,setUndoAsk]=useState(false),[undoAsked,setUndoAsked]=useState(false),[selectSheet,setSelectSheet]=useState(null),[catalogReady,setCatalogReady]=useState(false);
+  const [chosen,setChosen]=useState(STARTER[0].id),[activePatchGroup,setActivePatchGroup]=useState('all'),[placed,setPlaced]=useState([]),[history,setHistory]=useState([]),[selectedUid,setSelectedUid]=useState(''),[activeView,setActiveView]=useState('front'),[flowDone,setFlowDone]=useState(false),[stageZoom,setStageZoom]=useState({scale:1,x:0,y:0}),[trashActive,setTrashActive]=useState(false),[trashHot,setTrashHot]=useState(false),[mode,setMode]=useState('shop'),[productId,setProductId]=useState(defaultProduct.id),[productSheetGroup,setProductSheetGroup]=useState(defaultProduct.product_type),[size,setSize]=useState(''),[name,setName]=useState(''),[phone,setPhone]=useState(''),[draftOrderCode,setDraftOrderCode]=useState(''),[address,setAddress]=useState(''),[note,setNote]=useState(''),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[uploadingMockup,setUploadingMockup]=useState(false),[orderProgress,setOrderProgress]=useState(''),[toast,setToast]=useState(''),[order,setOrder]=useState(null),[copied,setCopied]=useState(false),[messengerPrompt,setMessengerPrompt]=useState(false),[quotePatch,setQuotePatch]=useState(''),[celebrate,setCelebrate]=useState(false),[undoAsk,setUndoAsk]=useState(false),[undoAsked,setUndoAsked]=useState(false),[selectSheet,setSelectSheet]=useState(null),[catalogReady,setCatalogReady]=useState(false);
   const stage=useRef(null),trash=useRef(null),drag=useRef(null),pan=useRef(null),rotating=useRef(false),pinch=useRef(null);
   const product=catalog.products.find(x=>x.id===productId)||catalog.products[0]||defaultProduct;
   const savedBrand=catalog.settings.brand||{};
@@ -172,26 +172,29 @@ export default function Home(){
   function jumpView(id){setActiveView(id);setSelectedUid('');}
   function tapView(e,id){e.preventDefault();e.stopPropagation();jumpView(id);}
 
-  async function makePNG(){
-    const c=document.createElement('canvas');c.width=900;c.height=900;const ctx=c.getContext('2d');
+  async function makeMockup(){
+    const c=document.createElement('canvas');c.width=800;c.height=800;const ctx=c.getContext('2d');
     const cache=new Map();
     const draw=src=>{if(!cache.has(src))cache.set(src,new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>res(im);im.onerror=rej;im.src=src;}));return cache.get(src);};
-    const cells=[{x:0,y:0},{x:450,y:0},{x:0,y:450},{x:450,y:450}];
+    const cells=[{x:0,y:0},{x:400,y:0},{x:0,y:400},{x:400,y:400}];
     const prepared=await Promise.all(activeViews.map(async view=>{
       const shirtSrc=(product?.view_images||{})[view.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url;
       const items=placed.filter(x=>(x.view||'front')===view.id);
       return {view,tee:await draw(shirtSrc),items:await Promise.all(items.map(async item=>{const patch=catalog.patches.find(x=>x.id===item.patchId);return patch?{item,patch,image:await draw(patch.image_url)}:null;}))};
     }));
-    ctx.fillStyle='#f8f6ef';ctx.fillRect(0,0,900,900);
+    ctx.fillStyle='#f8f6ef';ctx.fillRect(0,0,800,800);
     prepared.forEach(({view,tee,items},idx)=>{
-      const cell=cells[idx];ctx.fillStyle='#f1eddf';ctx.fillRect(cell.x,cell.y,450,450);ctx.drawImage(tee,cell.x,cell.y,450,450);
-      ctx.fillStyle='#24212bcc';ctx.font='700 18px Manrope, sans-serif';ctx.fillText(view.label,cell.x+20,cell.y+32);
-      items.filter(Boolean).forEach(({item,patch,image})=>{const size=patchSizePercent(patch,view.id),w=size.width*4.5,h=size.height*4.5;ctx.save();ctx.translate(cell.x+item.x*450,cell.y+item.y*450);ctx.rotate((Number(item.rotation)||0)*Math.PI/180);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();});
+      const cell=cells[idx];ctx.fillStyle='#f1eddf';ctx.fillRect(cell.x,cell.y,400,400);ctx.drawImage(tee,cell.x,cell.y,400,400);
+      ctx.fillStyle='#24212bcc';ctx.font='700 16px Manrope, sans-serif';ctx.fillText(view.label,cell.x+16,cell.y+28);
+      items.filter(Boolean).forEach(({item,patch,image})=>{const size=patchSizePercent(patch,view.id),w=size.width*4,h=size.height*4;ctx.save();ctx.translate(cell.x+item.x*400,cell.y+item.y*400);ctx.rotate((Number(item.rotation)||0)*Math.PI/180);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();});
     });
-    return await new Promise(resolve=>c.toBlob(resolve,'image/png'));
+    const webp=await new Promise(resolve=>c.toBlob(resolve,'image/webp',.82));
+    if(webp)return {blob:webp,type:'image/webp',filename:'patchie-mockup.webp'};
+    const png=await new Promise(resolve=>c.toBlob(resolve,'image/png'));
+    return {blob:png,type:'image/png',filename:'patchie-mockup.png'};
   }
 
-  async function save(onProgress=()=>{}){
+  function validateOrder(){
     if(!flowDone)throw Error('Hoàn tất các mặt custom trước nhé.');
     if(!placed.length)throw Error('Thêm ít nhất một patch trước nhé.');
     if(!name.trim())throw Error('Nhập tên để shop nhận diện yêu cầu.');
@@ -199,13 +202,19 @@ export default function Home(){
     if(!address.trim())throw Error('Nhập địa chỉ nhận hàng.');
     if(!size)throw Error('Chọn size trước nhé.');
     if(!consent)throw Error('Xác nhận quyền riêng tư để tiếp tục.');
-    onProgress('Đang ráp mockup các mặt áo…');
-    const blob=await makePNG(),f=new FormData();
-    f.set('name',name.trim());f.set('phone',phone.trim());f.set('orderId',draftOrderCode);f.set('address',address.trim());f.set('size',size);f.set('mode',mode);f.set('productId',productId);f.set('note',note);
-    f.set('patches',JSON.stringify(placed.map(x=>({patchId:x.patchId,view:x.view||'front',x:x.x,y:x.y,rotation:normalizeRotation(x.rotation)}))));
-    f.set('mockup',blob,'patchie-mockup.png');f.set('consent','true');onProgress('Đang tạo mã đơn cho bạn…');
-    const r=await fetch('/api/designs',{method:'POST',body:f}),d=await r.json();if(!r.ok)throw Error(d.error||'Chưa lưu được thiết kế.');
-    return {id:d.id};
+  }
+
+  async function startOrder(){
+    validateOrder();
+    const r=await fetch('/api/designs/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:name.trim(),phone:phone.trim(),orderId:draftOrderCode,address:address.trim(),size,mode,productId,note,consent:true,patches:placed.map(x=>({patchId:x.patchId,view:x.view||'front',x:x.x,y:x.y,rotation:normalizeRotation(x.rotation)}))})});
+    const d=await r.json();if(!r.ok)throw Error(d.error||'Chưa tạo được mã đơn.');
+    return d;
+  }
+
+  async function finishMockup(id){
+    const prepared=await makeMockup(),f=new FormData();f.set('id',id);f.set('phone',phone.trim());f.set('mockup',prepared.blob,prepared.filename);
+    const r=await fetch('/api/designs/complete',{method:'POST',body:f}),d=await r.json();if(!r.ok)throw Error(d.error||'Chưa gửi được mockup.');
+    return d;
   }
 
   function orderMessage(id){
@@ -213,7 +222,7 @@ export default function Home(){
     return `Chào Patchie! Mình muốn đặt sản phẩm custom.\nMã đơn: ${id}\nTên: ${name.trim()}\nSĐT: ${phone.trim()}\nĐịa chỉ nhận hàng: ${address.trim()}\nCách hoàn thiện: ${mode==='shop'?'Shop ủi giúp':'Tự ủi tại nhà'}\nBase: ${product?.name||'Sản phẩm base'} · ${product?.color||''}\nGiá base: ${money(product?.price)}\nSize: ${size}\nPatch:\n${lines}\nTổng tạm tính: ${money(orderTotal)}\nGhi chú: ${note||'Không có'}`;
   }
 
-  async function placeOrder(){setBusy(true);setOrderProgress('Đang ráp mockup các mặt áo…');try{const {id}=await save(setOrderProgress);setOrder({id,message:orderMessage(id)});setCopied(false);setMessengerPrompt(false);show(`Đã tạo mã đơn ${id}.`);}catch(e){show(e.message);}finally{setBusy(false);setOrderProgress('');}}
+  async function placeOrder(){setBusy(true);setOrderProgress('Đang chốt mã đơn…');try{const {id}=await startOrder();setOrder({id,message:orderMessage(id),uploading:true});setCopied(false);setMessengerPrompt(false);show(`Đã tạo mã đơn ${id}.`);setUploadingMockup(true);setOrderProgress('Đang gửi mockup cho shop…');finishMockup(id).then(()=>{setOrder(current=>current?{...current,uploading:false}:current);show('Mockup đã gửi shop.');}).catch(e=>{setOrder(current=>current?{...current,uploading:false,uploadError:true}:current);show(`Mã đơn đã tạo, nhưng mockup chưa gửi xong: ${e.message}`);}).finally(()=>{setBusy(false);setUploadingMockup(false);setOrderProgress('');});}catch(e){show(e.message);setBusy(false);setOrderProgress('');}}
   async function copyOrder(){if(!order)return;try{await navigator.clipboard.writeText(order.id);setCopied(true);setMessengerPrompt(true);show('Đã copy mã đơn. Gửi mã này cho shop nha!');}catch{show('Không copy được, bạn copy mã đơn thủ công giúp mình nhé.');}}
   function openMessenger(){if(!order)return;if(catalog.settings.messengerUrl)window.open(catalog.settings.messengerUrl,'_blank','noopener,noreferrer');else show('Shop chưa cài link Messenger trong admin.');}
   const MiniPreview=()=> <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v=>{const shirt=(product?.view_images||{})[v.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url,inView=placed.filter(x=>(x.view||'front')===v.id);return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label}/>{inView.map((item,i)=>{const p=catalog.patches.find(x=>x.id===item.patchId),s=patchSizePercent(p,v.id);return p?<span key={item.uid} className="mini-placed" style={{left:`${item.x*100}%`,top:`${item.y*100}%`,width:`${s.width}%`,height:`${s.height}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`}}><img src={p.image_url} alt={p.name}/></span>:null})}<em>{v.short}</em></div>})}</div></div>;

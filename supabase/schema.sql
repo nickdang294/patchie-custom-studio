@@ -54,8 +54,8 @@ create table if not exists public.designs (
   total_price integer not null default 0,
   patches jsonb not null default '[]'::jsonb,
   note text not null default '',
-  image_path text not null,
-  status text not null default 'new' check (status in ('new','review','confirmed','completed','closed')),
+  image_path text,
+  status text not null default 'new' check (status in ('processing','new','review','confirmed','completed','closed')),
   created_at timestamptz not null default now(),
   expires_at timestamptz not null
 );
@@ -114,7 +114,7 @@ insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('patch-assets','patch-assets',true,4194304,array['image/png','image/jpeg','image/webp'])
 on conflict (id) do update set public=true, file_size_limit=4194304, allowed_mime_types=array['image/png','image/jpeg','image/webp'];
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
-values ('design-mockups','design-mockups',false,3145728,array['image/png'])
+values ('design-mockups','design-mockups',false,3145728,array['image/png','image/webp'])
 on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png'];
 
 insert into public.products (id,base_key,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
