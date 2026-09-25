@@ -119,6 +119,13 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @media(max-width:700px){
   /* Decorative spark in the order panel is hidden on touch screens to avoid accidental taps. */
   .spark,.hero-sticker{display:none!important}
+  /* The tiny slogan/sparkle control in the mobile header is decorative only. */
+  .studio-header-note{display:none!important}
+  /* Keep the patch-step counter in the same compact header row; it must not
+     reserve an empty block above the patch filter. */
+  .mobile-patch-dock{position:relative}
+  .mobile-patch-dock .mobile-dock-kicker{padding-right:58px}
+  .mobile-patch-dock .mobile-dock-head{position:absolute;right:10px;top:9px;margin:0;min-height:0;z-index:1}
   .mobile-patch-dock{padding:9px 10px 7px;margin-bottom:6px}
   .mobile-dock-kicker{margin:0 0 2px!important;line-height:1.2}
   .mobile-patch-dock .pretty-select-field{margin:2px 0 6px}
