@@ -103,3 +103,9 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .studio-footer>div span:last-child{display:none}
   .admin-footer-link{padding:8px 10px;font-size:9px}
 }
+
+/* Unified admin orders and direct navigation between Studio and Patch Market admin. */
+.admin-nav-market{display:block;margin-top:auto;padding:11px 12px;border-radius:10px;background:#f0eaff;color:#51427b;font-size:11px;font-weight:850}
+.admin-heading-links{display:flex;align-items:center;gap:8px}.admin-heading-links a{white-space:nowrap}
+.order-filter-row{display:flex;justify-content:flex-end;margin:0 0 12px}.order-filter-row label{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:10px;font-weight:850}.order-filter-row select{border:1px solid var(--line);border-radius:10px;background:#fffefa;color:var(--ink);padding:9px 28px 9px 10px;font-size:11px;font-weight:800}.order-hidden{display:none}
+@media(max-width:700px){.admin-nav-market{margin-top:0}.admin-heading-links{display:grid;justify-items:end;gap:4px;font-size:10px}.order-filter-row{justify-content:stretch}.order-filter-row label{width:100%;display:grid;gap:6px}.order-filter-row select{width:100%}}

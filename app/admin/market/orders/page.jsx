@@ -6,6 +6,8 @@ import { createBrowserClient } from '@supabase/ssr';
 const money=value=>`${new Intl.NumberFormat('vi-VN').format(Number(value)||0)}đ`;
 
 export default function PatchMarketOrders(){
+  useEffect(()=>{window.location.replace('/admin?tab=orders');},[]);
+  return <main className="admin-shell"><div className="admin-loading">Đang mở khu vực Đơn hàng…</div></main>;
   const [user,setUser]=useState(null),[email,setEmail]=useState(''),[orders,setOrders]=useState([]),[loading,setLoading]=useState(true),[message,setMessage]=useState('');
   const supa=()=>createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const call=async(path,options={})=>{const response=await fetch(`/api/admin/${path}`,options),data=await response.json();if(!response.ok)throw Error(data.error||'Có lỗi xảy ra.');return data;};
