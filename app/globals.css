@@ -197,3 +197,8 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .finish-custom.finish-disabled{background:#d8d4cd!important;color:#8d8982!important;box-shadow:none;cursor:not-allowed;opacity:1}
 }
 @media(max-width:700px){.order-progress-card{padding:10px}.order-progress-card b{font-size:10px}.order-progress-card small{font-size:8px}.copy-hint{font-size:9px}.messenger-reveal{align-items:flex-start}.messenger-reveal b{font-size:9px}.order-code-row button{font-size:9px;padding:8px 9px}}
+/* Balanced order-code card after the review popup opens. */
+.order-code-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.order-code-heading>span{font-size:9px;font-weight:800;letter-spacing:.12em;color:#7b6a9c;text-transform:uppercase}
+.order-code-heading i{font-size:9px;font-style:normal;font-weight:900;color:#4e8b43;background:#e8f5df;border-radius:999px;padding:4px 7px}
+.order-code-row-centered{display:flex;justify-content:center;margin:11px 0 10px;padding:9px 10px;border:1px dashed #c8b9e9;border-radius:10px;background:#fffefa}
