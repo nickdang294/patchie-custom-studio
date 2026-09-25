@@ -169,3 +169,10 @@ create table if not exists public.patch_order_items (
 create index if not exists patch_orders_created_at_idx on public.patch_orders(created_at desc);
 alter table public.patch_orders enable row level security;
 alter table public.patch_order_items enable row level security;
+
+-- The server API uses SUPABASE_SERVICE_ROLE_KEY. Explicit grants are kept
+-- here because projects created from an older schema may not grant access to
+-- tables added later, which otherwise produces "permission denied" in Admin.
+grant all on table public.patch_orders to service_role;
+grant all on table public.patch_order_items to service_role;
+grant usage, select on sequence public.patch_order_items_id_seq to service_role;

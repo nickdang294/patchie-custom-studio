@@ -20,7 +20,15 @@ export default function Admin(){
  const [user,setUser]=useState(null),[email,setEmail]=useState(''),[loading,setLoading]=useState(true),[tab,setTab]=useState('requests'),[items,setItems]=useState([]),[patchOrders,setPatchOrders]=useState([]),[orderFilter,setOrderFilter]=useState('all'),[summary,setSummary]=useState({}),[settings,setSettings]=useState({}),[products,setProducts]=useState([]),[patches,setPatches]=useState([]),[editingProduct,setEditingProduct]=useState(null),[editingPatch,setEditingPatch]=useState(null),[productType,setProductType]=useState('shirt'),[selectedPatchIds,setSelectedPatchIds]=useState([]),[bulkSourceGroup,setBulkSourceGroup]=useState('all'),[bulkGroup,setBulkGroup]=useState('Best Seller'),[msg,setMsg]=useState('');
  const supa=()=>createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
  const call=async(path,opts={})=>{const r=await fetch('/api/admin/'+path,opts),d=await r.json();if(!r.ok)throw Error(d.error||'Có lỗi xảy ra');return d;};
- async function refresh(){setLoading(true);try{const {data:{user:u}}=await supa().auth.getUser();setUser(u);if(u){const [s,d,p,a,z,po]=await Promise.all([call('summary'),call('designs'),call('products'),call('patches'),call('settings'),call('patch-orders')]);setSummary(s);setItems(d.items||[]);setPatchOrders(po.items||[]);setProducts(p.items||[]);setPatches(a.items||[]);setSettings(z.settings||{});}}catch(e){setMsg(e.message);}finally{setLoading(false);}}
+ async function refresh(){setLoading(true);try{const {data:{user:u}}=await supa().auth.getUser();setUser(u);if(u){
+   // Keep the main dashboard usable even when an older Supabase project has
+   // not granted access to the optional Patch Market tables yet.
+   const patchOrdersRequest=call('patch-orders').catch(error=>({items:[],error:error.message}));
+   const [s,d,p,a,z,po]=await Promise.all([call('summary'),call('designs'),call('products'),call('patches'),call('settings'),patchOrdersRequest]);
+   setSummary(s);setItems(d.items||[]);setPatchOrders(po.items||[]);setProducts(p.items||[]);setPatches(a.items||[]);
+   setSettings(z.settings||{});
+   if(po.error)setMsg(`Đơn thiết kế đã tải. ${po.error} Hãy chạy file supabase/patch-orders-permissions.sql một lần.`);
+ }}catch(e){setMsg(e.message);}finally{setLoading(false);}}
  useEffect(()=>{refresh();},[]);
  async function login(e){e.preventDefault();setMsg('Đang gửi link đăng nhập…');const {error}=await supa().auth.signInWithOtp({email,options:{emailRedirectTo:`${location.origin}/auth/callback`}});setMsg(error?.message||'Đã gửi link đăng nhập vào email.');}
  async function status(id,status){await call('designs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});await refresh();}
