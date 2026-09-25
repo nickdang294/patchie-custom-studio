@@ -236,17 +236,17 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @media(max-width:700px){.gift-settings-grid{grid-template-columns:1fr}}
 /* Gift picker: show a quiet image/name first, then reveal the choice actions
    directly over the selected patch so the offer feels intentional. */
-.gift-offer-option{cursor:pointer;grid-template-columns:112px 1fr;grid-template-rows:auto;min-height:132px;outline:none}
+.gift-offer-option{cursor:pointer;grid-template-columns:150px 1fr;grid-template-rows:auto;min-height:170px;outline:none}
 .gift-offer-option:focus-visible{border-color:#9a7bd0;box-shadow:0 0 0 3px #dcd0f6}
 .gift-offer-option b{align-self:center;font-size:12px}
 .gift-offer-option small,.gift-offer-option strong,.gift-offer-option em{display:none!important}
-.gift-offer-image{position:relative;width:112px;height:112px;grid-row:1;overflow:hidden}
+.gift-offer-image{position:relative;width:150px;height:150px;grid-row:1;overflow:hidden}
 .gift-offer-image img{transition:opacity .18s ease,filter .18s ease}
 .gift-offer-option.is-previewing .gift-offer-image img{opacity:.16;filter:blur(1px)}
 .gift-offer-option.is-previewing b{opacity:.38}
-.gift-offer-confirm{position:absolute;inset:3px;display:grid;align-content:center;gap:5px;padding:5px;border-radius:9px;background:#ffffffd9;backdrop-filter:blur(3px)}
-.gift-offer-confirm button{width:100%;border:0;border-radius:7px;padding:6px 4px;font:800 8px/1.15 'DM Sans',sans-serif;cursor:pointer}
-.gift-offer-confirm-primary{background:#332943;color:#fff}
-.gift-offer-confirm-secondary{background:#eee7fa;color:#584772}
+.gift-offer-confirm{position:absolute;inset:4px;display:grid;align-content:center;gap:8px;padding:8px;border-radius:11px;background:#ffffffd9;backdrop-filter:blur(3px)}
+.gift-offer-confirm button{width:100%;min-height:38px;border:0;border-radius:9px;padding:8px 6px;font:900 10px/1.15 'DM Sans',sans-serif;cursor:pointer;touch-action:manipulation}
+.gift-offer-confirm-primary{background:#ff7667;color:#2f2538;box-shadow:0 5px 12px #ff76674d}
+.gift-offer-confirm-secondary{background:#eee7fa;color:#776887;box-shadow:none}
 .gift-offer-confirm button:hover{filter:brightness(.97);transform:translateY(-1px)}
-@media(max-width:700px){.gift-offer-option{grid-template-columns:88px 1fr;min-height:106px;padding:8px}.gift-offer-image{width:88px;height:88px}.gift-offer-confirm button{font-size:7px;padding:5px 3px}.gift-offer-option b{font-size:10px}}
+@media(max-width:700px){.gift-offer-option{grid-template-columns:120px 1fr;min-height:138px;padding:9px}.gift-offer-image{width:120px;height:120px}.gift-offer-confirm{gap:7px;padding:7px}.gift-offer-confirm button{min-height:40px;font-size:9px;padding:8px 5px}.gift-offer-option b{font-size:10px}}
