@@ -161,6 +161,20 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .messenger-order-button{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:10px;background:#0084ff;color:#fff;border-radius:11px;padding:12px 14px;font-size:11px;font-weight:900;box-shadow:0 7px 16px #0084ff2b}
 .messenger-order-button:hover{background:#0077e6;filter:none;box-shadow:0 9px 20px #0084ff38}
 .messenger-reveal{display:flex;align-items:center;gap:7px;margin-top:9px;padding:8px;border-radius:10px;background:#eaf3ff;color:#315b89}.messenger-reveal>span{font-size:16px}.messenger-reveal b{font-size:10px;line-height:1.25;flex:1}.order-code-row .messenger-btn,.messenger-reveal .messenger-btn{border:0;border-radius:9px;padding:8px 10px;background:#0084ff;color:#fff;font-size:10px;font-weight:900;white-space:nowrap}
+.order-review-modal{z-index:90;background:#28213266}
+.order-review-card{position:relative;width:min(530px,calc(100vw - 28px));max-height:min(88vh,760px);padding:25px 22px 20px;border:1px solid #dfd0ff;background:linear-gradient(145deg,#fffefa 0%,#f8f3ff 100%);text-align:left;overflow:auto}
+.order-review-close{position:absolute;right:13px;top:12px;width:30px;height:30px;border:0!important;border-radius:50%!important;background:#f0eaff!important;color:#6d5a92!important;padding:0!important;font-size:20px!important;line-height:1;font-weight:500!important}
+.order-review-spark{margin:0 0 9px;width:43px;height:43px;border-radius:15px;background:#d7f45b;color:#332943;font-size:23px}
+.order-review-kicker{display:block;color:#8d77c8;font-size:9px;font-weight:900;letter-spacing:.13em;margin:0 0 6px}
+.order-review-card h3{font-size:21px;margin:0 35px 6px 0}
+.order-review-intro{max-width:none!important;margin:0 0 13px!important;text-align:left;font-size:11px!important}
+.order-message-preview{max-height:270px;overflow:auto;margin:0;padding:14px;border:1px solid #e6dcf7;border-radius:14px;background:#fffefa;color:#3b3445;font:500 11px/1.55 'DM Sans',system-ui,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+.order-review-actions{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;margin-top:13px}
+.order-review-actions button{min-height:45px;border:0!important;border-radius:13px!important;padding:11px 10px!important;font-size:11px!important;font-weight:900!important}
+.order-review-copy{background:#f0eaff!important;color:#51427b!important}
+.order-review-messenger{background:#0084ff!important;color:#fff!important;box-shadow:0 7px 16px #0084ff2b}
+.order-review-copied{margin-top:10px;padding:9px 11px;border-radius:11px;background:#eaf3ff;color:#315b89;font-size:10px;font-weight:800;text-align:center}
+@media(max-width:700px){.order-review-modal{padding:12px}.order-review-card{width:min(100%,480px);max-height:90vh;padding:22px 14px 15px;border-radius:22px}.order-review-card h3{font-size:19px}.order-message-preview{max-height:290px;font-size:10px;line-height:1.5;padding:12px}.order-review-actions{grid-template-columns:1fr!important}.order-review-actions button{min-height:43px}.order-review-intro{font-size:10px!important}}
 .order-messenger-modal .cute-card{border-color:#cfe1ff}.order-messenger-modal .cute-spark{background:#d6e9ff;color:#315b89}
 
 @media(max-width:700px){
