@@ -76,3 +76,30 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .shell{position:relative;padding-bottom:54px}.shell>.topbar>.toplinks>a[href="/admin"]{position:absolute;right:0;bottom:5px;z-index:3}.shell>footer{padding-right:100px}.shell>footer span:last-child{margin-left:auto}
 .shell>.topbar{position:static}
 @media(max-width:700px){.shell{padding-bottom:48px}.shell>.topbar>.toplinks>a[href="/admin"]{right:0;bottom:3px;padding:7px 10px;font-size:9px}.shell>footer{padding-right:82px}}
+
+/* Main Studio header mirrors Patch Market: real page navigation, no hidden admin action. */
+.shell>.topbar{position:relative;height:88px;display:flex;align-items:center;gap:14px;padding:0 2px;border-bottom:1px solid var(--line)}
+.shell>.topbar>.brand{margin-right:0;flex:0 0 auto}
+.studio-nav{order:2;display:flex;align-items:center;gap:8px}
+.studio-nav a{padding:10px 15px;border-radius:999px;color:var(--muted);font-size:11px;font-weight:800;white-space:nowrap;transition:background .15s ease,transform .15s ease}
+.studio-nav a:hover{background:#f0eaff;color:#51427b;transform:translateY(-1px)}
+.studio-nav .studio-nav-active{background:#f0eaff;border:1px solid #cbbaf2;color:#51427b}
+.studio-header-note{order:3;margin-left:auto;display:flex;align-items:center;border:1px solid var(--line);background:#fffefa;border-radius:999px;padding:10px 15px;color:var(--muted);font-size:11px;font-weight:800;box-shadow:0 7px 22px #5540700b}
+.shell .studio-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 3px 8px;color:#97929b;font-size:10px}
+.studio-footer>div{display:flex;justify-content:space-between;gap:24px;min-width:0;flex:1}
+.admin-footer-link{flex:0 0 auto;padding:9px 13px;border-radius:999px;background:var(--ink);color:#fff;font-size:11px;font-weight:800;transition:background .15s ease,transform .15s ease}
+.admin-footer-link:hover{background:#3a3344;transform:translateY(-1px)}
+@media(max-width:700px){
+  .shell>.topbar{height:70px;padding:0;gap:6px}
+  .shell>.topbar>.brand{font-size:16px;gap:6px}
+  .shell>.topbar>.brand .brand-studio{font-size:7px}
+  .studio-nav{gap:3px;min-width:0;overflow:auto;scrollbar-width:none}
+  .studio-nav::-webkit-scrollbar{display:none}
+  .studio-nav a{padding:8px 9px;font-size:9px}
+  .studio-header-note{margin-left:auto;padding:8px 9px;font-size:0;white-space:nowrap}
+  .studio-header-note:after{content:'✦';font-size:13px;color:#8d77c8}
+  .shell .studio-footer{padding:20px 0 6px;gap:8px;align-items:flex-end;font-size:8px}
+  .studio-footer>div{display:grid;gap:4px}
+  .studio-footer>div span:last-child{display:none}
+  .admin-footer-link{padding:8px 10px;font-size:9px}
+}
