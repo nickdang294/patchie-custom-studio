@@ -55,7 +55,7 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @media(max-width:700px){.catalog-loading{margin:22px 0 0;padding:22px;border-radius:18px}.catalog-loading b{font-size:18px}.catalog-loading p{font-size:12px}}
 /* Product families: one parent product with color variations underneath. */
 .product-family{border-top:1px solid var(--line);padding:12px 0 4px}.product-family-head{display:flex;align-items:center;gap:12px;padding:2px 0 10px}.product-family-head>img{width:58px;height:58px;object-fit:contain;border-radius:10px;background:#f4f1e8;border:1px solid var(--line)}.product-family-copy{display:grid;gap:3px;flex:1;min-width:0}.product-family-copy>b{font-size:13px}.product-family-copy span{font-size:10px;color:#51427b;font-weight:800}.product-family-copy small{font-size:9px;color:var(--muted)}.product-variants{margin-left:70px;border-left:2px solid #eee7d8;padding-left:10px;display:grid;gap:7px}.product-variant{display:flex;align-items:center;gap:9px;padding:8px 0}.product-variant>img{width:38px;height:38px;object-fit:contain;border-radius:8px;background:#f7f4ec;border:1px solid #eee7d8}.product-variant>div:nth-child(2){display:grid;gap:3px;flex:1;min-width:0}.product-variant b{font-size:10px}.product-variant span,.product-variant small{font-size:9px;color:var(--muted)}.product-variant .admin-actions{margin:0}
-.brand-logo{width:31px;height:31px;object-fit:contain;border-radius:11px;background:#fff;border:1px solid var(--line)}.shell{font-family:var(--patchie-font,'DM Sans',system-ui,sans-serif)}.shell .hero h1{font-family:var(--patchie-font,'Manrope',sans-serif)}.brand-form{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-form select{border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11px;background:#fffefa}.brand-image-grid{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:13px}.brand-image-grid label{display:grid;gap:6px}
+.brand-logo{width:31px;height:31px;object-fit:contain;border-radius:11px;background:transparent;border:0;mix-blend-mode:multiply}.shell{font-family:var(--patchie-font,'DM Sans',system-ui,sans-serif)}.shell .hero h1{font-family:var(--patchie-font,'Manrope',sans-serif)}.brand-form{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-form select{border:1px solid var(--line);border-radius:8px;padding:10px;font-size:11px;background:#fffefa}.brand-image-grid{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:13px}.brand-image-grid label{display:grid;gap:6px}
 .brand-market-link{display:inline-flex;align-items:center;margin-left:9px;padding:4px 8px;border:1px solid #d6c9f6;border-radius:999px;background:#f4efff;color:#5a477a;font-size:9px;font-weight:900;letter-spacing:0;cursor:pointer;white-space:nowrap;transition:transform .15s ease,background .15s ease}.brand-market-link:hover{background:#e8ddff;transform:translateY(-1px)}.toplinks .market-nav-link{color:#5a477a;background:#f4efff;border-radius:999px;padding:6px 9px;font-weight:900}.toplinks .market-nav-link:hover{background:#e8ddff}
 @media(min-width:701px){.shell .picker .panel-title small,.shell .preview-head small,.shell .request .panel-title small{font-size:0}.shell .picker .panel-title small:after{content:var(--step-base-desktop);font-size:10px}.shell .preview-head small:after{content:var(--step-preview-desktop);font-size:10px}.shell .request .panel-title small:after{content:var(--step-order-desktop);font-size:10px}.shell .picker .product-select-field:before{display:none}}
 @media(max-width:700px){.shell .picker .panel-title small,.shell .preview-head small,.shell .request .panel-title small,.mobile-dock-kicker{font-size:0}.shell .picker .panel-title small:after{content:var(--step-patch-mobile);font-size:10px}.shell .preview-head small:after{content:var(--step-preview-mobile);font-size:10px}.shell .request .panel-title small:after{content:var(--step-order-mobile);font-size:10px}.mobile-dock-kicker:after{content:var(--step-patch-mobile);font-size:10px}.mobile-config .product-select-field:before{content:var(--step-base-mobile);display:block;color:#8d829b;font-size:10px;letter-spacing:.16em;font-weight:800}}
@@ -122,6 +122,27 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
     top:0;
     box-shadow:0 6px 16px rgba(48,40,55,.07);
   }
+}
+
+/* Patch Market header: keep the compact logo-only brand and make the cart
+   status immediately readable without taking space from the page switcher. */
+.market-logo{display:inline-flex;align-items:center;flex:0 0 auto}
+.market-logo .brand-mark{width:34px;height:34px}
+.market-logo-image{display:block;width:40px;height:40px;object-fit:contain;background:transparent;border:0;mix-blend-mode:multiply}
+.market-cart-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:45px;height:42px;padding:0;border:1px solid #f0b5ae;background:#fff4f2;color:#d8665c;box-shadow:0 7px 22px rgba(216,102,92,.12);transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease}
+.market-cart-button:hover{transform:translateY(-1px);background:#ffe9e5;border-color:#e78b82}
+.market-cart-button.has-items{border-color:#b9d6a5;background:#eff8e8;color:#4f8a3f;box-shadow:0 7px 22px rgba(79,138,63,.13)}
+.market-cart-button.has-items:hover{background:#e4f3d9;border-color:#96c77e}
+.market-cart-icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8}
+.market-cart-icon path:last-child{stroke-width:3.2}
+.market-cart-button b{display:inline-grid;place-items:center;min-width:20px;height:20px;margin:0;border-radius:50%;background:currentColor;color:#fff;font-size:10px;line-height:1}
+.market-cart-button.has-items b{color:#fff}
+@media(max-width:700px){
+  .market-logo .brand-mark{width:31px;height:31px}
+  .market-logo-image{width:34px;height:34px}
+  .market-cart-button{width:40px;height:38px;padding:0}
+  .market-cart-icon{width:18px;height:18px}
+  .market-cart-button b{min-width:18px;height:18px;font-size:9px}
 }
 
 /* Unified admin orders and direct navigation between Studio and Patch Market admin. */

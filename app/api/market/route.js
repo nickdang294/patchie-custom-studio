@@ -25,13 +25,13 @@ export async function GET(){
     const db=serviceDb();
     const [{data:patches,error:pErr},{data:settings,error:sErr}]=await Promise.all([
       db.from('patches').select('*').eq('active',true).order('is_featured',{ascending:false}).order('is_new',{ascending:false}).order('sort_order'),
-      db.from('settings').select('key,value').in('key',['market','messengerUrl'])
+      db.from('settings').select('key,value').in('key',['market','messengerUrl','brand'])
     ]);
     if(pErr||sErr)throw new Error('Chưa tải được Patch Market.');
     const config=Object.fromEntries((settings||[]).map(x=>[x.key,x.value]));
-    return Response.json({patches:patches||[],market:{...MARKET_DEFAULTS,...(config.market||{})},messengerUrl:config.messengerUrl||''},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return Response.json({patches:patches||[],market:{...MARKET_DEFAULTS,...(config.market||{})},messengerUrl:config.messengerUrl||'',brand:config.brand||{}},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }catch(e){
-    if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)return Response.json({patches:starterPatches,market:MARKET_DEFAULTS,messengerUrl:''});
+    if(!process.env.NEXT_PUBLIC_SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)return Response.json({patches:starterPatches,market:MARKET_DEFAULTS,messengerUrl:'',brand:{}});
     return jsonError(e.message||'Không tải được Patch Market.',503);
   }
 }
