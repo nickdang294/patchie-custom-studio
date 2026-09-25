@@ -157,7 +157,15 @@ export default function Home(){
     if(e.touches.length!==2||!pinch.current||!stage.current)return;
     e.preventDefault();
     const r=stage.current.getBoundingClientRect(),a=touchPoint(e.touches[0],r),b=touchPoint(e.touches[1],r),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2},start=pinch.current;
-    const scale=clampZoom(start.zoom.scale*(touchDistance(a,b)/Math.max(1,start.dist))),contentX=(start.mid.x-start.zoom.x)/start.zoom.scale,contentY=(start.mid.y-start.zoom.y)/start.zoom.scale;
+    const rawScale=start.zoom.scale*(touchDistance(a,b)/Math.max(1,start.dist));
+    // On sleeve views, an extra pinch-out past the minimum zoom means
+    // “go back to the front” instead of making the user hunt for the button.
+    if((activeView==='left_sleeve'||activeView==='right_sleeve')&&rawScale<.95){
+      pinch.current=null;
+      jumpView('front');
+      return;
+    }
+    const scale=clampZoom(rawScale),contentX=(start.mid.x-start.zoom.x)/start.zoom.scale,contentY=(start.mid.y-start.zoom.y)/start.zoom.scale;
     setStageZoom(containZoom({scale,x:mid.x-contentX*scale,y:mid.y-contentY*scale},r));
   }
   function endPinch(e){if(e.touches.length<2)pinch.current=null;}
