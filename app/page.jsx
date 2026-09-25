@@ -101,7 +101,7 @@ export default function Home(){
   useEffect(()=>{if(!activeViews.some(v=>v.id===activeView))setActiveView('front');},[productId,catalog.products]);
   useEffect(()=>{setProductSheetGroup(product?.product_type||'shirt');},[productId,catalog.products]);
   useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
-  useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const ready=placed.length>0;button.disabled=!ready;button.textContent=ready?'Đã custom xong rồi':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed.length]);
+  useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const ready=placed.length>0;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed.length,catalogReady]);
   useEffect(()=>{Array.from(new Set([...activeViews.map(v=>imageForView(v.id)),...catalog.patches.map(p=>p.image_url)].filter(Boolean))).forEach(src=>{const img=new Image();img.decoding='async';img.crossOrigin='anonymous';img.src=src;});},[productId,catalog.products,catalog.patches]);
   useEffect(()=>{setStageZoom({scale:1,x:0,y:0});setTrashActive(false);setTrashHot(false);pinch.current=null;drag.current=null;pan.current=null;},[activeView,productId]);
 

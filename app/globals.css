@@ -118,7 +118,7 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 
 @media(max-width:700px){
   /* Decorative spark in the order panel is hidden on touch screens to avoid accidental taps. */
-  .request .spark{display:none}
+  .spark,.hero-sticker{display:none!important}
   .mobile-patch-dock{padding:9px 10px 7px;margin-bottom:6px}
   .mobile-dock-kicker{margin:0 0 2px!important;line-height:1.2}
   .mobile-patch-dock .pretty-select-field{margin:2px 0 6px}
