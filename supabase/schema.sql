@@ -141,7 +141,8 @@ insert into public.settings(key,value) values
 ('sizes','["S","M","L","XL"]'::jsonb),
 ('retentionDays','30'::jsonb),
 ('privacyText','"Shop dùng thông tin này để xử lý yêu cầu thiết kế. Bản mẫu lưu 30 ngày."'::jsonb),
-('adminEmails','[]'::jsonb)
+('adminEmails','[]'::jsonb),
+('giftOffer','{"enabled":true,"eyebrow":"QUÀ NHỎ KHAI TRƯƠNG","title":"Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen","description":"Bạn thích patch nào thì chọn heee 💖","buttonLabel":"Nhận patch này","patchIds":["patch-pink","patch-black"]}'::jsonb)
 on conflict (key) do nothing;
 insert into public.settings(key,value) values
 ('market','{"brand":"Patch Market","eyebrow":"PATCHIE MARKET","title":"Những miếng patch bạn thích, mua riêng cũng được.","subtitle":"Chọn patch lẻ, gom vào giỏ và gửi mã đơn cho shop qua Messenger.","bannerImageUrl":"","bannerLink":"","bannerBadge":"NEW DROP"}'::jsonb)

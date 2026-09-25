@@ -1,5 +1,14 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
 
+const GIFT_DEFAULTS = {
+  enabled: true,
+  eyebrow: 'QUÀ NHỎ KHAI TRƯƠNG',
+  title: 'Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen',
+  description: 'Bạn thích patch nào thì chọn heee 💖',
+  buttonLabel: 'Nhận patch này',
+  patchIds: ['patch-pink', 'patch-black']
+};
+
 // The catalog is edited from the admin dashboard, so never serve a stale
 // cached response to the storefront after a save.
 export const dynamic = 'force-dynamic';
@@ -13,7 +22,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{} }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS }
 };
 
 export async function GET() {
@@ -34,6 +43,7 @@ export async function GET() {
           messengerUrl:config.messengerUrl||'',
           sizes:config.sizes||['S','M','L','XL'],
           privacyText:config.privacyText||'',
+          giftOffer:{...GIFT_DEFAULTS,...(config.giftOffer||{})},
           // Brand & content is stored in the existing settings table as JSON.
           // It must be forwarded here or the storefront can only show defaults.
           brand:config.brand||{}
