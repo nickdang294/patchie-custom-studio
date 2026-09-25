@@ -65,7 +65,7 @@ const StudioFooter=()=> <footer className="studio-footer"><div><span>Patchie · 
 
 const GiftOfferOption=({patch,previewing,onPreview,onClaim,onCancel})=><div className={`gift-offer-option${previewing?' is-previewing':''}`} role="button" tabIndex={0} onClick={()=>{if(!previewing)onPreview()}} onKeyDown={e=>{if((e.key==='Enter'||e.key===' ')&&!previewing){e.preventDefault();onPreview()}}}>
   <span className="gift-offer-image"><img src={patch.image_url} alt={patch.name}/>{previewing&&<span className="gift-offer-confirm" onClick={e=>e.stopPropagation()}><button type="button" className="gift-offer-confirm-primary" onClick={onClaim}>Tui chọn patch này</button><button type="button" className="gift-offer-confirm-secondary" onClick={onCancel}>Để tui suy nghĩ lại</button></span>}</span>
-  <b>{patch.name}</b>
+  <span className="gift-offer-name"><b>{patch.name}</b></span>
 </div>;
 
 export default function Home(){
