@@ -25,9 +25,11 @@ export async function POST(request) {
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0);
     const id='PCH-'+crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();
     const path=`${id}.png`;
-    const {error:upErr}=await db.storage.from('design-mockups').upload(path, mockup, {contentType:'image/png',upsert:false});
+    const [{error:upErr},{data:retention}]=await Promise.all([
+      db.storage.from('design-mockups').upload(path, mockup, {contentType:'image/png',upsert:false}),
+      db.from('settings').select('value').eq('key','retentionDays').maybeSingle()
+    ]);
     if(upErr) throw upErr;
-    const {data:retention}=await db.from('settings').select('value').eq('key','retentionDays').maybeSingle();
     const expires=new Date(Date.now()+Number(retention?.value||30)*86400000).toISOString();
     const {error}=await db.from('designs').insert({id,customer_name:name,customer_phone:phone,shipping_address:address,size,mode,product_id:productId,product_price:productPrice,total_price:totalPrice,patches:mapped,note,image_path:path,status:'new',expires_at:expires});
     if(error){await db.storage.from('design-mockups').remove([path]);throw error;}
