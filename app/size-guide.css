@@ -2,3 +2,7 @@
 .size-guide-admin-field span{font-size:11px;font-weight:800;color:var(--ink)}
 .size-guide-admin-field textarea{width:100%;min-height:58px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:12px;color:var(--ink);background:#fff}
 .size-guide-admin-field textarea:focus{outline:2px solid rgba(38,112,255,.18);border-color:#2670ff}
+.choose-patch-cta{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:4px;border:1px solid #d8c4f4;border-radius:12px;padding:10px 13px;background:#f7f1ff;color:#694c89;font-size:11px;font-weight:900;box-shadow:0 4px 12px rgba(105,76,137,.08);animation:choose-patch-pulse 1.8s ease-in-out infinite}
+.choose-patch-cta span{font-size:15px;line-height:1}
+.base-config-toggle.is-edit{border-color:#d5c0ee;background:#f5effd;color:#67458b;box-shadow:0 2px 8px rgba(103,69,139,.1)}
+@keyframes choose-patch-pulse{0%,100%{opacity:1;transform:translateY(0)}50%{opacity:.72;transform:translateY(-1px)}}
