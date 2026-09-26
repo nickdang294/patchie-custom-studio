@@ -79,10 +79,16 @@ const GiftOfferOption=({patch,previewing,onPreview,onClaim,onCancel})=><div clas
   <span className="gift-offer-name"><b>{patch.name}</b></span>
 </div>;
 
+const TarotIllustration=({kind})=>{
+  if(kind==='ghost')return <svg viewBox="0 0 120 120" role="img" aria-label="Illustration ma nhỏ"><path d="M29 91V53c0-23 13-36 31-36s31 13 31 36v38l-10-8-10 8-11-8-11 8-10-8-10 8Z" fill="#fffaf2" stroke="#8d77c8" strokeWidth="3" strokeLinejoin="round"/><circle cx="49" cy="53" r="4" fill="#fa8e7e"/><circle cx="71" cy="53" r="4" fill="#fa8e7e"/><path d="M51 70c6 5 12 5 18 0" fill="none" stroke="#8d77c8" strokeWidth="3" strokeLinecap="round"/><path d="M26 27c6-8 14-12 23-13" fill="none" stroke="#fa8e7e" strokeWidth="3" strokeLinecap="round"/></svg>;
+  if(kind==='witch')return <svg viewBox="0 0 120 120" role="img" aria-label="Illustration phù thủy"><circle cx="82" cy="34" r="17" fill="#d7f45b" stroke="#8d77c8" strokeWidth="3"/><path d="M23 48h72L72 12 58 30 45 8 37 31Z" fill="#8d77c8" stroke="#51427b" strokeWidth="3" strokeLinejoin="round"/><path d="M31 48h56c-2 10-12 15-28 15S33 58 31 48Z" fill="#fa8e7e" stroke="#51427b" strokeWidth="3"/><path d="M45 82c5-12 12-18 17-18s12 6 17 18v24H45Z" fill="#51427b" stroke="#30273b" strokeWidth="3"/><path d="M40 106h44" stroke="#fa8e7e" strokeWidth="4" strokeLinecap="round"/><circle cx="54" cy="87" r="3" fill="#d7f45b"/><circle cx="68" cy="87" r="3" fill="#d7f45b"/></svg>;
+  return <svg viewBox="0 0 120 120" role="img" aria-label="Illustration quái vật"><path d="M29 102V49l12-17 11 10 8-17 10 17 13-11 8 18v53Z" fill="#fa8e7e" stroke="#51427b" strokeWidth="3" strokeLinejoin="round"/><path d="M43 44 34 20l19 16M77 43l11-23-20 16" fill="#d6c9f6" stroke="#51427b" strokeWidth="3" strokeLinejoin="round"/><circle cx="49" cy="59" r="7" fill="#fffaf2" stroke="#51427b" strokeWidth="3"/><circle cx="71" cy="59" r="7" fill="#fffaf2" stroke="#51427b" strokeWidth="3"/><circle cx="49" cy="59" r="3" fill="#51427b"/><circle cx="71" cy="59" r="3" fill="#51427b"/><path d="M45 78c8 8 22 8 30 0v14H45Z" fill="#fffaf2" stroke="#51427b" strokeWidth="3"/><path d="M52 82v8M60 83v8M68 82v8" stroke="#fa8e7e" strokeWidth="2"/></svg>;
+};
+
 const TarotCardOption=({card,patch,revealed,onReveal,onClaim,onCancel,buttonLabel})=><div className={`tarot-card-option${revealed?' is-revealed':''}`}>
   <button type="button" className="tarot-card" onClick={onReveal} disabled={revealed} aria-label={`Lật lá ${card.label}`}>
     <span className="tarot-card-inner">
-      <span className="tarot-card-back"><i>✦</i><b>{card.label}</b><small>Tap to reveal</small></span>
+      <span className="tarot-card-back"><span className={`tarot-card-illustration tarot-illustration-${card.id}`}><TarotIllustration kind={card.id}/></span><small>Tap to reveal</small></span>
       <span className="tarot-card-front">{patch&&<img src={patch.image_url} alt={patch.name}/>}<b>{patch?.name||'Patch bí ẩn'}</b><strong>FREE PATCH</strong></span>
     </span>
   </button>
