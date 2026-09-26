@@ -47,8 +47,11 @@ const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.n
 const VIEW_REFERENCE_CM={
   front:{width:62.5,height:62.5},
   back:{width:62.5,height:62.5},
-  left_sleeve:{width:24,height:24},
-  right_sleeve:{width:24,height:24}
+  // Sleeve mockups use a narrower canvas, so the full image width is not the
+  // real printable sleeve width. Keep the reference closer to the body view
+  // so a 4cm patch does not look oversized on the arm.
+  left_sleeve:{width:50,height:50},
+  right_sleeve:{width:50,height:50}
 };
 const clampPatchPercent=value=>Math.max(.8,Math.min(35,value));
 const clampZoom=value=>Math.max(1,Math.min(3.2,value));
