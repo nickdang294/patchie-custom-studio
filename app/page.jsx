@@ -47,11 +47,11 @@ const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.n
 const VIEW_REFERENCE_CM={
   front:{width:62.5,height:62.5},
   back:{width:62.5,height:62.5},
-  // Sleeve mockups use a narrower canvas, so the full image width is not the
-  // real printable sleeve width. Keep the reference closer to the body view
-  // so a 4cm patch does not look oversized on the arm.
-  left_sleeve:{width:50,height:50},
-  right_sleeve:{width:50,height:50}
+  // Keep sleeve sizing on the same visual cm scale as the body mockups. The
+  // sleeve photo is already shown in perspective, so using a smaller
+  // reference width would make real 6–7cm patches look oversized.
+  left_sleeve:{width:62.5,height:62.5},
+  right_sleeve:{width:62.5,height:62.5}
 };
 const clampPatchPercent=value=>Math.max(.8,Math.min(35,value));
 const clampZoom=value=>Math.max(1,Math.min(3.2,value));
@@ -91,6 +91,7 @@ export default function Home(){
   Object.assign(brand,{step1Title:'Sản phẩm base',stepBaseDesktop:savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||BRAND_DEFAULTS.stepOrderMobile});
   const selectedBaseKey=productBaseKey(product);
   const colorVariants=catalog.products.filter(p=>productBaseKey(p)===selectedBaseKey);
+  const sizeGuide=String(product?.size_guide||colorVariants.map(p=>p?.size_guide).find(value=>String(value||'').trim())||'').trim();
   const activeViews=viewsForProduct(product,brand.productGroups);
   const sizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];
   const chosenPatch=catalog.patches.find(x=>x.id===chosen);
@@ -333,7 +334,7 @@ export default function Home(){
   const PatchGroupSelect=()=> <CuteSelect label="Nhóm patch" value={activePatchGroup} sheetKey="patchGroup" options={patchGroupOptions}/>;
   const ProductSelect=()=> <div className="form-field product-select-field"><CuteSelect label="Sản phẩm base" value={selectedBaseKey} sheetKey="productGroup" onOpen={()=>setProductSheetGroup(product?.product_type||'shirt')} options={[{value:selectedBaseKey,label:product?.name||'Sản phẩm base',sub:product?.color||'',price:money(product?.price),image:productThumb(product)}]}/></div>;
   const ColorSelect=()=> <div className="form-field color-field"><label>Màu</label><div className="color-row">{colorVariants.map(v=><button type="button" key={v.id} className={`color-chip ${v.id===productId?'on':''}`} onClick={()=>changeProductColor(v.id)} title={`${v.color||'Màu'} ${v.hex||''}`}><span className="color-swatch" style={{backgroundColor:v.hex||'#f5f1e8'}}></span><b>{v.color}</b></button>)}</div></div>;
-  const SizeSelect=()=> <div className="form-field size-field"><label>Size</label><div className="size-row">{sizes.map(s=><button type="button" key={s} className={`size ${size===s?'on':''}`} onClick={()=>setSize(s)}>{s}</button>)}</div>{size&&String(product?.size_guide||'').trim()&&<small className="size-guide-note">{String(product.size_guide).trim()}</small>}</div>;
+  const SizeSelect=()=> <div className="form-field size-field"><label>Size</label><div className="size-row">{sizes.map(s=><button type="button" key={s} className={`size ${size===s?'on':''}`} onClick={()=>setSize(s)}>{s}</button>)}</div>{size&&sizeGuide&&<small className="size-guide-note">{sizeGuide}</small>}</div>;
   const BaseConfig=()=> {const baseReady=Boolean(productId&&product?.color&&size);return <section className={`base-config${baseCollapsed?' is-collapsed':''}`} aria-label="Cấu hình sản phẩm base">{baseCollapsed&&<div className="base-config-heading"><div><small>SẢN PHẨM BASE</small><b>Đã chọn sản phẩm</b></div><button type="button" className="base-config-toggle is-edit" onClick={()=>setBaseCollapsed(false)}>Chỉnh sửa <span>⌄</span></button></div>}{baseCollapsed?<div className="base-config-summary"><img src={productThumb(product)} alt=""/><div><b>{product?.name||'Sản phẩm base'}</b><small>{product?.color||'Chưa chọn màu'}{size?` · Size ${size}`:''}</small></div><strong>{money(product?.price)}</strong></div>:<div className="base-config-fields"><ProductSelect/>{colorVariants.length>1&&<ColorSelect/>}{sizes.length>1&&<SizeSelect/>}{baseReady&&<button type="button" className="choose-patch-cta" onClick={()=>setBaseCollapsed(true)}>Chọn patch</button>}</div>}</section>};
 
   return <main className="shell" style={{'--patchie-font':brand.fontFamily,'--step-base-desktop':cssContent(brand.stepBaseDesktop),'--step-base-mobile':cssContent(brand.stepBaseMobile),'--step-patch-desktop':cssContent(brand.stepPatchDesktop),'--step-patch-mobile':cssContent(brand.stepPatchMobile),'--step-preview-desktop':cssContent(brand.stepPreviewDesktop),'--step-preview-mobile':cssContent(brand.stepPreviewMobile),'--step-order-desktop':cssContent(brand.stepOrderDesktop),'--step-order-mobile':cssContent(brand.stepOrderMobile),'--step1-desktop':cssContent(brand.stepBaseDesktop),'--step1-mobile':cssContent(brand.stepBaseMobile),'--step2-desktop':cssContent(brand.stepPatchDesktop),'--step2-mobile':cssContent(brand.stepPatchMobile)}}><StudioHeader brand={brand}/>
