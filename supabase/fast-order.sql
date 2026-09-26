@@ -5,6 +5,7 @@ alter table public.designs alter column image_path drop not null;
 -- Product groups use stable ids stored in product_type; the display label is
 -- editable in settings, so custom groups must not be restricted to shirt/bag.
 alter table public.products drop constraint if exists products_product_type_check;
+alter table public.products add column if not exists size_guide text not null default '';
 
 alter table public.designs drop constraint if exists designs_status_check;
 alter table public.designs

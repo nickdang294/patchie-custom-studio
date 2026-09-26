@@ -42,6 +42,7 @@ export default function Admin(){
  }}catch(e){setMsg(e.message);}finally{setLoading(false);}}
  useEffect(()=>{refresh();},[]);
  useEffect(()=>{setProductGroupDrafts(normalizeProductGroups(settings.brand?.productGroups));},[settings.brand?.productGroups]);
+ useEffect(()=>{const form=document.querySelector('.product-form'),price=form?.querySelector('input[name="price"]');if(!form||!price||form.querySelector('textarea[name="size_guide"]'))return;const label=document.createElement('label');label.className='size-guide-admin-field';const title=document.createElement('span');title.textContent='Hướng dẫn chọn size';const field=document.createElement('textarea');field.name='size_guide';field.rows=2;field.placeholder='Ví dụ: S 45–55kg · M 55–65kg · form oversize';field.value=editingProduct?.size_guide||'';label.append(title,field);price.parentNode?.insertBefore(label,price.nextSibling);return()=>label.remove();},[editingProduct,productType]);
  async function login(e){e.preventDefault();setMsg('Đang gửi link đăng nhập…');const {error}=await supa().auth.signInWithOtp({email,options:{emailRedirectTo:`${location.origin}/auth/callback`}});setMsg(error?.message||'Đã gửi link đăng nhập vào email.');}
  async function status(id,status){await call('designs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});await refresh();}
  async function patchStatus(id,status){await call('patch-orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});await refresh();}
@@ -76,7 +77,7 @@ export default function Admin(){
   }
   const image_url=view_images.front||'/assets/blank-tee.webp';
   const nameKey=String(f.get('name')||'').trim().toLowerCase(),base_key=String(editingProduct?.product_type&&editingProduct.product_type!==product_type?`${product_type}::${nameKey}`:editingProduct?.base_key||`${product_type}::${nameKey}`);
-  const b={id:f.get('id')||undefined,base_key,sku:String(f.get('sku')||'').trim()||undefined,product_type,name:f.get('name'),color:f.get('color'),hex:f.get('hex'),image_url,view_images,sizes:String(f.get('sizes')).split(',').map(x=>x.trim()).filter(Boolean),price:f.get('price')?Number(f.get('price')):null,active:true};
+  const b={id:f.get('id')||undefined,base_key,sku:String(f.get('sku')||'').trim()||undefined,product_type,name:f.get('name'),color:f.get('color'),hex:f.get('hex'),image_url,view_images,sizes:String(f.get('sizes')).split(',').map(x=>x.trim()).filter(Boolean),size_guide:String(f.get('size_guide')||'').trim(),price:f.get('price')?Number(f.get('price')):null,active:true};
   await call('products',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
   setEditingProduct(null);setProductType('shirt');form.reset();await refresh();setMsg(f.get('id')?'Đã cập nhật sản phẩm base / SKU.':'Đã lưu sản phẩm base / SKU.');
  }

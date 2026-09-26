@@ -14,6 +14,7 @@ create table if not exists public.products (
   image_url text not null default '/assets/blank-tee.webp',
   view_images jsonb not null default '{}'::jsonb,
   sizes text[] not null default array['S','M','L','XL'],
+  size_guide text not null default '',
   price integer,
   active boolean not null default true,
   created_at timestamptz not null default now()
@@ -69,6 +70,7 @@ alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists base_key text;
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+alter table public.products add column if not exists size_guide text not null default '';
 alter table public.products drop constraint if exists products_product_type_check;
 alter table public.patches add column if not exists quote text not null default '';
 alter table public.patches add column if not exists patch_group text not null default 'Best Seller';
