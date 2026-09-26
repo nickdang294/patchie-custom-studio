@@ -1,4 +1,5 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
+import { DEFAULT_POPUP_CAMPAIGNS, normalizePopupCampaigns } from '@/lib/popup-campaigns';
 
 const GIFT_DEFAULTS = {
   enabled: true,
@@ -22,7 +23,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, defaultPatchGroup:'all' }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, popupCampaigns:DEFAULT_POPUP_CAMPAIGNS, activePopupCampaign:'traditional-gift', defaultPatchGroup:'all' }
 };
 
 export async function GET() {
@@ -35,6 +36,7 @@ export async function GET() {
     ]);
     if (pErr || paErr || sErr) throw new Error('Database chưa được khởi tạo. Chạy supabase/schema.sql trước.');
     const config = Object.fromEntries((settings||[]).map(x=>[x.key,x.value]));
+    const popupCampaigns = normalizePopupCampaigns(config.popupCampaigns, config.giftOffer || GIFT_DEFAULTS);
     return Response.json(
       {
         products:products||[],
@@ -44,6 +46,10 @@ export async function GET() {
           sizes:config.sizes||['S','M','L','XL'],
           privacyText:config.privacyText||'',
           giftOffer:{...GIFT_DEFAULTS,...(config.giftOffer||{})},
+          popupCampaigns,
+          activePopupCampaign:typeof config.activePopupCampaign==='string'&&config.activePopupCampaign
+            ? config.activePopupCampaign
+            : popupCampaigns.find(campaign=>campaign.enabled)?.id || popupCampaigns[0]?.id || '',
           defaultPatchGroup:typeof config.defaultPatchGroup==='string'&&config.defaultPatchGroup?config.defaultPatchGroup:'all',
           // Brand & content is stored in the existing settings table as JSON.
           // It must be forwarded here or the storefront can only show defaults.

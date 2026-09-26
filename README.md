@@ -8,6 +8,7 @@ Website độc lập để khách tự phối patch ủi lên áo base, tải mo
 - Hai cách hoàn thiện: khách tự ủi tại nhà hoặc shop ủi theo mockup.
 - Form lưu yêu cầu vào Supabase; nút gửi shop sao chép thông tin để khách dán vào Messenger.
 - Dashboard quản trị tại `/admin`: xem yêu cầu và mockup, đổi trạng thái, thêm/xóa mẫu áo và patch, chỉnh Messenger, size, nội dung quyền riêng tư và thời hạn lưu.
+- Dashboard quản trị có campaign popup tặng patch: bật/tắt popup truyền thống hoặc Halloween Tarot, chọn campaign đang chạy, chỉnh nội dung và gán patch quà cho từng event/lá bài.
 - Đăng nhập admin bằng magic link Supabase Auth và danh sách email được cho phép.
 - Supabase Storage lưu mockup riêng tư và ảnh patch; cron hằng ngày xóa mockup quá hạn.
 - Thư viện ban đầu dùng patch tham khảo đang có trong project; kích thước patch được quản lý trong dashboard.
@@ -29,9 +30,10 @@ Nếu chưa điền Supabase, trang vẫn mở bằng danh mục mẫu để xem
 1. Tạo project mới trên Supabase.
 2. Mở **SQL Editor**, dán toàn bộ `supabase/schema.sql`, rồi chạy. Script tạo bảng, policy đọc catalog công khai, hai storage bucket, dữ liệu mẫu và hàm tạo đơn patch atomic.
 3. Nếu project đã chạy schema cũ, chạy thêm `supabase/fast-order.sql` để mở WebP, bỏ constraint nhóm sản phẩm cũ và hỗ trợ luồng tạo đơn nhanh.
-4. Trong **Project Settings → API**, lấy Project URL, `anon`/publishable key và `service_role`/secret key.
-5. Trong **Authentication → URL Configuration**, đặt Site URL là domain Vercel sau khi deploy. Thêm redirect URL `https://TEN-MIEN/auth/callback` và URL preview Vercel nếu cần thử đăng nhập ở preview.
-6. Trong **Authentication → Providers → Email**, bật email OTP/magic link. Admin sẽ đăng nhập bằng link nhận qua email.
+4. Nếu project đã chạy trước khi có campaign popup, chạy thêm `supabase/popup-campaigns.sql` một lần.
+5. Trong **Project Settings → API**, lấy Project URL, `anon`/publishable key và `service_role`/secret key.
+6. Trong **Authentication → URL Configuration**, đặt Site URL là domain Vercel sau khi deploy. Thêm redirect URL `https://TEN-MIEN/auth/callback` và URL preview Vercel nếu cần thử đăng nhập ở preview.
+7. Trong **Authentication → Providers → Email**, bật email OTP/magic link. Admin sẽ đăng nhập bằng link nhận qua email.
 
 Giữ `service_role` key ở biến môi trường server của Vercel. Không đặt key này vào biến có tiền tố `NEXT_PUBLIC_`, không commit vào GitHub và không gửi qua chat.
 
