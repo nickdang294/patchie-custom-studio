@@ -148,6 +148,7 @@ export default function Home(){
   useEffect(()=>{if(visiblePatches.length&&!visiblePatches.some(p=>p.id===chosen))setChosen(visiblePatches[0].id);},[activePatchGroup,catalog.patches]);
   useEffect(()=>{if(!activeViews.some(v=>v.id===activeView))setActiveView('front');},[productId,catalog.products]);
   useEffect(()=>{setProductSheetGroup(product?.product_type||'shirt');},[productId,catalog.products]);
+  useEffect(()=>{if(!baseCollapsed||!window.matchMedia('(max-width: 700px)').matches)return;requestAnimationFrame(()=>document.querySelector('.mobile-patch-dock')?.scrollIntoView({behavior:'smooth',block:'start'}));},[baseCollapsed]);
   useEffect(()=>{if(colorVariants.length===1&&colorVariants[0].id!==productId)setProductId(colorVariants[0].id);const availableSizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];if(availableSizes.length===1&&size!==availableSizes[0])setSize(availableSizes[0]);},[productId,selectedBaseKey,catalog.products,product?.sizes,catalog.settings.sizes,size]);
   useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
   useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const ready=placed.length>0;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed.length,catalogReady]);
