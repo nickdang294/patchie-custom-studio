@@ -57,6 +57,7 @@ const StudioHeader=({brand})=><header className="topbar">
   <nav className="studio-nav" aria-label="Điều hướng chính">
     <a className="studio-nav-active" href="/">Custom áo</a>
     <a href="/patches">Patch Market</a>
+    <a href="/looks">Lookbook</a>
   </nav>
   <div className="studio-header-note"><span>{brand.slogan}</span></div>
 </header>;
