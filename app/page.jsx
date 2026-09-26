@@ -70,7 +70,7 @@ const GiftOfferOption=({patch,previewing,onPreview,onClaim,onCancel})=><div clas
 </div>;
 
 export default function Home(){
-  const [catalog,setCatalog]=useState({products:[defaultProduct],patches:STARTER,settings:{sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',brand:BRAND_DEFAULTS,giftOffer:GIFT_DEFAULTS}});
+  const [catalog,setCatalog]=useState({products:[defaultProduct],patches:STARTER,settings:{sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',brand:BRAND_DEFAULTS,giftOffer:GIFT_DEFAULTS,defaultBestSellerPatchIds:[]}});
   const [chosen,setChosen]=useState(STARTER[0].id),[activePatchGroup,setActivePatchGroup]=useState('all'),[placed,setPlaced]=useState([]),[history,setHistory]=useState([]),[selectedUid,setSelectedUid]=useState(''),[activeView,setActiveView]=useState('front'),[flowDone,setFlowDone]=useState(false),[stageZoom,setStageZoom]=useState({scale:1,x:0,y:0}),[trashActive,setTrashActive]=useState(false),[trashHot,setTrashHot]=useState(false),[mode,setMode]=useState('shop'),[productId,setProductId]=useState(defaultProduct.id),[productSheetGroup,setProductSheetGroup]=useState(defaultProduct.product_type),[size,setSize]=useState(''),[name,setName]=useState(''),[phone,setPhone]=useState(''),[draftOrderCode,setDraftOrderCode]=useState(''),[address,setAddress]=useState(''),[note,setNote]=useState(''),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[uploadingMockup,setUploadingMockup]=useState(false),[orderProgress,setOrderProgress]=useState(''),[toast,setToast]=useState(''),[order,setOrder]=useState(null),[copied,setCopied]=useState(false),[messengerPrompt,setMessengerPrompt]=useState(false),[quotePatch,setQuotePatch]=useState(''),[celebrate,setCelebrate]=useState(false),[undoAsk,setUndoAsk]=useState(false),[undoAsked,setUndoAsked]=useState(false),[selectSheet,setSelectSheet]=useState(null),[giftPopupOpen,setGiftPopupOpen]=useState(false),[giftPatchId,setGiftPatchId]=useState(''),[giftPreviewId,setGiftPreviewId]=useState(''),[catalogReady,setCatalogReady]=useState(false);
   const stage=useRef(null),trash=useRef(null),drag=useRef(null),pan=useRef(null),rotating=useRef(false),pinch=useRef(null);
   const product=catalog.products.find(x=>x.id===productId)||catalog.products[0]||defaultProduct;
@@ -96,7 +96,23 @@ export default function Home(){
   const existingPatchGroups=Array.from(new Set(catalog.patches.flatMap(patchGroupsOf)));
   const patchGroups=['all',...PATCH_GROUPS.filter(g=>existingPatchGroups.includes(g)),...existingPatchGroups.filter(g=>!PATCH_GROUPS.includes(g))];
   const patchGroupCount=g=>g==='all'?catalog.patches.length:catalog.patches.filter(p=>patchGroupsOf(p).includes(g)).length;
-  const visiblePatches=[...(activePatchGroup==='all'?catalog.patches:catalog.patches.filter(p=>patchGroupsOf(p).includes(activePatchGroup)))].sort((a,b)=>Number(b.id===giftPatchId)-Number(a.id===giftPatchId));
+  const configuredDefaultBestSellerIds=Array.isArray(catalog.settings.defaultBestSellerPatchIds)?Array.from(new Set(catalog.settings.defaultBestSellerPatchIds)):[];
+  const configuredDefaultBestSellers=configuredDefaultBestSellerIds.map(id=>catalog.patches.find(p=>p.id===id)).filter(p=>p&&patchGroupsOf(p).includes('Best Seller'));
+  // If admin has not picked a subset yet, keep the existing Best Seller group
+  // as the default order so older catalogs do not suddenly look empty.
+  const defaultBestSellers=configuredDefaultBestSellers.length?configuredDefaultBestSellers:[...catalog.patches].filter(p=>patchGroupsOf(p).includes('Best Seller')).sort((a,b)=>Number(a.sort_order||100)-Number(b.sort_order||100));
+  const defaultBestSellerRank=new Map(defaultBestSellers.map((p,index)=>[p.id,index]));
+  const visiblePatches=[...(activePatchGroup==='all'?catalog.patches:catalog.patches.filter(p=>patchGroupsOf(p).includes(activePatchGroup)))].sort((a,b)=>{
+    const giftDiff=Number(b.id===giftPatchId)-Number(a.id===giftPatchId);
+    if(giftDiff)return giftDiff;
+    const aRank=defaultBestSellerRank.get(a.id),bRank=defaultBestSellerRank.get(b.id);
+    if(aRank!==undefined||bRank!==undefined){
+      if(aRank===undefined)return 1;
+      if(bRank===undefined)return -1;
+      if(aRank!==bRank)return aRank-bRank;
+    }
+    return Number(a.sort_order||100)-Number(b.sort_order||100);
+  });
   const viewImages=product?.view_images||{};
   const imageForView=id=>viewImages[id]||viewImages.front||product?.image_url||defaultProduct.image_url;
   const activeImage=imageForView(activeView);
@@ -132,7 +148,7 @@ export default function Home(){
   const normalizeRotation=value=>((Math.round(Number(value)||0)%360)+360)%360;
   const signedRotation=value=>{const v=normalizeRotation(value);return v>180?v-360:v;};
 
-  useEffect(()=>{fetch('/api/catalog').then(r=>r.json()).then(d=>{const products=Array.isArray(d.products)?d.products:[],patches=Array.isArray(d.patches)?d.patches:[];setCatalog({products,patches:patches.length?patches:STARTER,settings:{sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',giftOffer:GIFT_DEFAULTS,...(d.settings||{})}});if(products.length)setProductId(products[0].id);if(patches.length)setChosen(patches[0].id);}).catch(()=>{}).finally(()=>setCatalogReady(true));},[]);
+  useEffect(()=>{fetch('/api/catalog').then(r=>r.json()).then(d=>{const products=Array.isArray(d.products)?d.products:[],patches=Array.isArray(d.patches)?d.patches:[],livePatches=patches.length?patches:STARTER,settings={sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',giftOffer:GIFT_DEFAULTS,defaultBestSellerPatchIds:[],...(d.settings||{})};setCatalog({products,patches:livePatches,settings});if(products.length)setProductId(products[0].id);const preferredIds=Array.isArray(settings.defaultBestSellerPatchIds)?settings.defaultBestSellerPatchIds:[],preferred=preferredIds.map(id=>livePatches.find(p=>p.id===id)).find(p=>p&&patchGroupsOf(p).includes('Best Seller')),fallback=livePatches.find(p=>patchGroupsOf(p).includes('Best Seller'));if(livePatches.length)setChosen((preferred||fallback||livePatches[0]).id);}).catch(()=>{}).finally(()=>setCatalogReady(true));},[]);
   useEffect(()=>{if(!catalogReady||!giftOffer.enabled||giftCandidates.length<2)return;setGiftPreviewId('');setGiftPopupOpen(true);},[catalogReady,giftOffer.enabled,giftCandidates.length]);
   useEffect(()=>{if(giftPatchId&&!catalog.patches.some(p=>p.id===giftPatchId))setGiftPatchId('');},[catalog.patches,giftPatchId]);
   useEffect(()=>{if(visiblePatches.length&&!visiblePatches.some(p=>p.id===chosen))setChosen(visiblePatches[0].id);},[activePatchGroup,catalog.patches]);

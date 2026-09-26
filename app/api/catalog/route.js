@@ -22,7 +22,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, defaultBestSellerPatchIds:[] }
 };
 
 export async function GET() {
@@ -44,6 +44,7 @@ export async function GET() {
           sizes:config.sizes||['S','M','L','XL'],
           privacyText:config.privacyText||'',
           giftOffer:{...GIFT_DEFAULTS,...(config.giftOffer||{})},
+          defaultBestSellerPatchIds:Array.isArray(config.defaultBestSellerPatchIds)?config.defaultBestSellerPatchIds:[],
           // Brand & content is stored in the existing settings table as JSON.
           // It must be forwarded here or the storefront can only show defaults.
           brand:config.brand||{}
