@@ -38,7 +38,7 @@ export default function Admin(){
    const [s,d,p,a,z,po]=await Promise.all([call('summary'),call('designs'),call('products'),call('patches'),call('settings'),patchOrdersRequest]);
    setSummary(s);setItems(d.items||[]);setPatchOrders(po.items||[]);setProducts(p.items||[]);setPatches(a.items||[]);
    setSettings(z.settings||{});
-   if(po.error)setMsg(`Đơn thiết kế đã tải. ${po.error} Hãy chạy file supabase/patch-orders-permissions.sql một lần.`);
+   if(po.error)setMsg(`Đơn thiết kế đã tải. ${po.error} Hãy chạy file supabase/patch-orders-permissions.sql một lần.`);else setMsg('');
  }}catch(e){setMsg(e.message);}finally{setLoading(false);}}
  useEffect(()=>{refresh();},[]);
  useEffect(()=>{setProductGroupDrafts(normalizeProductGroups(settings.brand?.productGroups));},[settings.brand?.productGroups]);
