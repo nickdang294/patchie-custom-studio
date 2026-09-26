@@ -29,7 +29,25 @@ export async function POST(request,{params}) {
     const {data}=db.storage.from('patch-assets').getPublicUrl(path);return Response.json({image_url:data.publicUrl});
   }
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
-  if(section==='settings') {for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}return Response.json({ok:true});}
+  if(section==='settings') {
+    if(b.brand?.productGroups){
+      const groups=b.brand.productGroups;
+      const ids=groups.map(group=>String(group?.id||group?.value||'').trim()).filter(Boolean);
+      const labels=groups.map(group=>String(group?.label||'').trim().toLocaleLowerCase());
+      if(!groups.length||ids.length!==groups.length||new Set(ids).size!==ids.length||labels.some(label=>!label)||new Set(labels).size!==labels.length)return jsonError('Nhóm sản phẩm phải có id và tên riêng biệt.',400);
+      const {data:previous}=await db.from('settings').select('value').eq('key','brand').maybeSingle();
+      const previousGroups=Array.isArray(previous?.value?.productGroups)?previous.value.productGroups:[];
+      for(const group of groups){
+        const id=String(group.id||group.value).trim(),old=previousGroups.find(item=>String(item?.id||item?.value||'').trim()===id);
+        if(old?.label&&String(old.label).trim()!==String(group.label).trim()){
+          const {error}=await db.from('products').update({product_type:id}).eq('product_type',String(old.label).trim());
+          if(error)return jsonError(`Không cập nhật được sản phẩm thuộc nhóm ${old.label}: ${error.message}`,500);
+        }
+      }
+    }
+    for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}
+    return Response.json({ok:true});
+  }
   if(section==='designs') {const {id,status}=b;if(!['processing','new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
   if(section==='patch-orders') {const {id,status}=b;if(!id||!['new','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái đơn không hợp lệ.');const {error}=await db.from('patch_orders').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
   if(section==='patch-groups') {

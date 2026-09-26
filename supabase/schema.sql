@@ -5,7 +5,9 @@ create table if not exists public.products (
   id text primary key default ('base-' || replace(gen_random_uuid()::text,'-','')),
   base_key text,
   sku text,
-  product_type text not null default 'shirt' check (product_type in ('shirt','bag')),
+  -- This stores the stable product-group id (for example shirt, bag, hoodies),
+  -- not the editable display label.
+  product_type text not null default 'shirt',
   name text not null,
   color text not null,
   hex text not null default '#f5f1e8',
@@ -67,14 +69,7 @@ alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists base_key text;
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint where conname = 'products_product_type_check'
-  ) then
-    alter table public.products add constraint products_product_type_check check (product_type in ('shirt','bag'));
-  end if;
-end $$;
+alter table public.products drop constraint if exists products_product_type_check;
 alter table public.patches add column if not exists quote text not null default '';
 alter table public.patches add column if not exists patch_group text not null default 'Best Seller';
 alter table public.patches add column if not exists patch_groups text[] not null default array['Best Seller'];
@@ -115,7 +110,7 @@ values ('patch-assets','patch-assets',true,4194304,array['image/png','image/jpeg
 on conflict (id) do update set public=true, file_size_limit=4194304, allowed_mime_types=array['image/png','image/jpeg','image/webp'];
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('design-mockups','design-mockups',false,3145728,array['image/png','image/webp'])
-on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png'];
+on conflict (id) do update set public=false, file_size_limit=3145728, allowed_mime_types=array['image/png','image/webp'];
 
 insert into public.products (id,base_key,sku,product_type,name,color,hex,image_url,view_images,sizes,active)
 values ('base-offwhite','shirt::áo thun oversized','BASE-OFFWHITE','shirt','Áo thun oversized','Off-white','#f5f1e8','/assets/blank-tee.webp','{"front":"/assets/blank-tee.webp"}'::jsonb,array['S','M','L','XL'],true)
@@ -170,6 +165,129 @@ create table if not exists public.patch_order_items (
 create index if not exists patch_orders_created_at_idx on public.patch_orders(created_at desc);
 alter table public.patch_orders enable row level security;
 alter table public.patch_order_items enable row level security;
+
+-- Reserve stock and create the order in one transaction. The API calls this
+-- function through the service role so concurrent checkouts cannot oversell.
+create or replace function public.create_patch_order(
+  p_customer_name text,
+  p_customer_phone text,
+  p_shipping_address text,
+  p_note text,
+  p_items jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_order_id text := 'PM-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
+  v_total integer := 0;
+  v_requested_count integer := 0;
+  v_active_count integer := 0;
+  item record;
+begin
+  if nullif(trim(p_customer_name), '') is null
+    or nullif(trim(p_customer_phone), '') is null
+    or nullif(trim(p_shipping_address), '') is null then
+    raise exception 'Vui lòng nhập tên, số điện thoại và địa chỉ.';
+  end if;
+
+  if jsonb_typeof(coalesce(p_items, '[]'::jsonb)) <> 'array' then
+    raise exception 'Giỏ hàng không hợp lệ.';
+  end if;
+
+  with requested as (
+    select distinct trim(x.patch_id) as patch_id
+    from jsonb_to_recordset(coalesce(p_items, '[]'::jsonb)) as x(patch_id text, quantity integer)
+    where nullif(trim(x.patch_id), '') is not null
+  )
+  select count(*) into v_requested_count from requested;
+
+  with requested as (
+    select distinct trim(x.patch_id) as patch_id
+    from jsonb_to_recordset(coalesce(p_items, '[]'::jsonb)) as x(patch_id text, quantity integer)
+    where nullif(trim(x.patch_id), '') is not null
+  )
+  select count(*) into v_active_count
+  from requested r
+  join public.patches p on p.id = r.patch_id and p.active = true;
+
+  if v_requested_count = 0 then
+    raise exception 'Giỏ hàng không có patch hợp lệ.';
+  end if;
+  if v_requested_count <> v_active_count then
+    raise exception 'Một patch trong giỏ không còn bán.';
+  end if;
+
+  -- Lock all involved patch rows in deterministic order before reading stock.
+  for item in
+    select p.id, p.name, coalesce(p.price, 0)::integer as unit_price,
+           coalesce(p.stock_quantity, 0)::integer as stock_quantity,
+           coalesce(p.sold_count, 0)::integer as sold_count,
+           r.quantity
+    from public.patches p
+    join (
+      select trim(x.patch_id) as patch_id,
+             least(99, sum(greatest(1, least(99, coalesce(x.quantity, 1)))))::integer as quantity
+      from jsonb_to_recordset(coalesce(p_items, '[]'::jsonb)) as x(patch_id text, quantity integer)
+      where nullif(trim(x.patch_id), '') is not null
+      group by trim(x.patch_id)
+    ) r on r.patch_id = p.id
+    where p.active = true
+    order by p.id
+    for update of p
+  loop
+    if item.stock_quantity < item.quantity then
+      raise exception '% chỉ còn % cái.', item.name, item.stock_quantity;
+    end if;
+    v_total := v_total + item.unit_price * item.quantity;
+  end loop;
+
+  insert into public.patch_orders(id, customer_name, customer_phone, shipping_address, total_price, note)
+  values(v_order_id, left(trim(p_customer_name), 120), left(trim(p_customer_phone), 40),
+         left(trim(p_shipping_address), 1000), v_total, left(coalesce(trim(p_note), ''), 1200));
+
+  for item in
+    select p.id, p.name, coalesce(p.price, 0)::integer as unit_price,
+           coalesce(p.sold_count, 0)::integer as sold_count, r.quantity
+    from public.patches p
+    join (
+      select trim(x.patch_id) as patch_id,
+             least(99, sum(greatest(1, least(99, coalesce(x.quantity, 1)))))::integer as quantity
+      from jsonb_to_recordset(coalesce(p_items, '[]'::jsonb)) as x(patch_id text, quantity integer)
+      where nullif(trim(x.patch_id), '') is not null
+      group by trim(x.patch_id)
+    ) r on r.patch_id = p.id
+    where p.active = true
+    order by p.id
+  loop
+    insert into public.patch_order_items(order_id, patch_id, patch_name, quantity, unit_price, line_total)
+    values(v_order_id, item.id, item.name, item.quantity, item.unit_price, item.unit_price * item.quantity);
+    update public.patches
+    set stock_quantity = stock_quantity - item.quantity,
+        sold_count = item.sold_count + item.quantity
+    where id = item.id;
+  end loop;
+
+  return jsonb_build_object(
+    'id', v_order_id,
+    'total_price', v_total,
+    'items', (
+      select jsonb_agg(jsonb_build_object(
+        'name', i.patch_name,
+        'quantity', i.quantity,
+        'line_total', i.line_total
+      ) order by i.id)
+      from public.patch_order_items i
+      where i.order_id = v_order_id
+    )
+  );
+end;
+$$;
+
+revoke all on function public.create_patch_order(text, text, text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.create_patch_order(text, text, text, text, jsonb) to service_role;
 
 -- The server API uses SUPABASE_SERVICE_ROLE_KEY. Explicit grants are kept
 -- here because projects created from an older schema may not grant access to

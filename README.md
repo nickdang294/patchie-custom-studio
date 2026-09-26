@@ -4,13 +4,13 @@ Website độc lập để khách tự phối patch ủi lên áo base, tải mo
 
 ## Có sẵn
 
-- Studio kéo thả patch, chọn mẫu áo và size, lưu mockup PNG, tải ảnh về máy.
+- Studio kéo thả patch, chọn mẫu áo và size, lưu mockup PNG/WebP, tải ảnh về máy.
 - Hai cách hoàn thiện: khách tự ủi tại nhà hoặc shop ủi theo mockup.
 - Form lưu yêu cầu vào Supabase; nút gửi shop sao chép thông tin để khách dán vào Messenger.
 - Dashboard quản trị tại `/admin`: xem yêu cầu và mockup, đổi trạng thái, thêm/xóa mẫu áo và patch, chỉnh Messenger, size, nội dung quyền riêng tư và thời hạn lưu.
 - Đăng nhập admin bằng magic link Supabase Auth và danh sách email được cho phép.
 - Supabase Storage lưu mockup riêng tư và ảnh patch; cron hằng ngày xóa mockup quá hạn.
-- Thư viện ban đầu dùng patch tham khảo đang có trong project; mỗi patch mẫu được đặt kích thước 1 × 1 cm.
+- Thư viện ban đầu dùng patch tham khảo đang có trong project; kích thước patch được quản lý trong dashboard.
 
 ## Chạy trên máy
 
@@ -27,10 +27,11 @@ Nếu chưa điền Supabase, trang vẫn mở bằng danh mục mẫu để xem
 ## Tạo Supabase
 
 1. Tạo project mới trên Supabase.
-2. Mở **SQL Editor**, dán toàn bộ `supabase/schema.sql`, rồi chạy. Script tạo bảng, policy đọc catalog công khai, hai storage bucket và dữ liệu mẫu.
-3. Trong **Project Settings → API**, lấy Project URL, `anon`/publishable key và `service_role`/secret key.
-4. Trong **Authentication → URL Configuration**, đặt Site URL là domain Vercel sau khi deploy. Thêm redirect URL `https://TEN-MIEN/auth/callback` và URL preview Vercel nếu cần thử đăng nhập ở preview.
-5. Trong **Authentication → Providers → Email**, bật email OTP/magic link. Admin sẽ đăng nhập bằng link nhận qua email.
+2. Mở **SQL Editor**, dán toàn bộ `supabase/schema.sql`, rồi chạy. Script tạo bảng, policy đọc catalog công khai, hai storage bucket, dữ liệu mẫu và hàm tạo đơn patch atomic.
+3. Nếu project đã chạy schema cũ, chạy thêm `supabase/fast-order.sql` để mở WebP, bỏ constraint nhóm sản phẩm cũ và hỗ trợ luồng tạo đơn nhanh.
+4. Trong **Project Settings → API**, lấy Project URL, `anon`/publishable key và `service_role`/secret key.
+5. Trong **Authentication → URL Configuration**, đặt Site URL là domain Vercel sau khi deploy. Thêm redirect URL `https://TEN-MIEN/auth/callback` và URL preview Vercel nếu cần thử đăng nhập ở preview.
+6. Trong **Authentication → Providers → Email**, bật email OTP/magic link. Admin sẽ đăng nhập bằng link nhận qua email.
 
 Giữ `service_role` key ở biến môi trường server của Vercel. Không đặt key này vào biến có tiền tố `NEXT_PUBLIC_`, không commit vào GitHub và không gửi qua chat.
 
@@ -77,6 +78,7 @@ Sao chép `.env.example` thành `.env.local` và điền cùng bộ Supabase key
 - Số tiền chưa được ấn định; dashboard cho phép shop thêm giá khi đã chốt.
 - Website không nhận thanh toán và không tự xác nhận đơn.
 - Thời hạn lưu mặc định 30 ngày; Vercel Cron gọi `/api/cron/cleanup` mỗi ngày và cần biến `CRON_SECRET`.
+- Nhóm sản phẩm dùng `id` ổn định và `label` có thể đổi trong dashboard. Đổi tên nhóm không cần cập nhật từng sản phẩm; sản phẩm cũ sẽ tự hiển thị label mới.
 - Admin bổ sung được quản lý trong phần Cài đặt. Email admin chính vẫn do `ADMIN_EMAILS` trên Vercel kiểm soát.
 - Mockup là link lưu nội bộ trong storage private, admin xem qua signed URL ngắn hạn. Messenger nhận mã thiết kế và thông tin mô tả; khách tải ảnh mockup về để gửi kèm trong Messenger.
 

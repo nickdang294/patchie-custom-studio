@@ -1,6 +1,5 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
-
-const VIEW_SETS={shirt:['front','left_sleeve','right_sleeve','back'],bag:['front','back']};
+import { productViews } from '@/lib/products';
 
 export async function POST(request) {
   let form;
@@ -10,23 +9,24 @@ export async function POST(request) {
   let patches; try { patches=JSON.parse(form.get('patches')||'[]'); } catch { return jsonError('Danh sách patch không hợp lệ.'); }
   const mockup=form.get('mockup');
   if (!name || !phone || !address || !size || !productId || !Array.isArray(patches) || !patches.length || patches.length>12 || form.get('consent')!=='true') return jsonError('Nhập tên, SĐT, địa chỉ, chọn size và patch, rồi xác nhận quyền riêng tư.');
-  if (!(mockup instanceof File) || mockup.type!=='image/png' || mockup.size>3_000_000) return jsonError('Mockup PNG không hợp lệ hoặc lớn hơn 3 MB.');
+  if (!(mockup instanceof File) || !['image/png','image/webp'].includes(mockup.type) || mockup.size>3_000_000) return jsonError('Mockup PNG/WebP không hợp lệ hoặc lớn hơn 3 MB.');
   try {
     const db=serviceDb();
     const patchIds=[...new Set(patches.map(x=>String(x.patchId||'')).filter(Boolean))].slice(0,12);
-    const [{data:product},{data:validPatches}] = await Promise.all([
+    const [{data:product},{data:validPatches},{data:brandSetting}] = await Promise.all([
       db.from('products').select('id,sizes,price,product_type').eq('id',productId).eq('active',true).maybeSingle(),
-      db.from('patches').select('id,name,price').in('id',patchIds).eq('active',true)
+      db.from('patches').select('id,name,price').in('id',patchIds).eq('active',true),
+      db.from('settings').select('value').eq('key','brand').maybeSingle()
     ]);
     if (!product || !(product.sizes||[]).includes(size)) return jsonError('Sản phẩm base hoặc size vừa thay đổi. Tải lại trang nhé.');
     if (!validPatches || validPatches.length!==patchIds.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
-    const allowedViews=VIEW_SETS[product.product_type||'shirt']||VIEW_SETS.shirt;
+    const allowedViews=productViews(product.product_type||'shirt',brandSetting?.value||{});
     const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0);
     const id=/^PCH-[0-9A-F]{12}$/.test(requestedId)?requestedId:'PCH-'+crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase();
-    const path=`${id}.png`;
+    const path=`${id}.${mockup.type==='image/webp'?'webp':'png'}`;
     const [{error:upErr},{data:retention}]=await Promise.all([
-      db.storage.from('design-mockups').upload(path, mockup, {contentType:'image/png',upsert:false}),
+      db.storage.from('design-mockups').upload(path, mockup, {contentType:mockup.type,upsert:false}),
       db.from('settings').select('value').eq('key','retentionDays').maybeSingle()
     ]);
     if(upErr) throw upErr;
