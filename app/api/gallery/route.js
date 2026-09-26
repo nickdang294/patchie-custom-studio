@@ -5,10 +5,9 @@ const DEFAULT_GALLERY={
   eyebrow:'PATCHIE LOOKBOOK',
   title:'Những chiếc áo đã tìm được mood của mình.',
   subtitle:'Một vài thiết kế đã được dán patch sẵn — chọn look bạn thích rồi gửi mã cho shop.',
-  autoplayIntervalMs:6500,
   slides:[
-    {id:'slide-1',layout:'split',eyebrow:'READY TO WEAR',title:'Mặc mood này đi chơi nha.',body:'Các mẫu đã phối patch sẵn, chụp thật và sẵn sàng về với bạn.',image_url:'/assets/blank-tee.webp',ctaLabel:'Xem các look',ctaHref:'#looks'},
-    {id:'slide-2',layout:'image-left',eyebrow:'A LITTLE DETAIL',title:'Một miếng nhỏ, cả outfit khác đi.',body:'Từ áo tee đến túi tote, mỗi look là một câu chuyện riêng.',image_url:'/assets/blank-tee.webp',ctaLabel:'Khám phá collection',ctaHref:'#looks'}
+    {id:'slide-1',eyebrow:'READY TO WEAR',title:'Mặc mood này đi chơi nha.',body:'Các mẫu đã phối patch sẵn, chụp thật và sẵn sàng về với bạn.',image_url:'/assets/blank-tee.webp',ctaLabel:'Xem các look',ctaHref:'#looks'},
+    {id:'slide-2',eyebrow:'A LITTLE DETAIL',title:'Một miếng nhỏ, cả outfit khác đi.',body:'Từ áo tee đến túi tote, mỗi look là một câu chuyện riêng.',image_url:'/assets/blank-tee.webp',ctaLabel:'Khám phá collection',ctaHref:'#looks'}
   ],
   looks:[
     {id:'look-1',name:'Off-white · Little Mood',category:'Áo Tee',price:249000,image_url:'/assets/blank-tee.webp',detail_image_url:'/assets/blank-tee.webp',description:'Áo tee off-white với patch nhỏ ở ngực.',tag:'EDITOR PICK',href:'/'},
