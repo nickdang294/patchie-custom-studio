@@ -139,6 +139,7 @@ insert into public.settings(key,value) values
 ('retentionDays','30'::jsonb),
 ('privacyText','"Shop dùng thông tin này để xử lý yêu cầu thiết kế. Bản mẫu lưu 30 ngày."'::jsonb),
 ('adminEmails','[]'::jsonb),
+('halloweenThemeEnabled','true'::jsonb),
 ('giftOffer','{"enabled":true,"eyebrow":"QUÀ NHỎ KHAI TRƯƠNG","title":"Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen","description":"Bạn thích patch nào thì chọn heee 💖","buttonLabel":"Nhận patch này","patchIds":["patch-pink","patch-black"]}'::jsonb)
 on conflict (key) do nothing;
 insert into public.settings(key,value) values

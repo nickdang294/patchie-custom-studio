@@ -23,7 +23,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, popupCampaigns:DEFAULT_POPUP_CAMPAIGNS, activePopupCampaign:'traditional-gift', defaultPatchGroup:'all' }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, popupCampaigns:DEFAULT_POPUP_CAMPAIGNS, activePopupCampaign:'traditional-gift', defaultPatchGroup:'all', halloweenThemeEnabled:true }
 };
 
 export async function GET() {
@@ -51,6 +51,7 @@ export async function GET() {
             ? config.activePopupCampaign
             : popupCampaigns.find(campaign=>campaign.enabled)?.id || popupCampaigns[0]?.id || '',
           defaultPatchGroup:typeof config.defaultPatchGroup==='string'&&config.defaultPatchGroup?config.defaultPatchGroup:'all',
+          halloweenThemeEnabled:config.halloweenThemeEnabled!==false,
           // Brand & content is stored in the existing settings table as JSON.
           // It must be forwarded here or the storefront can only show defaults.
           brand:config.brand||{}

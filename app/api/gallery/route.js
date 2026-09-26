@@ -38,9 +38,9 @@ export async function GET(){
     if(sErr)throw sErr;
     const config=Object.fromEntries((settings||[]).map(row=>[row.key,row.value]));
     const savedGallery=config.gallery||{};
-    return Response.json({brand:config.brand||{},gallery:{...DEFAULT_GALLERY,...savedGallery,autoplayIntervalMs:normalizeAutoplayInterval(savedGallery.autoplayIntervalMs,DEFAULT_GALLERY.autoplayIntervalMs)}},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return Response.json({brand:config.brand||{},gallery:{...DEFAULT_GALLERY,...savedGallery,autoplayIntervalMs:normalizeAutoplayInterval(savedGallery.autoplayIntervalMs,DEFAULT_GALLERY.autoplayIntervalMs)},halloweenThemeEnabled:config.halloweenThemeEnabled!==false},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }catch(error){
-    return Response.json({brand:{},gallery:DEFAULT_GALLERY},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return Response.json({brand:{},gallery:DEFAULT_GALLERY,halloweenThemeEnabled:true},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }
 }
 

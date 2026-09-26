@@ -388,3 +388,27 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .tarot-offer-modal .gift-offer-later{margin-top:22px;padding:7px 11px;border-radius:999px;color:#776887;background:#faf7ff;border:1px solid #e9e1f3;text-decoration:none;font-size:10px;transition:.15s}
 .tarot-offer-modal .gift-offer-later:hover{background:#f0eaff;color:#51427b;transform:translateY(-1px)}
 @media(max-width:700px){.tarot-offer-modal .gift-offer-card{padding:28px 14px 20px;border-radius:22px}.tarot-offer-modal .gift-offer-card:before{left:16px;top:18px}.tarot-offer-modal .tarot-grid{gap:7px;margin-top:21px}.tarot-offer-modal .tarot-card-back i{font-size:22px}.tarot-offer-modal .tarot-card-back b{font-size:8px}.tarot-offer-modal .tarot-card-back small{font-size:6px}.tarot-offer-modal .tarot-card-front b{font-size:8px}.tarot-offer-modal .tarot-card-label{font-size:8px}.tarot-offer-modal .tarot-card-actions button{min-height:34px!important;font-size:8px!important;padding:7px 5px!important}}
+
+/* Optional seasonal layer: Patchie stays light and playful, Halloween only adds a few accents. */
+.theme-halloween{--halloween-orange:#f29a72;--halloween-plum:#735982;--halloween-cream:#fff1e8;position:relative}
+.shell.theme-halloween .topbar,.market-shell.theme-halloween .market-topbar,.gallery-shell.theme-halloween .gallery-topbar{position:relative}
+.shell.theme-halloween .topbar:after,.market-shell.theme-halloween .market-topbar:after,.gallery-shell.theme-halloween .gallery-topbar:after{content:'✦  ◒';position:absolute;right:0;top:50%;color:var(--halloween-orange);font-size:14px;letter-spacing:4px;opacity:.72;pointer-events:none;transform:translateY(-50%) rotate(-7deg)}
+.shell.theme-halloween .hero{position:relative;overflow:hidden}
+.shell.theme-halloween .hero:after{content:'☾';position:absolute;right:8%;top:19%;color:var(--halloween-orange);font-size:48px;line-height:1;opacity:.25;transform:rotate(12deg);pointer-events:none}
+.shell.theme-halloween .hero h1 em{color:var(--halloween-plum)}
+.shell.theme-halloween .brand-mark,.market-shell.theme-halloween .brand-mark,.gallery-shell.theme-halloween .brand-mark{background:var(--coral);color:var(--ink);box-shadow:3px 3px 0 var(--halloween-orange)}
+.market-shell.theme-halloween .market-hero{position:relative}
+.market-shell.theme-halloween .market-hero:after{content:'✦  ☾';position:absolute;right:7%;bottom:16%;color:#ffd4bd;font-size:18px;letter-spacing:7px;opacity:.65;pointer-events:none;transform:rotate(-8deg)}
+.market-shell.theme-halloween .market-badge{background:var(--coral);box-shadow:3px 3px 0 var(--halloween-orange)}
+.market-shell.theme-halloween .market-card-image{position:relative}
+.market-shell.theme-halloween .market-card-image:after{content:'✦';position:absolute;right:12px;bottom:10px;color:var(--halloween-orange);font-size:18px;opacity:.8;pointer-events:none;transform:rotate(12deg)}
+.market-shell.theme-halloween .market-add-button{background:var(--halloween-plum);box-shadow:3px 3px 0 #5c456c}
+.gallery-shell.theme-halloween .gallery-hero{position:relative;background:#f8ebe4}
+.gallery-shell.theme-halloween .gallery-hero:after{content:'✦  ◒';position:absolute;right:6%;top:14%;color:var(--halloween-orange);font-size:18px;letter-spacing:6px;opacity:.6;pointer-events:none;transform:rotate(8deg)}
+.gallery-shell.theme-halloween .gallery-hero-frame:before{content:'☾';position:absolute;left:17px;top:17px;z-index:1;color:var(--halloween-orange);font-size:24px;opacity:.7;pointer-events:none;transform:rotate(-12deg)}
+.gallery-shell.theme-halloween .gallery-stamp{background:var(--coral);box-shadow:3px 3px 0 var(--halloween-orange)}
+.gallery-shell.theme-halloween .gallery-primary{background:var(--halloween-plum);box-shadow:3px 3px 0 #5c456c}
+.theme-toggle{display:flex!important;align-items:center;gap:9px;flex-wrap:wrap}
+.theme-toggle input{width:17px!important;height:17px;accent-color:var(--coral)}
+.theme-toggle .admin-help{flex-basis:100%;margin-left:26px}
+@media(max-width:800px){.shell.theme-halloween .topbar:after,.market-shell.theme-halloween .market-topbar:after,.gallery-shell.theme-halloween .gallery-topbar:after{right:10px;font-size:11px;letter-spacing:2px}.shell.theme-halloween .hero:after{right:9%;top:11%;font-size:36px}.market-shell.theme-halloween .market-hero:after{right:9%;bottom:10%;font-size:14px}.gallery-shell.theme-halloween .gallery-hero:after{right:12%;top:7%;font-size:14px}.gallery-shell.theme-halloween .gallery-hero-frame:before{left:12px;top:12px;font-size:18px}}
