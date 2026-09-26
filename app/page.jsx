@@ -30,12 +30,18 @@ const VIEWS=[
   {id:'back',label:'Lưng áo',short:'Lưng'}
 ];
 const PRODUCT_VIEW_SETS={shirt:['front','left_sleeve','right_sleeve','back'],bag:['front','back']};
-const viewsForProduct=p=>VIEWS.filter(v=>(PRODUCT_VIEW_SETS[p?.product_type||'shirt']||PRODUCT_VIEW_SETS.shirt).includes(v.id));
 const PRODUCT_GROUPS=[
-  {value:'shirt',label:'Áo Tee'},
-  {value:'bag',label:'Túi Tote'}
+  {value:'shirt',label:'Áo Tee',kind:'shirt'},
+  {value:'bag',label:'Túi Tote',kind:'bag'}
 ];
-const productGroupLabel=value=>PRODUCT_GROUPS.find(g=>g.value===value)?.label||'Sản phẩm';
+const normalizeProductGroups=list=>{
+  const incoming=Array.isArray(list)?list:[];
+  const defaults=PRODUCT_GROUPS.map(group=>({...group}));
+  const merged=defaults.map(group=>{const saved=incoming.find(item=>item?.id===group.value||item?.value===group.value);return saved?{...group,...saved,value:group.value,id:group.value,kind:saved.kind||group.kind}:group;});
+  incoming.filter(item=>item&&(item.id||item.value)&&!merged.some(group=>(group.id||group.value)===(item.id||item.value))).forEach(item=>merged.push({...item,id:item.id||item.value,value:item.value||item.id,label:item.label||item.name||item.id,kind:item.kind==='bag'?'bag':'shirt'}));
+  return merged;
+};
+const viewsForProduct=(p,groups=PRODUCT_GROUPS)=>{const group=groups.find(g=>(g.id||g.value)===(p?.product_type||'shirt')),kind=group?.kind||((p?.product_type||'shirt')==='bag'?'bag':'shirt');return VIEWS.filter(v=>(PRODUCT_VIEW_SETS[kind]||PRODUCT_VIEW_SETS.shirt).includes(v.id));};
 const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
 
 const VIEW_REFERENCE_CM={
@@ -48,7 +54,7 @@ const clampPatchPercent=value=>Math.max(.8,Math.min(35,value));
 const clampZoom=value=>Math.max(1,Math.min(3.2,value));
 const makeDraftOrderCode=()=>`PCH-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase()}`;
 const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',product_type:'shirt',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],price:null};
-const BRAND_DEFAULTS={brandName:'Patchie',logoUrl:'',slogan:'Customize your everyday',fontFamily:'DM Sans',heroEyebrow:'YOUR BASE, YOUR LITTLE WORLD',heroTitle:'Tự tạo món đồ',heroAccent:'của riêng bạn.',heroDescription:'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',step1Label:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Title:'Sản phẩm base',step2Label:'02 / CHỌN PATCH BẠN THÍCH HA',step3Label:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepBaseDesktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepBaseMobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepPatchDesktop:'02 / CHỌN PATCH BẠN THÍCH HA',stepPatchMobile:'02 / CHỌN PATCH BẠN THÍCH HA',stepPreviewDesktop:'03 / CÙNG DESIGN HOI',stepPreviewMobile:'03 / CÙNG DESIGN HOI',stepOrderDesktop:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepOrderMobile:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',step1Desktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Mobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step2Desktop:'02 / CHỌN PATCH BẠN THÍCH HA',step2Mobile:'02 / CHỌN PATCH BẠN THÍCH HA',addPatchLabel:'＋ Thêm patch lên mặt đang chọn',mobileAddPatchLabel:'＋ Thêm patch vào mặt đang chọn',productGroupImages:{shirt:'',bag:''}};
+const BRAND_DEFAULTS={brandName:'Patchie',logoUrl:'',slogan:'Customize your everyday',fontFamily:'DM Sans',heroEyebrow:'YOUR BASE, YOUR LITTLE WORLD',heroTitle:'Tự tạo món đồ',heroAccent:'của riêng bạn.',heroDescription:'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',step1Label:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Title:'Sản phẩm base',step2Label:'02 / CHỌN PATCH BẠN THÍCH HA',step3Label:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepBaseDesktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepBaseMobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepPatchDesktop:'02 / CHỌN PATCH BẠN THÍCH HA',stepPatchMobile:'02 / CHỌN PATCH BẠN THÍCH HA',stepPreviewDesktop:'03 / CÙNG DESIGN HOI',stepPreviewMobile:'03 / CÙNG DESIGN HOI',stepOrderDesktop:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepOrderMobile:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',step1Desktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Mobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step2Desktop:'02 / CHỌN PATCH BẠN THÍCH HA',step2Mobile:'02 / CHỌN PATCH BẠN THÍCH HA',addPatchLabel:'＋ Thêm patch lên mặt đang chọn',mobileAddPatchLabel:'＋ Thêm patch vào mặt đang chọn',productGroupImages:{shirt:'',bag:''},productGroups:PRODUCT_GROUPS};
 const cssContent=value=>JSON.stringify(String(value||''));
 const BrandIdentity=({brand=BRAND_DEFAULTS})=><>{brand.logoUrl?<img className="brand-logo" src={brand.logoUrl} alt=""/>:<span className="brand-mark">P</span>} {brand.brandName||'Patchie'}<span className="brand-studio">STUDIO</span></>;
 
@@ -75,14 +81,14 @@ export default function Home(){
   const stage=useRef(null),trash=useRef(null),drag=useRef(null),pan=useRef(null),rotating=useRef(false),pinch=useRef(null);
   const product=catalog.products.find(x=>x.id===productId)||catalog.products[0]||defaultProduct;
   const savedBrand=catalog.settings.brand||{};
-  const brand={...BRAND_DEFAULTS,...savedBrand,stepBaseDesktop:savedBrand.stepBaseDesktop||savedBrand.step1Desktop||savedBrand.step1Label||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||savedBrand.step1Mobile||savedBrand.step1Label||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||savedBrand.step2Desktop||savedBrand.step2Label||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||savedBrand.step2Mobile||savedBrand.step2Label||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||savedBrand.step3Desktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||savedBrand.step3Mobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||savedBrand.step4Desktop||savedBrand.step3Label||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||savedBrand.step4Mobile||savedBrand.step3Label||BRAND_DEFAULTS.stepOrderMobile,step1Desktop:savedBrand.step1Desktop||savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,step1Mobile:savedBrand.step1Mobile||savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,step2Desktop:savedBrand.step2Desktop||savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,step2Mobile:savedBrand.step2Mobile||savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,productGroupImages:{...BRAND_DEFAULTS.productGroupImages,...(savedBrand.productGroupImages||{})}};
+  const brand={...BRAND_DEFAULTS,...savedBrand,stepBaseDesktop:savedBrand.stepBaseDesktop||savedBrand.step1Desktop||savedBrand.step1Label||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||savedBrand.step1Mobile||savedBrand.step1Label||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||savedBrand.step2Desktop||savedBrand.step2Label||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||savedBrand.step2Mobile||savedBrand.step2Label||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||savedBrand.step3Desktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||savedBrand.step3Mobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||savedBrand.step4Desktop||savedBrand.step3Label||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||savedBrand.step4Mobile||savedBrand.step3Label||BRAND_DEFAULTS.stepOrderMobile,step1Desktop:savedBrand.step1Desktop||savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,step1Mobile:savedBrand.step1Mobile||savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,step2Desktop:savedBrand.step2Desktop||savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,step2Mobile:savedBrand.step2Mobile||savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,productGroupImages:{...BRAND_DEFAULTS.productGroupImages,...(savedBrand.productGroupImages||{})},productGroups:normalizeProductGroups(savedBrand.productGroups)};
   // New four-step flow: ignore legacy step labels unless the new keys exist.
   // This prevents previously saved “step 1/2/3” values from moving the labels
   // back to the old patch-first layout.
   Object.assign(brand,{step1Title:'Sản phẩm base',stepBaseDesktop:savedBrand.stepBaseDesktop||BRAND_DEFAULTS.stepBaseDesktop,stepBaseMobile:savedBrand.stepBaseMobile||BRAND_DEFAULTS.stepBaseMobile,stepPatchDesktop:savedBrand.stepPatchDesktop||BRAND_DEFAULTS.stepPatchDesktop,stepPatchMobile:savedBrand.stepPatchMobile||BRAND_DEFAULTS.stepPatchMobile,stepPreviewDesktop:savedBrand.stepPreviewDesktop||BRAND_DEFAULTS.stepPreviewDesktop,stepPreviewMobile:savedBrand.stepPreviewMobile||BRAND_DEFAULTS.stepPreviewMobile,stepOrderDesktop:savedBrand.stepOrderDesktop||BRAND_DEFAULTS.stepOrderDesktop,stepOrderMobile:savedBrand.stepOrderMobile||BRAND_DEFAULTS.stepOrderMobile});
   const selectedBaseKey=productBaseKey(product);
   const colorVariants=catalog.products.filter(p=>productBaseKey(p)===selectedBaseKey);
-  const activeViews=viewsForProduct(product);
+  const activeViews=viewsForProduct(product,brand.productGroups);
   const sizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];
   const chosenPatch=catalog.patches.find(x=>x.id===chosen);
   const giftOffer={...GIFT_DEFAULTS,...(catalog.settings.giftOffer||{})};
@@ -312,7 +318,9 @@ export default function Home(){
   const productThumb=p=>(p?.view_images||{}).front||p?.image_url||defaultProduct.image_url;
   const productsByGroup=type=>catalog.products.filter(p=>(p.product_type||'shirt')===type);
   const productBasesByGroup=type=>Array.from(productsByGroup(type).reduce((map,p)=>{const key=productBaseKey(p);map.set(key,[...(map.get(key)||[]),p]);return map;},new Map()).entries()).map(([key,list])=>{const current=list.find(p=>p.id===productId)||list[0],prices=list.map(p=>Number(p.price)).filter(Number.isFinite);return {value:key,label:current.name,sub:`${list.length} màu`,price:prices.length?`từ ${money(Math.min(...prices))}`:'Chưa set',image:productThumb(current)};});
-  const productGroupOptions=PRODUCT_GROUPS.filter(g=>productsByGroup(g.value).length).map(g=>{const list=productsByGroup(g.value),first=list[0];return {value:g.value,label:g.label,sub:`${productBasesByGroup(g.value).length} mẫu`,image:brand.productGroupImages?.[g.value]||productThumb(first)};});
+  const productGroups=brand.productGroups;
+  const productGroupLabel=value=>productGroups.find(g=>(g.id||g.value)===value)?.label||'Sản phẩm';
+  const productGroupOptions=productGroups.filter(g=>productsByGroup(g.id||g.value).length).map(g=>{const value=g.id||g.value,list=productsByGroup(value),first=list[0];return {value,label:g.label,sub:`${productBasesByGroup(value).length} mẫu`,image:brand.productGroupImages?.[value]||g.imageUrl||productThumb(first)};});
   const patchGroupOptions=patchGroups.map(g=>({value:g,label:g==='all'?'Tất cả':g,sub:`${patchGroupCount(g)} patch`}));
   const productOptions=productBasesByGroup(productSheetGroup);
   const selectData=selectSheet==='patchGroup'?{label:'Nhóm patch',intro:'Chọn nhóm patch muốn xem.',value:activePatchGroup,options:patchGroupOptions,onChange:setActivePatchGroup}:selectSheet==='productGroup'?{label:'Nhóm sản phẩm',intro:'Chọn loại base trước, rồi chọn mẫu cụ thể.',value:productSheetGroup,options:productGroupOptions,onChange:setProductSheetGroup,nextSheet:'product'}:selectSheet==='product'?{label:productGroupLabel(productSheetGroup),intro:'Chọn mẫu base muốn custom. Màu sẽ chọn ở bước kế bên.',value:selectedBaseKey,options:productOptions,onChange:changeProductBase,backSheet:'productGroup'}:null;
