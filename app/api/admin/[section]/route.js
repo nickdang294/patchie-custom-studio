@@ -76,7 +76,7 @@ export async function DELETE(request,{params}) {
   const {section}=await params, id=new URL(request.url).searchParams.get('id');if(!id)return jsonError('Thiếu mã mục.');
   const db=serviceDb();
   if(section==='designs'){const {data}=await db.from('designs').select('image_path').eq('id',id).maybeSingle();if(data?.image_path)await db.storage.from('design-mockups').remove([data.image_path]);}
-  if(!['designs','products','patches'].includes(section))return jsonError('Không thể xóa mục này.',404);
+  if(!['designs','products','patches','patch-orders'].includes(section))return jsonError('Không thể xóa mục này.',404);
   const {error}=await db.from(section).delete().eq('id',id);
   if(error&&section==='patches'&&/foreign key|violates.*constraint|referenced/i.test(error.message||'')){
     const {error:archiveError}=await db.from('patches').update({active:false}).eq('id',id);
