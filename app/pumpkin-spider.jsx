@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export default function PumpkinSpider({ enabled=true, page='studio', reactionKey='' }) {
-  const spiderRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false),homeRef=useRef(null);
+export default function PumpkinSpider({ enabled=true, page='studio', reactionKey='', patchCount=0 }) {
+  const spiderRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false);
   const [reducedMotion,setReducedMotion]=useState(false),[reacting,setReacting]=useState(false);
 
   useEffect(()=>{
@@ -42,7 +42,6 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
     event.preventDefault();
     const rect=spiderRef.current.getBoundingClientRect();
     manualRef.current=true;
-    homeRef.current={left:rect.left,top:rect.top};
     dragRef.current={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
     event.currentTarget.setPointerCapture?.(event.pointerId);
     spiderRef.current.style.setProperty('--pumpkin-spider-left',`${rect.left}px`);
@@ -62,29 +61,20 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
     if(!dragRef.current||dragRef.current.pointerId!==event.pointerId)return;
     const spider=spiderRef.current;
     if(spider){
-      const rect=spider.getBoundingClientRect();
-      const home=homeRef.current??{left:Math.max(8,window.innerWidth-rect.width-10),top:rect.top};
-      const left=Math.min(Math.max(8,home.left),window.innerWidth-rect.width-8);
-      const top=Math.min(Math.max(8,home.top),window.innerHeight-rect.height-8);
       spider.releasePointerCapture?.(event.pointerId);
       spider.classList.remove('is-dragging');
-      spider.classList.add('is-returning');
-      requestAnimationFrame(()=>{
-        spider.style.setProperty('--pumpkin-spider-left',`${left}px`);
-        spider.style.setProperty('--pumpkin-spider-y',`${top}px`);
-        spider.style.setProperty('--pumpkin-spider-tilt','0deg');
-      });
-      setTimeout(()=>spider.classList.remove('is-returning'),850);
     }
     dragRef.current=null;
   };
 
   if(!enabled)return null;
-  return <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+  const growth=Math.min(6,Math.max(0,Number(patchCount)||0));
+  const notes=['Chọn thêm patch để tui lớn lên ✦','Tui lớn xíu rồi, thêm patch nữa nha?','Oa, tui đang lớn nhanh đó!','Tui sắp thành nhện bự nhất Patchie rồi!','Nuôi tui thêm chút nữa đi, sắp max level!','Tui no patch rồi nhưng vẫn muốn lớn hơn ✦','Tui max level rồi! Cảm ơn bạn đã nuôi tui ♥'];
+  return <div ref={spiderRef} style={{'--spider-growth-width':`${growth*5}px`,'--spider-growth-height':`${growth*6}px`}} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
     <span className="pumpkin-spider-web"></span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-a">✦</span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-b">✧</span>
-    <span className="pumpkin-spider-note">trick? ✦</span>
+    <span className="pumpkin-spider-note" aria-hidden="true">{notes[growth]}</span>
     <svg className="pumpkin-spider-art" viewBox="0 0 126 126" role="presentation">
       <path className="pumpkin-spider-leg" d="M42 72 15 61 6 46M38 82 11 82 4 71M43 91 19 103 10 117M84 72l27-11 9-15M88 82l27 0 7-11M83 91l24 12 9 14"/>
       <path className="pumpkin-spider-leg leg-inner" d="M47 67 28 49 25 35M79 67l19-18 3-14M47 97l-18 15M79 97l18 15"/>

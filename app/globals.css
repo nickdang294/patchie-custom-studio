@@ -549,3 +549,21 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .bat-8{--bat-x:-42vw;--bat-y:12vh;--bat-delay:90ms;--bat-scale:1.15}.bat-9{--bat-x:-21vw;--bat-y:-43vh;--bat-delay:130ms;--bat-scale:1}.bat-10{--bat-x:4vw;--bat-y:24vh;--bat-delay:180ms;--bat-scale:1.35}.bat-11{--bat-x:24vw;--bat-y:-43vh;--bat-delay:60ms;--bat-scale:1.1}.bat-12{--bat-x:45vw;--bat-y:-10vh;--bat-delay:110ms;--bat-scale:1.4}.bat-13{--bat-x:-5vw;--bat-y:45vh;--bat-delay:200ms;--bat-scale:1}.bat-14{--bat-x:37vw;--bat-y:8vh;--bat-delay:145ms;--bat-scale:1.25}
 
 @media(max-width:800px){.pumpkin-spider{pointer-events:auto}.bat{font-size:16px}}
+
+/* The spider grows with the patch-collecting game and reacts when someone tries to drag it. */
+.pumpkin-spider{width:calc(68px + var(--spider-growth-width,0px));height:calc(84px + var(--spider-growth-height,0px));transition:width .45s ease,height .45s ease,left .72s cubic-bezier(.16,.87,.28,1.18),top .72s cubic-bezier(.16,.87,.28,1.18),transform .72s ease}
+.pumpkin-spider-note{opacity:.84;transform:translateY(0) rotate(-5deg);animation:pumpkin-spider-note-breathe 3.6s ease-in-out infinite;max-width:180px;text-align:center;line-height:1.15}
+.pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
+.pumpkin-spider.is-dragging .pumpkin-spider-leg{transform-box:fill-box;transform-origin:center;animation:pumpkin-spider-leg-protest .24s ease-in-out infinite}
+.pumpkin-spider.is-dragging .pumpkin-spider-leg.leg-inner{animation-delay:-.12s}
+@keyframes pumpkin-spider-leg-protest{0%,100%{transform:rotate(-7deg) scaleY(.94)}50%{transform:rotate(7deg) scaleY(1.06)}}
+@keyframes pumpkin-spider-note-breathe{0%,100%{opacity:.68;transform:translateY(0) rotate(-5deg)}50%{opacity:.96;transform:translateY(-2px) rotate(-5deg)}}
+
+/* Soft hearts appear from the patch picker; later levels are denser, brighter and larger. */
+.hearts-burst{position:fixed;z-index:44;inset:0;overflow:hidden;pointer-events:none}
+.heart{position:absolute;left:clamp(20%,28vw,36%);top:52%;color:#fa8e7e;font:900 var(--heart-size,14px)/1 'Arial Rounded MT Bold','Trebuchet MS',sans-serif;opacity:var(--heart-opacity,.28);filter:drop-shadow(0 2px 0 #fff2e9);animation:heart-float 1.25s cubic-bezier(.16,.72,.24,1) var(--heart-delay) forwards}
+.heart-1{--heart-x:-25vw;--heart-y:-22vh;--heart-delay:0ms;--heart-rotate:-18deg}.heart-2{--heart-x:-17vw;--heart-y:-35vh;--heart-delay:35ms;--heart-rotate:12deg}.heart-3{--heart-x:-9vw;--heart-y:-16vh;--heart-delay:70ms;--heart-rotate:-10deg}.heart-4{--heart-x:1vw;--heart-y:-31vh;--heart-delay:100ms;--heart-rotate:18deg}.heart-5{--heart-x:8vw;--heart-y:-13vh;--heart-delay:125ms;--heart-rotate:-14deg}.heart-6{--heart-x:16vw;--heart-y:-38vh;--heart-delay:155ms;--heart-rotate:10deg}
+.heart-7{--heart-x:-31vw;--heart-y:-8vh;--heart-delay:185ms;--heart-rotate:20deg}.heart-8{--heart-x:-4vw;--heart-y:-44vh;--heart-delay:210ms;--heart-rotate:-22deg}.heart-9{--heart-x:24vw;--heart-y:-26vh;--heart-delay:235ms;--heart-rotate:16deg}.heart-10{--heart-x:31vw;--heart-y:-8vh;--heart-delay:265ms;--heart-rotate:-12deg}.heart-11{--heart-x:-20vw;--heart-y:4vh;--heart-delay:295ms;--heart-rotate:8deg}.heart-12{--heart-x:13vw;--heart-y:5vh;--heart-delay:320ms;--heart-rotate:-18deg}
+.heart-13{--heart-x:-37vw;--heart-y:-29vh;--heart-delay:345ms;--heart-rotate:14deg}.heart-14{--heart-x:38vw;--heart-y:-35vh;--heart-delay:370ms;--heart-rotate:-9deg}.heart-15{--heart-x:-12vw;--heart-y:-50vh;--heart-delay:395ms;--heart-rotate:18deg}.heart-16{--heart-x:4vw;--heart-y:12vh;--heart-delay:420ms;--heart-rotate:-16deg}.heart-17{--heart-x:28vw;--heart-y:-47vh;--heart-delay:445ms;--heart-rotate:12deg}.heart-18{--heart-x:-30vw;--heart-y:-45vh;--heart-delay:470ms;--heart-rotate:-20deg}
+@keyframes heart-float{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0deg)}18%{opacity:var(--heart-opacity,.28)}100%{opacity:0;transform:translate(calc(-50% + var(--heart-x)),calc(-50% + var(--heart-y))) scale(var(--heart-scale,1)) rotate(var(--heart-rotate,0deg))}}
+@media(max-width:800px){.pumpkin-spider{width:calc(53px + var(--spider-growth-width,0px));height:calc(66px + var(--spider-growth-height,0px))}.pumpkin-spider-note{display:block;right:-4px;top:-23px;max-width:120px;padding:4px 6px;font-size:7px;white-space:nowrap}.heart{left:50%;top:48%;font-size:var(--heart-size,13px)}}
