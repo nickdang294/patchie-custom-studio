@@ -6,6 +6,7 @@ import PumpkinSpider from './pumpkin-spider';
 import BatsBurst from './bats-burst';
 import PumpkinFireworks from './pumpkin-fireworks';
 import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
+import { previewImageUrl } from '@/lib/image-utils';
 
 const STARTER=[
   {id:'patch-pink',name:'Mũ xanh lá',image_url:'/assets/patch-pink-cap.webp',width_cm:4,height_cm:4,quote:'nhỏ xíu mà có võ',patch_group:'Best Seller',patch_groups:['Best Seller']},
@@ -183,7 +184,7 @@ export default function Home(){
   useEffect(()=>{if(colorVariants.length===1&&colorVariants[0].id!==productId)setProductId(colorVariants[0].id);const availableSizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];if(availableSizes.length===1&&size!==availableSizes[0])setSize(availableSizes[0]);},[productId,selectedBaseKey,catalog.products,product?.sizes,catalog.settings.sizes,size]);
   useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
   useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const ready=placed.length>0;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed.length,catalogReady]);
-  useEffect(()=>{Array.from(new Set([...activeViews.map(v=>imageForView(v.id)),...catalog.patches.map(p=>p.image_url)].filter(Boolean))).forEach(src=>{const img=new Image();img.decoding='async';img.crossOrigin='anonymous';img.src=src;});},[productId,catalog.products,catalog.patches]);
+  useEffect(()=>{const sources=[...activeViews.map(v=>imageForView(v.id)),...catalog.products.map(p=>previewImageUrl((p.view_images||{}).front||p.image_url)),...catalog.patches.map(p=>p.image_url)].filter(Boolean);Array.from(new Set(sources)).forEach(src=>{const img=new Image();img.decoding='async';img.fetchPriority='low';img.crossOrigin='anonymous';img.src=src;});},[productId,catalog.products,catalog.patches]);
   useEffect(()=>{setStageZoom({scale:1,x:0,y:0});setTrashActive(false);setTrashHot(false);pinch.current=null;drag.current=null;pan.current=null;},[activeView,productId]);
 
   const LoadingAnimation=()=> <section className="catalog-loading loading-card"><div className="loading-art" aria-hidden="true"><div className="loading-tee"><span>P</span></div><i className="loading-patch loading-patch-a">✦</i><i className="loading-patch loading-patch-b">♡</i><i className="loading-patch loading-patch-c">☀</i><i className="loading-patch loading-patch-d">✿</i><span className="loading-spark loading-spark-a">✧</span><span className="loading-spark loading-spark-b">✦</span></div><b>Đang dán chút đáng yêu lên shop…</b><p>Patchie đang gom sản phẩm base và mấy miếng patch xinh cho bạn.</p><div className="loading-dots" aria-label="Đang tải"><i></i><i></i><i></i></div></section>;
@@ -348,7 +349,7 @@ export default function Home(){
     setMessengerPrompt(false);
   }
   const MiniPreview=()=> <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v=>{const shirt=(product?.view_images||{})[v.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url,inView=placed.filter(x=>(x.view||'front')===v.id);return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label}/>{inView.map((item,i)=>{const p=catalog.patches.find(x=>x.id===item.patchId),s=patchSizePercent(p,v.id);return p?<span key={item.uid} className="mini-placed" style={{left:`${item.x*100}%`,top:`${item.y*100}%`,width:`${s.width}%`,height:`${s.height}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`}}><img src={p.image_url} alt={p.name}/></span>:null})}<em>{v.short}</em></div>})}</div></div>;
-  const productThumb=p=>(p?.view_images||{}).front||p?.image_url||defaultProduct.image_url;
+  const productThumb=p=>previewImageUrl((p?.view_images||{}).front||p?.image_url||defaultProduct.image_url,420);
   const productsByGroup=type=>catalog.products.filter(p=>(p.product_type||'shirt')===type);
   const productBasesByGroup=type=>Array.from(productsByGroup(type).reduce((map,p)=>{const key=productBaseKey(p);map.set(key,[...(map.get(key)||[]),p]);return map;},new Map()).entries()).map(([key,list])=>{const current=list.find(p=>p.id===productId)||list[0],prices=list.map(p=>Number(p.price)).filter(Number.isFinite);return {value:key,label:current.name,sub:`${list.length} màu`,price:prices.length?`từ ${money(Math.min(...prices))}`:'Chưa set',image:productThumb(current)};});
   const productGroups=brand.productGroups;
