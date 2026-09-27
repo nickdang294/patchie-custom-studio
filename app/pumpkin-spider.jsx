@@ -3,23 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function PumpkinSpider({ enabled=true, page='studio', reactionKey='' }) {
-  const spiderRef=useRef(null),threadRef=useRef(null),threadLineRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false),threadAnchorRef=useRef(null),homeRef=useRef(null);
+  const spiderRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false),homeRef=useRef(null);
   const [reducedMotion,setReducedMotion]=useState(false),[reacting,setReacting]=useState(false);
-
-  const updateThread=()=>{
-    const spider=spiderRef.current,thread=threadRef.current,line=threadLineRef.current;
-    if(!spider||!thread||!line)return;
-    const rect=spider.getBoundingClientRect();
-    const anchorX=threadAnchorRef.current??(threadAnchorRef.current=rect.left+rect.width*.48);
-    const targetX=rect.left+rect.width*.48;
-    const targetY=Math.max(8,rect.top+8);
-    const width=Math.max(1,window.innerWidth),height=Math.max(1,window.innerHeight);
-    thread.setAttribute('viewBox',`0 0 ${width} ${height}`);
-    line.setAttribute('x1',`${anchorX}`);
-    line.setAttribute('y1','0');
-    line.setAttribute('x2',`${targetX}`);
-    line.setAttribute('y2',`${targetY}`);
-  };
 
   useEffect(()=>{
     if(!enabled||reactionKey==='')return undefined;
@@ -43,7 +28,6 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
         spiderRef.current.style.setProperty('--pumpkin-spider-y',`${19+progress*58}vh`);
         spiderRef.current.style.setProperty('--pumpkin-spider-tilt',`${Math.sin(progress*Math.PI*5)*5}deg`);
       }
-      updateThread();
     };
     let frame=0;
     const onScroll=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(updatePosition);};
@@ -64,8 +48,6 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
     spiderRef.current.style.setProperty('--pumpkin-spider-left',`${rect.left}px`);
     spiderRef.current.style.setProperty('--pumpkin-spider-y',`${rect.top}px`);
     spiderRef.current.classList.add('is-floating','is-dragging');
-    threadRef.current?.classList.add('is-dragging');
-    updateThread();
   };
   const moveDrag=event=>{
     if(!dragRef.current||dragRef.current.pointerId!==event.pointerId||!spiderRef.current)return;
@@ -75,7 +57,6 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
     spiderRef.current.style.setProperty('--pumpkin-spider-left',`${left}px`);
     spiderRef.current.style.setProperty('--pumpkin-spider-y',`${top}px`);
     spiderRef.current.style.setProperty('--pumpkin-spider-tilt','0deg');
-    updateThread();
   };
   const endDrag=event=>{
     if(!dragRef.current||dragRef.current.pointerId!==event.pointerId)return;
@@ -87,13 +68,11 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
       const top=Math.min(Math.max(8,home.top),window.innerHeight-rect.height-8);
       spider.releasePointerCapture?.(event.pointerId);
       spider.classList.remove('is-dragging');
-      threadRef.current?.classList.remove('is-dragging');
       spider.classList.add('is-returning');
       requestAnimationFrame(()=>{
         spider.style.setProperty('--pumpkin-spider-left',`${left}px`);
         spider.style.setProperty('--pumpkin-spider-y',`${top}px`);
         spider.style.setProperty('--pumpkin-spider-tilt','0deg');
-        updateThread();
       });
       setTimeout(()=>spider.classList.remove('is-returning'),850);
     }
@@ -101,11 +80,7 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
   };
 
   if(!enabled)return null;
-  return <>
-    <svg ref={threadRef} className="pumpkin-spider-thread" aria-hidden="true" focusable="false">
-      <line ref={threadLineRef} className="pumpkin-spider-thread-line" />
-    </svg>
-    <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+  return <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
     <span className="pumpkin-spider-web"></span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-a">✦</span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-b">✧</span>
@@ -120,6 +95,5 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
       <path className="pumpkin-spider-smile" d="M58 78c4 3 7 3 11 0"/>
       <circle className="pumpkin-spider-cheek" cx="50" cy="77" r="3"/><circle className="pumpkin-spider-cheek" cx="76" cy="77" r="3"/>
     </svg>
-    </div>
-  </>;
+  </div>;
 }

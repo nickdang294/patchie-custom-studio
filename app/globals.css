@@ -504,8 +504,6 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 /* Halloween interaction polish */
 .theme-halloween:not(.theme-cobwebs):before{display:none}
 .pumpkin-spider{pointer-events:none}
-.pumpkin-spider-thread{position:absolute;z-index:-1;left:48%;bottom:100%;width:1px;height:var(--pumpkin-spider-y,19vh);border-left:2px dotted #b39bca;opacity:.58;transform-origin:bottom;animation:pumpkin-spider-thread-sway 3.2s ease-in-out infinite}
-.pumpkin-spider-thread:after{content:'';position:absolute;left:-4px;bottom:-2px;width:8px;height:8px;border:2px solid #b39bca;border-radius:50%;background:#fff2e9}
 .pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
 .pumpkin-spider-cheek{fill:#fa8e7e;opacity:.58}
 .pumpkin-spider-face{fill:#fffaf2}
@@ -527,31 +525,27 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @keyframes firework-ray{0%{opacity:0;transform:rotate(var(--ray-angle)) translateY(0) scale(.3)}18%{opacity:1}100%{opacity:0;transform:rotate(var(--ray-angle)) translateY(-54px) scale(1)}}
 @keyframes firework-pop{0%{opacity:0;transform:translateY(9px) scale(.6)}28%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-25px) scale(.9)}}
 @keyframes pumpkin-fireworks-fade{0%,78%{opacity:1}100%{opacity:0}}
-@keyframes pumpkin-spider-thread-sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
-@media(max-width:800px){.pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab}.pumpkin-spider-thread{border-left-width:1px}.bat{font-size:15px}.pumpkin-fireworks-face{font-size:40px}.finish-halloween:before{font-size:14px;margin-right:5px}}
+@media(max-width:800px){.pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab}.bat{font-size:15px}.pumpkin-fireworks-face{font-size:40px}.finish-halloween:before{font-size:14px;margin-right:5px}}
 @media(prefers-reduced-motion:reduce){.bats-burst,.pumpkin-fireworks{display:none}.finish-halloween:before{content:'🎃'}}
 
 
 /* Final Pumpkin Spider and bat-flight tuning from the reference direction. */
 .pumpkin-spider{width:68px;height:84px;filter:drop-shadow(0 6px 7px #6f5a8728)}
 .pumpkin-spider-abdomen{fill:#735982;stroke:#51427b;stroke-width:2.6}.pumpkin-spider-body{fill:#8d77c8;stroke:#51427b}.pumpkin-spider-face{fill:#fffaf2;stroke:#51427b}.pumpkin-spider-eye{fill:#51427b}.pumpkin-spider-smile{stroke:#fa8e7e;stroke-width:2.8}.pumpkin-spider-cheek{fill:#fa8e7e;opacity:.58}
-.pumpkin-spider-thread{top:-27px;bottom:auto;height:27px}
 .bat{left:50%;top:50%;font:inherit;font-size:23px;letter-spacing:0;line-height:1;animation:bat-flight 1.55s cubic-bezier(.16,.72,.24,1) var(--bat-delay) forwards}
 .bat-1{--bat-x:-43vw;--bat-y:-34vh;--bat-delay:0ms;--bat-scale:1.2}.bat-2{--bat-x:-25vw;--bat-y:-12vh;--bat-delay:70ms;--bat-scale:1.5}.bat-3{--bat-x:-10vw;--bat-y:31vh;--bat-delay:140ms;--bat-scale:1.1}.bat-4{--bat-x:8vw;--bat-y:-39vh;--bat-delay:40ms;--bat-scale:1.6}.bat-5{--bat-x:27vw;--bat-y:-15vh;--bat-delay:210ms;--bat-scale:1.25}.bat-6{--bat-x:43vw;--bat-y:26vh;--bat-delay:110ms;--bat-scale:1.4}.bat-7{--bat-x:30vw;--bat-y:39vh;--bat-delay:260ms;--bat-scale:1}
 @keyframes bat-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.08) rotate(-8deg)}15%{opacity:1}62%{opacity:.95;transform:translate(calc(-50% + var(--bat-x)*.72),calc(-50% + var(--bat-y)*.72)) scale(calc(var(--bat-scale)*1.25)) rotate(8deg)}100%{opacity:0;transform:translate(calc(-50% + var(--bat-x)),calc(-50% + var(--bat-y))) scale(calc(var(--bat-scale)*2.1)) rotate(-5deg)}}
-@media(max-width:800px){.pumpkin-spider{width:53px;height:66px}.pumpkin-spider-thread{top:-20px;height:20px}.bat{font-size:16px}}
+@media(max-width:800px){.pumpkin-spider{width:53px;height:66px}.bat{font-size:16px}}
 
 /* Free drag: once moved, the spider stays anchored to the viewport and settles at the right edge. */
 .pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab;transition:left .72s cubic-bezier(.16,.87,.28,1.18),top .72s cubic-bezier(.16,.87,.28,1.18),transform .72s ease}
 .pumpkin-spider.is-floating{left:var(--pumpkin-spider-left);right:auto}
 .pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
 .pumpkin-spider.is-returning{transition:left .72s cubic-bezier(.16,.87,.28,1.18),top .72s cubic-bezier(.16,.87,.28,1.18),transform .72s ease}
-.pumpkin-spider-thread{position:fixed;z-index:29;inset:0;width:100vw;height:100vh;display:block;overflow:visible;opacity:.58;pointer-events:none}
-.pumpkin-spider-thread-line{fill:none;stroke:#b39bca;stroke-width:1.5;stroke-dasharray:1 5;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 0 #fff2e9)}
 
 /* A denser, faster burst that expands from the patch-selection button toward the viewer. */
 .bat{animation-duration:1.05s!important}
 .bat-1{--bat-x:-46vw;--bat-y:-38vh;--bat-delay:0ms;--bat-scale:1.2}.bat-2{--bat-x:-31vw;--bat-y:-22vh;--bat-delay:20ms;--bat-scale:1}.bat-3{--bat-x:-15vw;--bat-y:35vh;--bat-delay:50ms;--bat-scale:1.35}.bat-4{--bat-x:0vw;--bat-y:-46vh;--bat-delay:80ms;--bat-scale:1}.bat-5{--bat-x:13vw;--bat-y:42vh;--bat-delay:120ms;--bat-scale:1.2}.bat-6{--bat-x:29vw;--bat-y:-28vh;--bat-delay:30ms;--bat-scale:1.5}.bat-7{--bat-x:47vw;--bat-y:34vh;--bat-delay:160ms;--bat-scale:1.1}
 .bat-8{--bat-x:-42vw;--bat-y:12vh;--bat-delay:90ms;--bat-scale:1.15}.bat-9{--bat-x:-21vw;--bat-y:-43vh;--bat-delay:130ms;--bat-scale:1}.bat-10{--bat-x:4vw;--bat-y:24vh;--bat-delay:180ms;--bat-scale:1.35}.bat-11{--bat-x:24vw;--bat-y:-43vh;--bat-delay:60ms;--bat-scale:1.1}.bat-12{--bat-x:45vw;--bat-y:-10vh;--bat-delay:110ms;--bat-scale:1.4}.bat-13{--bat-x:-5vw;--bat-y:45vh;--bat-delay:200ms;--bat-scale:1}.bat-14{--bat-x:37vw;--bat-y:8vh;--bat-delay:145ms;--bat-scale:1.25}
 
-@media(max-width:800px){.pumpkin-spider{pointer-events:auto}.pumpkin-spider-thread{border-left-width:1px}.bat{font-size:16px}}
+@media(max-width:800px){.pumpkin-spider{pointer-events:auto}.bat{font-size:16px}}
