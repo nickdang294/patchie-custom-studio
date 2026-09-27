@@ -540,3 +540,16 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .bat-1{--bat-x:-43vw;--bat-y:-34vh;--bat-delay:0ms;--bat-scale:1.2}.bat-2{--bat-x:-25vw;--bat-y:-12vh;--bat-delay:70ms;--bat-scale:1.5}.bat-3{--bat-x:-10vw;--bat-y:31vh;--bat-delay:140ms;--bat-scale:1.1}.bat-4{--bat-x:8vw;--bat-y:-39vh;--bat-delay:40ms;--bat-scale:1.6}.bat-5{--bat-x:27vw;--bat-y:-15vh;--bat-delay:210ms;--bat-scale:1.25}.bat-6{--bat-x:43vw;--bat-y:26vh;--bat-delay:110ms;--bat-scale:1.4}.bat-7{--bat-x:30vw;--bat-y:39vh;--bat-delay:260ms;--bat-scale:1}
 @keyframes bat-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.08) rotate(-8deg)}15%{opacity:1}62%{opacity:.95;transform:translate(calc(-50% + var(--bat-x)*.72),calc(-50% + var(--bat-y)*.72)) scale(calc(var(--bat-scale)*1.25)) rotate(8deg)}100%{opacity:0;transform:translate(calc(-50% + var(--bat-x)),calc(-50% + var(--bat-y))) scale(calc(var(--bat-scale)*2.1)) rotate(-5deg)}}
 @media(max-width:800px){.pumpkin-spider{width:53px;height:66px}.pumpkin-spider-thread{top:-20px;height:20px}.bat{font-size:16px}}
+
+/* Free drag: once moved, the spider stays anchored to the viewport and settles at the right edge. */
+.pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab;transition:left .55s cubic-bezier(.22,.75,.25,1),top .9s cubic-bezier(.22,.75,.25,1),transform .9s ease}
+.pumpkin-spider.is-floating{left:var(--pumpkin-spider-left);right:auto}
+.pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
+.pumpkin-spider-thread{top:calc(-1 * var(--pumpkin-spider-y,19vh));bottom:auto;height:var(--pumpkin-spider-y,19vh);z-index:-1}
+
+/* A denser, faster burst that expands from the patch-selection button toward the viewer. */
+.bat{animation-duration:1.05s!important}
+.bat-1{--bat-x:-46vw;--bat-y:-38vh;--bat-delay:0ms;--bat-scale:1.2}.bat-2{--bat-x:-31vw;--bat-y:-22vh;--bat-delay:20ms;--bat-scale:1}.bat-3{--bat-x:-15vw;--bat-y:35vh;--bat-delay:50ms;--bat-scale:1.35}.bat-4{--bat-x:0vw;--bat-y:-46vh;--bat-delay:80ms;--bat-scale:1}.bat-5{--bat-x:13vw;--bat-y:42vh;--bat-delay:120ms;--bat-scale:1.2}.bat-6{--bat-x:29vw;--bat-y:-28vh;--bat-delay:30ms;--bat-scale:1.5}.bat-7{--bat-x:47vw;--bat-y:34vh;--bat-delay:160ms;--bat-scale:1.1}
+.bat-8{--bat-x:-42vw;--bat-y:12vh;--bat-delay:90ms;--bat-scale:1.15}.bat-9{--bat-x:-21vw;--bat-y:-43vh;--bat-delay:130ms;--bat-scale:1}.bat-10{--bat-x:4vw;--bat-y:24vh;--bat-delay:180ms;--bat-scale:1.35}.bat-11{--bat-x:24vw;--bat-y:-43vh;--bat-delay:60ms;--bat-scale:1.1}.bat-12{--bat-x:45vw;--bat-y:-10vh;--bat-delay:110ms;--bat-scale:1.4}.bat-13{--bat-x:-5vw;--bat-y:45vh;--bat-delay:200ms;--bat-scale:1}.bat-14{--bat-x:37vw;--bat-y:8vh;--bat-delay:145ms;--bat-scale:1.25}
+
+@media(max-width:800px){.pumpkin-spider{pointer-events:auto}.pumpkin-spider-thread{border-left-width:1px}.bat{font-size:16px}}

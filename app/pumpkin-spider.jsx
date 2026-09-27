@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function PumpkinSpider({ enabled=true, page='studio', reactionKey='' }) {
-  const spiderRef=useRef(null),dragRef=useRef(null);
+  const spiderRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false);
   const [reducedMotion,setReducedMotion]=useState(false),[reacting,setReacting]=useState(false);
 
   useEffect(()=>{
@@ -20,7 +20,7 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
     updateMotion();
     media.addEventListener?.('change',updateMotion);
     const updatePosition=()=>{
-      if(!spiderRef.current||media.matches)return;
+      if(!spiderRef.current||media.matches||manualRef.current)return;
       const root=document.documentElement;
       const maxScroll=Math.max(1,root.scrollHeight-window.innerHeight);
       const progress=Math.min(1,Math.max(0,window.scrollY/maxScroll));
@@ -36,28 +36,41 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
   },[enabled]);
 
   const startDrag=event=>{
-    if(event.pointerType==='mouse'||!spiderRef.current)return;
+    if(!spiderRef.current)return;
     event.preventDefault();
     const rect=spiderRef.current.getBoundingClientRect();
-    dragRef.current={pointerId:event.pointerId,offset:event.clientY-rect.top};
+    manualRef.current=true;
+    dragRef.current={pointerId:event.pointerId,offsetX:event.clientX-rect.left,offsetY:event.clientY-rect.top};
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    spiderRef.current.classList.add('is-dragging');
+    spiderRef.current.style.setProperty('--pumpkin-spider-left',`${rect.left}px`);
+    spiderRef.current.style.setProperty('--pumpkin-spider-y',`${rect.top}px`);
+    spiderRef.current.classList.add('is-floating','is-dragging');
   };
   const moveDrag=event=>{
     if(!dragRef.current||dragRef.current.pointerId!==event.pointerId||!spiderRef.current)return;
-    const height=spiderRef.current.getBoundingClientRect().height;
-    const next=Math.min(Math.max(8,event.clientY-dragRef.current.offset),window.innerHeight-height-8);
-    spiderRef.current.style.setProperty('--pumpkin-spider-y',`${next}px`);
+    const {width,height}=spiderRef.current.getBoundingClientRect();
+    const left=Math.min(Math.max(8,event.clientX-dragRef.current.offsetX),window.innerWidth-width-8);
+    const top=Math.min(Math.max(8,event.clientY-dragRef.current.offsetY),window.innerHeight-height-8);
+    spiderRef.current.style.setProperty('--pumpkin-spider-left',`${left}px`);
+    spiderRef.current.style.setProperty('--pumpkin-spider-y',`${top}px`);
     spiderRef.current.style.setProperty('--pumpkin-spider-tilt','0deg');
   };
   const endDrag=event=>{
     if(!dragRef.current||dragRef.current.pointerId!==event.pointerId)return;
+    const spider=spiderRef.current;
+    if(spider){
+      const rect=spider.getBoundingClientRect();
+      const right=Math.max(8,window.innerWidth-rect.width-10);
+      spider.style.setProperty('--pumpkin-spider-left',`${right}px`);
+      spider.style.setProperty('--pumpkin-spider-y',`${Math.min(Math.max(8,rect.top),window.innerHeight-rect.height-8)}px`);
+      spider.releasePointerCapture?.(event.pointerId);
+    }
     dragRef.current=null;
     spiderRef.current?.classList.remove('is-dragging');
   };
 
   if(!enabled)return null;
-  return <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô lên hoặc xuống" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+  return <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
     <span className="pumpkin-spider-thread"></span>
     <span className="pumpkin-spider-web"></span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-a">✦</span>
