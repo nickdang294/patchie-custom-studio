@@ -1,4 +1,5 @@
 import { serviceDb } from '@/lib/supabase';
+import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
 
 const normalizeAutoplayInterval=(value,fallback=2000)=>{
   const raw=Number(value);
@@ -38,9 +39,9 @@ export async function GET(){
     if(sErr)throw sErr;
     const config=Object.fromEntries((settings||[]).map(row=>[row.key,row.value]));
     const savedGallery=config.gallery||{};
-    return Response.json({brand:config.brand||{},gallery:{...DEFAULT_GALLERY,...savedGallery,autoplayIntervalMs:normalizeAutoplayInterval(savedGallery.autoplayIntervalMs,DEFAULT_GALLERY.autoplayIntervalMs)},halloweenThemeEnabled:config.halloweenThemeEnabled!==false},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return Response.json({brand:config.brand||{},gallery:{...DEFAULT_GALLERY,...savedGallery,autoplayIntervalMs:normalizeAutoplayInterval(savedGallery.autoplayIntervalMs,DEFAULT_GALLERY.autoplayIntervalMs)},halloweenThemeEnabled:config.halloweenThemeEnabled!==false,halloweenFeatures:normalizeHalloweenFeatures(config.halloweenFeatures)},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }catch(error){
-    return Response.json({brand:{},gallery:DEFAULT_GALLERY,halloweenThemeEnabled:true},{headers:{'Cache-Control':'no-store, max-age=0'}});
+    return Response.json({brand:{},gallery:DEFAULT_GALLERY,halloweenThemeEnabled:true,halloweenFeatures:DEFAULT_HALLOWEEN_FEATURES},{headers:{'Cache-Control':'no-store, max-age=0'}});
   }
 }
 

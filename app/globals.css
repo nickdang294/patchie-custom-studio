@@ -411,6 +411,10 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .theme-toggle{display:flex!important;align-items:center;gap:9px;flex-wrap:wrap}
 .theme-toggle input{width:17px!important;height:17px;accent-color:var(--coral)}
 .theme-toggle .admin-help{flex-basis:100%;margin-left:26px}
+.halloween-feature-toggles{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;padding:12px 14px;border:1px solid #eadff4;border-radius:14px;background:#fbf8ff}
+.halloween-feature-toggles>b{flex-basis:100%;font-size:11px;color:#66527e}
+.halloween-feature-toggles label{display:inline-flex!important;align-items:center;gap:5px!important;width:auto!important;margin:0!important;padding:7px 9px;border:1px solid #eadff4;border-radius:999px;background:#fffefa;font-size:10px!important}
+.halloween-feature-toggles input{width:15px!important;height:15px;accent-color:var(--coral)}
 @media(max-width:800px){.shell.theme-halloween .topbar:after,.market-shell.theme-halloween .market-topbar:after,.gallery-shell.theme-halloween .gallery-topbar:after{right:10px;font-size:11px;letter-spacing:2px}.shell.theme-halloween .hero:after{right:9%;top:11%;font-size:36px}.market-shell.theme-halloween .market-hero:after{right:9%;bottom:10%;font-size:14px}.gallery-shell.theme-halloween .gallery-hero:after{right:12%;top:7%;font-size:14px}.gallery-shell.theme-halloween .gallery-hero-frame:before{left:12px;top:12px;font-size:18px}}
 
 
@@ -495,3 +499,34 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @keyframes pumpkin-spider-sparkle{0%,100%{opacity:.3;transform:scale(.75) rotate(0)}50%{opacity:1;transform:scale(1.2) rotate(16deg)}}
 @keyframes pumpkin-spider-note{0%,74%,100%{opacity:0;transform:translateY(5px) rotate(-5deg)}78%,91%{opacity:1;transform:translateY(0) rotate(-5deg)}}
 @media(max-width:800px){.pumpkin-spider{right:7px;width:67px;height:84px;filter:drop-shadow(0 5px 6px #6f5a8720)}.pumpkin-spider-market,.pumpkin-spider-lookbook{right:7px}.pumpkin-spider-note{display:none}.pumpkin-spider-spark-a{left:-4px;top:17px;font-size:11px}.pumpkin-spider-spark-b{right:-6px;bottom:18px;font-size:9px}.pumpkin-spider-web{right:-16px;top:-17px;width:33px;height:33px}.pumpkin-spider-web:before{inset:6px}.pumpkin-spider-web:after{inset:12px}}
+
+
+/* Halloween interaction polish */
+.theme-halloween:not(.theme-cobwebs):before{display:none}
+.pumpkin-spider{pointer-events:none}
+.pumpkin-spider-thread{position:absolute;z-index:-1;left:48%;bottom:100%;width:1px;height:var(--pumpkin-spider-y,19vh);border-left:2px dotted #b39bca;opacity:.58;transform-origin:bottom;animation:pumpkin-spider-thread-sway 3.2s ease-in-out infinite}
+.pumpkin-spider-thread:after{content:'';position:absolute;left:-4px;bottom:-2px;width:8px;height:8px;border:2px solid #b39bca;border-radius:50%;background:#fff2e9}
+.pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
+.pumpkin-spider-cheek{fill:#fa8e7e;opacity:.58}
+.pumpkin-spider-face{fill:#fffaf2}
+.pumpkin-spider-smile{stroke-width:2.8}
+.pumpkin-spider-art{animation:pumpkin-spider-crawl 3.7s ease-in-out infinite}
+.finish-halloween{background:#f29a72!important;border-color:#e0786b!important;color:#422b2a!important;box-shadow:4px 4px 0 #d97967!important}
+.finish-halloween:before{content:'🎃';display:inline-block;margin-right:7px;font-size:16px;vertical-align:-1px;filter:saturate(.88)}
+.finish-halloween:hover{background:#ffad86!important;transform:translateY(-2px) rotate(-1deg)}
+.bats-burst{position:fixed;z-index:45;inset:0;overflow:hidden;pointer-events:none}
+.bat{position:absolute;left:-12vw;top:var(--bat-top);color:#66527e;font:800 19px/1 'Arial Rounded MT Bold','Trebuchet MS',sans-serif;letter-spacing:-5px;opacity:0;filter:drop-shadow(2px 3px 0 #d6c9f6);animation:bat-flight 1.7s cubic-bezier(.2,.65,.25,1) forwards}
+.bat-1{--bat-top:18%;--bat-delay:0ms;--bat-scale:.85}.bat-2{--bat-top:28%;--bat-delay:90ms;--bat-scale:1.1}.bat-3{--bat-top:38%;--bat-delay:170ms;--bat-scale:.7}.bat-4{--bat-top:52%;--bat-delay:40ms;--bat-scale:1.3}.bat-5{--bat-top:61%;--bat-delay:230ms;--bat-scale:.9}.bat-6{--bat-top:72%;--bat-delay:130ms;--bat-scale:.72}.bat-7{--bat-top:82%;--bat-delay:290ms;--bat-scale:1}
+@keyframes bat-flight{0%{left:-12vw;opacity:0;transform:scale(var(--bat-scale)) rotate(-8deg)}12%{opacity:.95}55%{opacity:.9;transform:scale(var(--bat-scale)) rotate(8deg) translateY(-20px)}100%{left:112vw;opacity:0;transform:scale(var(--bat-scale)) rotate(-5deg) translateY(10px)}}
+.pumpkin-fireworks{position:fixed;z-index:46;left:50%;top:47%;width:1px;height:1px;pointer-events:none;animation:pumpkin-fireworks-fade 1.25s ease-out forwards}
+.pumpkin-fireworks-face{position:absolute;left:-25px;top:-25px;font-size:48px;line-height:1;animation:pumpkin-break .72s cubic-bezier(.16,.8,.35,1) forwards;filter:drop-shadow(0 5px 0 #d97967)}
+.pumpkin-fireworks-ray{position:absolute;left:-7px;top:-7px;color:#f29a72;font-size:17px;font-style:normal;animation:firework-ray 1s cubic-bezier(.16,.8,.35,1) forwards;transform:rotate(var(--ray-angle)) translateY(0) scale(.4);opacity:0}
+.ray-1{--ray-angle:0deg}.ray-2{--ray-angle:30deg}.ray-3{--ray-angle:60deg}.ray-4{--ray-angle:90deg}.ray-5{--ray-angle:120deg}.ray-6{--ray-angle:150deg}.ray-7{--ray-angle:180deg}.ray-8{--ray-angle:210deg}.ray-9{--ray-angle:240deg}.ray-10{--ray-angle:270deg}.ray-11{--ray-angle:300deg}.ray-12{--ray-angle:330deg}
+.pumpkin-fireworks-pop{position:absolute;left:20px;top:-70px;color:#735982;font:900 12px/1 'DM Sans',sans-serif;letter-spacing:.12em;animation:firework-pop 1s ease-out forwards}
+@keyframes pumpkin-break{0%{transform:scale(1) rotate(0)}42%{transform:scale(1.25) rotate(-8deg)}100%{transform:scale(.1) rotate(25deg);opacity:0}}
+@keyframes firework-ray{0%{opacity:0;transform:rotate(var(--ray-angle)) translateY(0) scale(.3)}18%{opacity:1}100%{opacity:0;transform:rotate(var(--ray-angle)) translateY(-54px) scale(1)}}
+@keyframes firework-pop{0%{opacity:0;transform:translateY(9px) scale(.6)}28%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-25px) scale(.9)}}
+@keyframes pumpkin-fireworks-fade{0%,78%{opacity:1}100%{opacity:0}}
+@keyframes pumpkin-spider-thread-sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+@media(max-width:800px){.pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab}.pumpkin-spider-thread{border-left-width:1px}.bat{font-size:15px}.pumpkin-fireworks-face{font-size:40px}.finish-halloween:before{font-size:14px;margin-right:5px}}
+@media(prefers-reduced-motion:reduce){.bats-burst,.pumpkin-fireworks{display:none}.finish-halloween:before{content:'🎃'}}
