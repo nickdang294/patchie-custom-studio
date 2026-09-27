@@ -546,8 +546,8 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .pumpkin-spider.is-floating{left:var(--pumpkin-spider-left);right:auto}
 .pumpkin-spider.is-dragging{transition:none;cursor:grabbing}
 .pumpkin-spider.is-returning{transition:left .72s cubic-bezier(.16,.87,.28,1.18),top .72s cubic-bezier(.16,.87,.28,1.18),transform .72s ease}
-.pumpkin-spider-thread{position:fixed;z-index:29;top:0;left:var(--pumpkin-spider-thread-x,calc(100vw - 48px));width:1px;height:var(--pumpkin-spider-thread-length,19vh);border-left:2px dotted #b39bca;transform-origin:top center;transform:rotate(var(--pumpkin-spider-thread-angle,0deg));transition:left .72s cubic-bezier(.16,.87,.28,1.18),height .72s cubic-bezier(.16,.87,.28,1.18),transform .72s cubic-bezier(.16,.87,.28,1.18);bottom:auto;opacity:.58;pointer-events:none}
-.pumpkin-spider-thread.is-dragging{transition:none}
+.pumpkin-spider-thread{position:fixed;z-index:29;inset:0;width:100vw;height:100vh;display:block;overflow:visible;opacity:.58;pointer-events:none}
+.pumpkin-spider-thread-line{fill:none;stroke:#b39bca;stroke-width:1.5;stroke-dasharray:1 5;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 0 #fff2e9)}
 
 /* A denser, faster burst that expands from the patch-selection button toward the viewer. */
 .bat{animation-duration:1.05s!important}

@@ -3,20 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function PumpkinSpider({ enabled=true, page='studio', reactionKey='' }) {
-  const spiderRef=useRef(null),threadRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false),threadAnchorRef=useRef(null),homeRef=useRef(null);
+  const spiderRef=useRef(null),threadRef=useRef(null),threadLineRef=useRef(null),dragRef=useRef(null),manualRef=useRef(false),threadAnchorRef=useRef(null),homeRef=useRef(null);
   const [reducedMotion,setReducedMotion]=useState(false),[reacting,setReacting]=useState(false);
 
   const updateThread=()=>{
-    const spider=spiderRef.current,thread=threadRef.current;
-    if(!spider||!thread)return;
+    const spider=spiderRef.current,thread=threadRef.current,line=threadLineRef.current;
+    if(!spider||!thread||!line)return;
     const rect=spider.getBoundingClientRect();
     const anchorX=threadAnchorRef.current??(threadAnchorRef.current=rect.left+rect.width*.48);
     const targetX=rect.left+rect.width*.48;
     const targetY=Math.max(8,rect.top+8);
-    const dx=targetX-anchorX;
-    thread.style.setProperty('--pumpkin-spider-thread-x',`${anchorX}px`);
-    thread.style.setProperty('--pumpkin-spider-thread-length',`${Math.max(12,Math.hypot(dx,targetY))}px`);
-    thread.style.setProperty('--pumpkin-spider-thread-angle',`${Math.atan2(dx,targetY)*180/Math.PI}deg`);
+    const width=Math.max(1,window.innerWidth),height=Math.max(1,window.innerHeight);
+    thread.setAttribute('viewBox',`0 0 ${width} ${height}`);
+    line.setAttribute('x1',`${anchorX}`);
+    line.setAttribute('y1','0');
+    line.setAttribute('x2',`${targetX}`);
+    line.setAttribute('y2',`${targetY}`);
   };
 
   useEffect(()=>{
@@ -100,7 +102,9 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
 
   if(!enabled)return null;
   return <>
-    <span ref={threadRef} className="pumpkin-spider-thread" aria-hidden="true"></span>
+    <svg ref={threadRef} className="pumpkin-spider-thread" aria-hidden="true" focusable="false">
+      <line ref={threadLineRef} className="pumpkin-spider-thread-line" />
+    </svg>
     <div ref={spiderRef} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
     <span className="pumpkin-spider-web"></span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-a">✦</span>
