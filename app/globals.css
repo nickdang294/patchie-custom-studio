@@ -443,3 +443,35 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .gallery-shell.theme-halloween .gallery-cta{position:relative;overflow:hidden}
 .gallery-shell.theme-halloween .gallery-cta:after{content:'☾  ✦';position:absolute;right:25px;bottom:17px;color:#ffd4bd;font-size:20px;letter-spacing:7px;opacity:.6;pointer-events:none;transform:rotate(-9deg)}
 @media(max-width:800px){.theme-halloween:before{width:105px;height:105px;opacity:.34}.theme-halloween:after{right:13px;bottom:20px;font-size:27px}.shell.theme-halloween .topbar:before,.market-shell.theme-halloween .market-topbar:before,.gallery-shell.theme-halloween .gallery-topbar:before{left:4%;font-size:8px;letter-spacing:2px}.shell.theme-halloween .hero:before{right:13%;top:8%;font-size:12px;letter-spacing:4px}.shell.theme-halloween .workspace:after{right:6%;font-size:15px;letter-spacing:4px}.market-shell.theme-halloween .market-hero:before{right:10%;top:10%;width:29px;height:29px;font-size:17px;line-height:24px}.market-shell.theme-halloween .market-content:before{right:5%;top:22px;font-size:12px;letter-spacing:4px}.gallery-shell.theme-halloween .gallery-hero:before{left:6%;top:7%;font-size:12px;letter-spacing:4px}.gallery-shell.theme-halloween .gallery-intro:before{right:5%;top:-21px}.gallery-shell.theme-halloween .gallery-looks:after{right:5%;font-size:12px;letter-spacing:4px}}
+
+
+/* Boo, the Patchie ghost cat: a tiny scroll companion that stays out of the way. */
+.ghost-cat{position:fixed;z-index:30;top:var(--ghost-cat-y,18vh);right:clamp(14px,2.4vw,34px);width:82px;height:106px;pointer-events:none;transform:rotate(var(--ghost-cat-tilt,0deg));transition:top .85s cubic-bezier(.22,.75,.25,1),transform .85s ease;filter:drop-shadow(0 8px 9px #6f5a8724)}
+.ghost-cat-market{right:clamp(15px,3vw,46px);left:auto}
+.ghost-cat-lookbook{right:clamp(15px,4vw,62px)}
+.ghost-cat-art{display:block;width:100%;height:100%;overflow:visible;animation:ghost-cat-float 3.8s ease-in-out infinite}
+.ghost-cat-body{fill:#fffaf2;stroke:#78619e;stroke-width:2.5;stroke-linejoin:round}
+.ghost-cat-ear{fill:#d6c9f6;stroke:#78619e;stroke-width:2.5;stroke-linejoin:round}
+.ghost-cat-tail,.ghost-cat-mouth,.ghost-cat-whisker{fill:none;stroke:#78619e;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.ghost-cat-tail{stroke:#fa8e7e;stroke-width:4}
+.ghost-cat-eye{fill:#fa8e7e;stroke:#51427b;stroke-width:1.5;animation:ghost-cat-blink 4.8s ease-in-out infinite}
+.ghost-cat-patch{fill:#d7f45b;stroke:#51427b;stroke-width:1.7;stroke-linejoin:round}
+.ghost-cat-patch-stitch{fill:none;stroke:#51427b;stroke-width:1.2;stroke-linecap:round}
+.ghost-cat-spark{position:absolute;color:#fa8e7e;font-size:14px;animation:ghost-cat-sparkle 2.5s ease-in-out infinite}
+.ghost-cat-spark-a{left:-2px;top:21px}.ghost-cat-spark-b{right:-4px;bottom:26px;color:#8d77c8;font-size:12px;animation-delay:1.1s}
+.ghost-cat-note{position:absolute;right:2px;top:-14px;padding:4px 7px;border:1px solid #e6b9ae;border-radius:999px;background:#fff2e9;color:#695475;font:800 8px/1 'DM Sans',sans-serif;letter-spacing:.03em;opacity:0;transform:translateY(5px) rotate(-5deg);animation:ghost-cat-note 8s ease-in-out infinite}
+.ghost-cat-web{position:absolute;right:-20px;top:-19px;width:42px;height:42px;border-top:1px solid #b39bca;border-right:1px solid #b39bca;border-radius:0 100% 0 0;opacity:.45;transform:rotate(12deg)}
+.ghost-cat-web:after{content:'';position:absolute;inset:8px;border-top:1px solid #b39bca;border-right:1px solid #b39bca;border-radius:0 100% 0 0}
+.ghost-cat-reduced{transition:none}
+.ghost-cat-reduced .ghost-cat-art,.ghost-cat-reduced .ghost-cat-eye,.ghost-cat-reduced .ghost-cat-spark,.ghost-cat-reduced .ghost-cat-note{animation:none}
+@keyframes ghost-cat-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes ghost-cat-blink{0%,42%,46%,100%{transform:scaleY(1);transform-origin:center}44%{transform:scaleY(.18);transform-origin:center}}
+@keyframes ghost-cat-sparkle{0%,100%{opacity:.3;transform:scale(.75) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(15deg)}}
+@keyframes ghost-cat-note{0%,74%,100%{opacity:0;transform:translateY(5px) rotate(-5deg)}78%,91%{opacity:1;transform:translateY(0) rotate(-5deg)}}
+@media(max-width:800px){.ghost-cat{right:8px;width:58px;height:76px;filter:drop-shadow(0 5px 6px #6f5a8720)}.ghost-cat-market{right:8px}.ghost-cat-lookbook{right:8px}.ghost-cat-note{display:none}.ghost-cat-spark-a{left:-4px;top:17px;font-size:11px}.ghost-cat-spark-b{right:-6px;bottom:18px;font-size:9px}.ghost-cat-web{right:-13px;top:-13px;width:28px;height:28px}.ghost-cat-web:after{inset:5px}}
+
+.ghost-cat-reacting{animation:ghost-cat-hop .9s cubic-bezier(.22,.75,.25,1)}
+.ghost-cat-reacting .ghost-cat-art{animation:ghost-cat-wave .9s ease-in-out}
+.ghost-cat-reacting .ghost-cat-note{opacity:1;animation:none;transform:translateY(0) rotate(-5deg)}
+@keyframes ghost-cat-hop{0%,100%{margin-top:0}38%{margin-top:-13px}68%{margin-top:2px}}
+@keyframes ghost-cat-wave{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-7px) rotate(-5deg)}70%{transform:translateY(0) rotate(4deg)}}
