@@ -530,3 +530,13 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @keyframes pumpkin-spider-thread-sway{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
 @media(max-width:800px){.pumpkin-spider{pointer-events:auto;touch-action:none;cursor:grab}.pumpkin-spider-thread{border-left-width:1px}.bat{font-size:15px}.pumpkin-fireworks-face{font-size:40px}.finish-halloween:before{font-size:14px;margin-right:5px}}
 @media(prefers-reduced-motion:reduce){.bats-burst,.pumpkin-fireworks{display:none}.finish-halloween:before{content:'🎃'}}
+
+
+/* Final Pumpkin Spider and bat-flight tuning from the reference direction. */
+.pumpkin-spider{width:68px;height:84px;filter:drop-shadow(0 6px 7px #6f5a8728)}
+.pumpkin-spider-abdomen{fill:#735982;stroke:#51427b;stroke-width:2.6}.pumpkin-spider-body{fill:#8d77c8;stroke:#51427b}.pumpkin-spider-face{fill:#fffaf2;stroke:#51427b}.pumpkin-spider-eye{fill:#51427b}.pumpkin-spider-smile{stroke:#fa8e7e;stroke-width:2.8}.pumpkin-spider-cheek{fill:#fa8e7e;opacity:.58}
+.pumpkin-spider-thread{top:-27px;bottom:auto;height:27px}
+.bat{left:50%;top:50%;font:inherit;font-size:23px;letter-spacing:0;line-height:1;animation:bat-flight 1.55s cubic-bezier(.16,.72,.24,1) var(--bat-delay) forwards}
+.bat-1{--bat-x:-43vw;--bat-y:-34vh;--bat-delay:0ms;--bat-scale:1.2}.bat-2{--bat-x:-25vw;--bat-y:-12vh;--bat-delay:70ms;--bat-scale:1.5}.bat-3{--bat-x:-10vw;--bat-y:31vh;--bat-delay:140ms;--bat-scale:1.1}.bat-4{--bat-x:8vw;--bat-y:-39vh;--bat-delay:40ms;--bat-scale:1.6}.bat-5{--bat-x:27vw;--bat-y:-15vh;--bat-delay:210ms;--bat-scale:1.25}.bat-6{--bat-x:43vw;--bat-y:26vh;--bat-delay:110ms;--bat-scale:1.4}.bat-7{--bat-x:30vw;--bat-y:39vh;--bat-delay:260ms;--bat-scale:1}
+@keyframes bat-flight{0%{opacity:0;transform:translate(-50%,-50%) scale(.08) rotate(-8deg)}15%{opacity:1}62%{opacity:.95;transform:translate(calc(-50% + var(--bat-x)*.72),calc(-50% + var(--bat-y)*.72)) scale(calc(var(--bat-scale)*1.25)) rotate(8deg)}100%{opacity:0;transform:translate(calc(-50% + var(--bat-x)),calc(-50% + var(--bat-y))) scale(calc(var(--bat-scale)*2.1)) rotate(-5deg)}}
+@media(max-width:800px){.pumpkin-spider{width:53px;height:66px}.pumpkin-spider-thread{top:-20px;height:20px}.bat{font-size:16px}}
