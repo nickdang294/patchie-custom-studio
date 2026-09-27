@@ -70,7 +70,7 @@ export default function PumpkinSpider({ enabled=true, page='studio', reactionKey
   if(!enabled)return null;
   const growth=Math.min(4,Math.max(0,Number(patchCount)||0));
   const notes=['Chọn thêm patch để tui lớn lên','tui lớn lên xíu rùi nè, thêm nữa i','tui thành thanh niên ùi, sắp trưởng thành ùi','còn 1 patch nữa là tui max level rùi đó','TUI MAX LEVEL RÙIIII'];
-  return <div ref={spiderRef} style={{'--spider-growth-width':`${growth*3}px`,'--spider-growth-height':`${growth*4}px`}} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+  return <div ref={spiderRef} style={{'--spider-growth-width':`${growth*7}px`,'--spider-growth-height':`${growth*9}px`}} className={`pumpkin-spider pumpkin-spider-${page}${reducedMotion?' pumpkin-spider-reduced':''}${reacting?' pumpkin-spider-reacting':''}`} role="button" tabIndex={0} aria-label="Kéo nhện bí ngô tự do trong màn hình" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
     <span className="pumpkin-spider-web"></span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-a">✦</span>
     <span className="pumpkin-spider-spark pumpkin-spider-spark-b">✧</span>
