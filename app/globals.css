@@ -581,3 +581,12 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .patch-release-field select{width:100%;border:1px solid var(--line);background:#fffefa;border-radius:9px;padding:10px 11px;font-size:12px;outline-color:#b8a5e6}
 .patch-release-field .admin-help{margin:0}
 @media(max-width:700px){.patch-release-field{grid-column:auto}.coming-soon-tag{font-size:6px;padding:3px 2px}.admin-patch .release-tag{font-size:7px}}
+
+/* Optional spotlight for the first three patch groups. Each rank has a different, restrained accent. */
+.select-options button.group-featured-1{background:linear-gradient(135deg,#fff8df,#fffefa 72%);border-color:#ead78f;box-shadow:0 7px 16px #d9b85a1c}
+.select-options button.group-featured-2{background:linear-gradient(135deg,#f6f0ff,#fffefa 72%);border-color:#d9c8f3;box-shadow:0 6px 14px #9d7dd51a}
+.select-options button.group-featured-3{background:linear-gradient(135deg,#eef9f2,#fffefa 72%);border-color:#c6e2cc;box-shadow:0 5px 12px #78ad8617}
+.group-featured-mark{display:inline-flex!important;width:max-content;margin-top:3px;padding:2px 6px;border-radius:999px;font-size:8px!important;font-style:normal;font-weight:900;letter-spacing:.04em}
+.group-featured-1 .group-featured-mark{background:#fff0b8;color:#80661b}
+.group-featured-2 .group-featured-mark{background:#ece1ff;color:#72539a}
+.group-featured-3 .group-featured-mark{background:#ddf1e2;color:#4f805d}
