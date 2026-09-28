@@ -134,6 +134,8 @@ export default function Home(){
   const sizeGuide=String(product?.size_guide||colorVariants.map(p=>p?.size_guide).find(value=>String(value||'').trim())||'').trim();
   const activeViews=viewsForProduct(product,brand.productGroups);
   const sizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];
+  const isFreeSize=sizes.length===1&&/free\s*size|one\s*size/i.test(String(sizes[0]||''));
+  const sizeRequired=!isFreeSize;
   const chosenPatch=catalog.patches.find(x=>x.id===chosen);
   const popupCampaigns=normalizePopupCampaigns(catalog.settings.popupCampaigns,catalog.settings.giftOffer||GIFT_DEFAULTS);
   const activeCampaign=getActivePopupCampaign(popupCampaigns,catalog.settings.activePopupCampaign);
@@ -203,7 +205,7 @@ export default function Home(){
   useEffect(()=>{if(!baseCollapsed||!window.matchMedia('(max-width: 700px)').matches)return;requestAnimationFrame(()=>document.querySelector('.mobile-patch-dock')?.scrollIntoView({behavior:'smooth',block:'start'}));},[baseCollapsed]);
   useEffect(()=>{if(colorVariants.length===1&&colorVariants[0].id!==productId)setProductId(colorVariants[0].id);const availableSizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];if(availableSizes.length===1&&size!==availableSizes[0])setSize(availableSizes[0]);},[productId,selectedBaseKey,catalog.products,product?.sizes,catalog.settings.sizes,size]);
   useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
-  useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift),ready=placed.length>0&&(!hasGift||hasPaidPatch);button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':hasGift?'Thêm ít nhất 1 patch mua':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed,catalogReady]);
+  useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift),hasRequiredSize=!sizeRequired||Boolean(size),ready=placed.length>0&&(!hasGift||hasPaidPatch)&&hasRequiredSize;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':!hasRequiredSize?'Hãy chọn size':hasGift?'Thêm ít nhất 1 patch mua':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed,size,sizeRequired,catalogReady]);
   useEffect(()=>{preloadImageSources([...activeViews.map(v=>imageForView(v.id)),...catalog.products.map(p=>previewImageUrl((p.view_images||{}).front||p.image_url,420)),...catalog.patches.map(p=>p.image_url)]);},[productId,catalog.products,catalog.patches]);
   useEffect(()=>{setStageZoom({scale:1,x:0,y:0});setTrashActive(false);setTrashHot(false);pinch.current=null;drag.current=null;pan.current=null;},[activeView,productId]);
 
@@ -281,7 +283,7 @@ export default function Home(){
     show('Xong các vị trí. Nhập thông tin để đặt đơn nhé.');
     setTimeout(()=>document.querySelector('.request')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
   }
-  function finishCustom(){const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift);if(!placed.length)return show('Bạn hãy chọn ít nhất 1 patch trước nhé.');if(hasGift&&!hasPaidPatch)return show('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');setFlowDone(true);setSelectedUid('');setCelebrate(true);show('Xong mockup. Nhập thông tin để đặt đơn nhé.');setTimeout(()=>setCelebrate(false),1100);setTimeout(()=>document.querySelector('.request')?.scrollIntoView({behavior:'smooth',block:'start'}),900);}
+  function finishCustom(){const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift);if(sizeRequired&&!size)return show('Hãy chọn size trước khi hoàn tất custom nhé.');if(!placed.length)return show('Bạn hãy chọn ít nhất 1 patch trước nhé.');if(hasGift&&!hasPaidPatch)return show('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');setFlowDone(true);setSelectedUid('');setCelebrate(true);show('Xong mockup. Nhập thông tin để đặt đơn nhé.');setTimeout(()=>setCelebrate(false),1100);setTimeout(()=>document.querySelector('.request')?.scrollIntoView({behavior:'smooth',block:'start'}),900);}
   function jumpView(id){setActiveView(id);setSelectedUid('');}
   function tapView(e,id){e.preventDefault();e.stopPropagation();jumpView(id);}
 
