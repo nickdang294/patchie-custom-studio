@@ -24,6 +24,7 @@ export async function POST(request){
     const giftOffer=giftSetting?.value||{},giftEnabled=giftOffer.enabled!==false,giftIds=Array.isArray(giftOffer.patchIds)?giftOffer.patchIds.filter(Boolean):[];
     let giftUsed=false;
     const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360,isGift=Boolean(x.gift===true&&giftEnabled&&giftIds.includes(p.id)&&!giftUsed);if(isGift)giftUsed=true;return {id:p.id,name:p.name,price:isGift?0:Number(p.price)||0,gift:isGift,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
+    if(mapped.some(item=>item.gift)&&!mapped.some(item=>!item.gift))return jsonError('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0),expires=new Date(Date.now()+Number(retention?.value||30)*86400000).toISOString();
     const preferred=/^PCH-[0-9A-F]{12}$/.test(requestedId)?requestedId:'';
     if(preferred){

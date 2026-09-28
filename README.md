@@ -11,6 +11,7 @@ Website độc lập để khách tự phối patch ủi lên áo base, tải mo
 - Dashboard quản trị có campaign popup tặng patch: bật/tắt popup truyền thống hoặc Halloween Tarot, chọn campaign đang chạy, chỉnh nội dung và gán patch quà cho từng event/lá bài. Admin cũng có thể bật/tắt lớp theme Halloween cho toàn bộ Studio, Patch Market và Lookbook, rồi toggle riêng Pumpkin Spider, mạng nhện, đàn dơi và pháo hoa bí ngô.
 - Khi thêm hoặc sửa patch, admin chọn trạng thái `Đã release` hoặc `Coming soon`. Patch Coming soon vẫn xuất hiện trong Studio và collection nhưng được làm mờ, hiện nhãn thay giá và không thể thêm vào mockup.
 - Admin có thể chỉnh thứ tự các nhóm patch và bật/tắt spotlight nhẹ cho 3 nhóm đầu; mỗi nhóm đầu dùng một accent Patchie khác nhau.
+- Chạm/click vào patch sẽ thêm ngay vào mockup ở cả desktop và mobile; không còn nút thêm patch riêng.
 - Đăng nhập admin bằng magic link Supabase Auth và danh sách email được cho phép.
 - Supabase Storage lưu mockup riêng tư và ảnh patch; cron hằng ngày xóa mockup quá hạn.
 - Thư viện ban đầu dùng patch tham khảo đang có trong project; kích thước patch được quản lý trong dashboard.
