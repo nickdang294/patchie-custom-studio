@@ -604,3 +604,16 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .patch-group-spotlight-on .select-options button:nth-child(2):after{content:'♡ NỔI BẬT';background:#cbb2f2;color:#503b78;box-shadow:0 3px 0 #ab8cd7}
 .patch-group-spotlight-on .select-options button:nth-child(3):after{content:'✿ GỢI Ý';background:#a9dfb4;color:#356344;box-shadow:0 3px 0 #80bf8c}
 @media(max-width:700px){.patch-group-spotlight-on .select-options button:nth-child(1){transform:scale(1.02)}.patch-group-spotlight-on .select-options button:nth-child(2){transform:scale(1.015)}.patch-group-spotlight-on .select-options button:nth-child(3){transform:scale(1.01)}.patch-group-spotlight-on .select-options button:nth-child(1):after,.patch-group-spotlight-on .select-options button:nth-child(2):after,.patch-group-spotlight-on .select-options button:nth-child(3):after{right:40px;top:7px;font-size:7px;padding:4px 6px}}
+
+/* Softer spotlight pass: stay inside the modal and keep the Patchie palette calm. */
+.patch-group-spotlight-on .select-options button:nth-child(1),.patch-group-spotlight-on .select-options button:nth-child(2),.patch-group-spotlight-on .select-options button:nth-child(3){transform:none;overflow:hidden}
+.patch-group-spotlight-on .select-options button:nth-child(1){border:1px solid #c9b8ed;background:linear-gradient(110deg,#f8f4ff,#fffefa 72%);box-shadow:0 5px 13px #8d77c826;animation:patch-group-top-breathe 1.8s ease-in-out infinite}
+.patch-group-spotlight-on .select-options button:nth-child(2){border:1px solid #e5c1ba;background:linear-gradient(110deg,#fff7f4,#fffefa 72%);box-shadow:0 4px 11px #d9968d20}
+.patch-group-spotlight-on .select-options button:nth-child(3){border:1px solid #b8d9e9;background:linear-gradient(110deg,#f3faff,#fffefa 72%);box-shadow:0 4px 10px #78b6d31c}
+.patch-group-spotlight-on .select-options button:nth-child(1):after,.patch-group-spotlight-on .select-options button:nth-child(2):after,.patch-group-spotlight-on .select-options button:nth-child(3):after{top:9px;right:44px;padding:3px 7px;font-size:7px;box-shadow:none}
+.patch-group-spotlight-on .select-options button:nth-child(1):after{background:#eee7ff;color:#69558e}
+.patch-group-spotlight-on .select-options button:nth-child(2):after{background:#ffe9e4;color:#95635e}
+.patch-group-spotlight-on .select-options button:nth-child(3):after{background:#e4f4fb;color:#557f95}
+.group-featured-1 .group-featured-mark{background:#eee7ff;color:#69558e}.group-featured-2 .group-featured-mark{background:#ffe9e4;color:#95635e}.group-featured-3 .group-featured-mark{background:#e4f4fb;color:#557f95}
+@keyframes patch-group-top-breathe{0%,100%{transform:translateY(0);box-shadow:0 5px 13px #8d77c826}50%{transform:translateY(-2px);box-shadow:0 7px 17px #8d77c83d}}
+@media(max-width:700px){.patch-group-spotlight-on .select-options button:nth-child(1),.patch-group-spotlight-on .select-options button:nth-child(2),.patch-group-spotlight-on .select-options button:nth-child(3){transform:none}.patch-group-spotlight-on .select-options button:nth-child(1):after,.patch-group-spotlight-on .select-options button:nth-child(2):after,.patch-group-spotlight-on .select-options button:nth-child(3):after{right:40px;top:8px}}
