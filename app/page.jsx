@@ -149,7 +149,7 @@ export default function Home(){
   const giftAvailable=p=>Boolean(giftPatchId&&p?.id===giftPatchId&&!giftPlacement);
   const existingPatchGroups=Array.from(new Set(catalog.patches.flatMap(patchGroupsOf)));
   const orderedPatchGroups=normalizePatchGroupOrder(catalog.settings.patchGroupOrder,existingPatchGroups);
-  const patchGroups=['all',...orderedPatchGroups];
+  const patchGroups=[...orderedPatchGroups,'all'];
   const highlightedPatchGroups=new Set(catalog.settings.patchGroupHighlightEnabled!==false?orderedPatchGroups.slice(0,3):[]);
   const patchGroupCount=g=>g==='all'?catalog.patches.length:catalog.patches.filter(p=>patchGroupsOf(p).includes(g)).length;
   const patchGroupHasComingSoon=g=>{if(g==='all')return false;const groupPatches=catalog.patches.filter(p=>patchGroupsOf(p).includes(g));return groupPatches.length>0&&groupPatches.every(p=>patchIsComingSoon(p));};

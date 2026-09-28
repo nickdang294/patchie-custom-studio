@@ -590,3 +590,8 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .group-featured-1 .group-featured-mark{background:#fff0b8;color:#80661b}
 .group-featured-2 .group-featured-mark{background:#ece1ff;color:#72539a}
 .group-featured-3 .group-featured-mark{background:#ddf1e2;color:#4f805d}
+.select-options button.group-featured-1{border:2px solid #e4bf43;box-shadow:0 0 0 3px #fff3bd,0 10px 24px #d5aa3d38;transform:scale(1.025)}
+.select-options button.group-featured-2{border:2px solid #ae8add;box-shadow:0 0 0 2px #eee2ff,0 9px 20px #9874c52e}
+.select-options button.group-featured-3{border:2px solid #8bc39a;box-shadow:0 0 0 2px #e3f3e6,0 8px 18px #70aa7d28}
+.group-featured-mark{font-size:9px!important;padding:4px 8px;letter-spacing:.06em}
+.group-featured-1 .group-featured-mark:before{content:'✦ ';font-size:10px}.group-featured-2 .group-featured-mark:before{content:'♡ ';font-size:10px}.group-featured-3 .group-featured-mark:before{content:'✿ ';font-size:10px}
