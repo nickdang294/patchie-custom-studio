@@ -30,6 +30,7 @@ create table if not exists public.patches (
   patch_groups text[] not null default array['Best Seller'],
   quote text not null default '',
   price integer,
+  release_status text not null default 'released' check (release_status in ('released','coming_soon')),
   stock_quantity integer not null default 20,
   sold_count integer not null default 0,
   is_featured boolean not null default false,
@@ -73,12 +74,15 @@ alter table public.products add column if not exists view_images jsonb not null 
 alter table public.products add column if not exists size_guide text not null default '';
 alter table public.products drop constraint if exists products_product_type_check;
 alter table public.patches add column if not exists quote text not null default '';
+alter table public.patches add column if not exists release_status text not null default 'released';
 alter table public.patches add column if not exists patch_group text not null default 'Best Seller';
 alter table public.patches add column if not exists patch_groups text[] not null default array['Best Seller'];
 alter table public.patches add column if not exists stock_quantity integer not null default 20;
 alter table public.patches add column if not exists sold_count integer not null default 0;
 alter table public.patches add column if not exists is_featured boolean not null default false;
 alter table public.patches add column if not exists is_new boolean not null default false;
+alter table public.patches drop constraint if exists patches_release_status_check;
+alter table public.patches add constraint patches_release_status_check check (release_status in ('released','coming_soon'));
 alter table public.designs add column if not exists customer_phone text not null default '';
 alter table public.designs add column if not exists shipping_address text not null default '';
 alter table public.designs add column if not exists product_price integer not null default 0;
@@ -95,6 +99,9 @@ where base_key is null or base_key = '';
 update public.products
 set product_type = 'shirt'
 where product_type is null;
+update public.patches
+set release_status = 'released'
+where release_status is null or release_status not in ('released','coming_soon');
 
 alter table public.products enable row level security;
 alter table public.patches enable row level security;

@@ -567,3 +567,17 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .heart-13{--heart-x:-37vw;--heart-y:-29vh;--heart-delay:345ms;--heart-rotate:14deg}.heart-14{--heart-x:38vw;--heart-y:-35vh;--heart-delay:370ms;--heart-rotate:-9deg}.heart-15{--heart-x:-12vw;--heart-y:-50vh;--heart-delay:395ms;--heart-rotate:18deg}.heart-16{--heart-x:4vw;--heart-y:12vh;--heart-delay:420ms;--heart-rotate:-16deg}.heart-17{--heart-x:28vw;--heart-y:-47vh;--heart-delay:445ms;--heart-rotate:12deg}.heart-18{--heart-x:-30vw;--heart-y:-45vh;--heart-delay:470ms;--heart-rotate:-20deg}
 @keyframes heart-float{0%{opacity:0;transform:translate(-50%,-50%) scale(.35) rotate(0deg)}18%{opacity:var(--heart-opacity,.28)}100%{opacity:0;transform:translate(calc(-50% + var(--heart-x)),calc(-50% + var(--heart-y))) scale(var(--heart-scale,1)) rotate(var(--heart-rotate,0deg))}}
 @media(max-width:800px){.pumpkin-spider{width:calc(53px + var(--spider-growth-width,0px));height:calc(66px + var(--spider-growth-height,0px))}.pumpkin-spider-note{display:block;right:-4px;top:-23px;max-width:min(150px,45vw);padding:4px 6px;font-size:7px}.heart{left:50%;top:48%;font-size:var(--heart-size,13px)}}
+
+/* Patch release states: keep the artwork colourful, but make unreleased items clearly view-only. */
+.patch-card.is-coming-soon{opacity:.68;cursor:not-allowed;filter:none;transform:none!important}
+.patch-card.is-coming-soon .patch-img{opacity:.72}
+.patch-card.is-coming-soon .price-tag{background:#f0ecf1;color:#817987}
+.patch-card.is-coming-soon .patch-img{position:relative}
+.coming-soon-tag{position:absolute;left:5px;right:5px;bottom:5px;padding:4px 3px;border-radius:999px;background:#fffef0e8;color:#75627e;font-size:7px;font-style:normal;font-weight:900;letter-spacing:.08em;text-align:center;box-shadow:0 2px 7px #211d2614}
+.coming-soon-mini-tag{display:inline-flex!important;width:max-content;margin-top:3px;padding:3px 6px;border-radius:999px;background:#f2eafa;color:#78668d;font-size:8px!important;font-style:normal;font-weight:900;letter-spacing:.06em}
+.admin-patch .release-tag{display:inline-flex;align-self:flex-start;margin:7px 0 0;padding:4px 7px;border-radius:999px;background:#e9f5b8;color:#536126;font-size:8px;font-style:normal;font-weight:900;letter-spacing:.06em}
+.admin-patch .release-tag.is-coming-soon{background:#f0e7f8;color:#745689}
+.patch-release-field{display:grid;gap:6px;grid-column:span 2;font-size:11px;font-weight:800}
+.patch-release-field select{width:100%;border:1px solid var(--line);background:#fffefa;border-radius:9px;padding:10px 11px;font-size:12px;outline-color:#b8a5e6}
+.patch-release-field .admin-help{margin:0}
+@media(max-width:700px){.patch-release-field{grid-column:auto}.coming-soon-tag{font-size:6px;padding:3px 2px}.admin-patch .release-tag{font-size:7px}}
