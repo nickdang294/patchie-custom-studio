@@ -8,6 +8,7 @@ import PumpkinFireworks from './pumpkin-fireworks';
 import HeartsBurst from './hearts-burst';
 import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
 import { previewImageUrl } from '@/lib/image-utils';
+import { rankPatchRecommendations } from '@/lib/recommendation-rules';
 
 const STARTER=[
   {id:'patch-pink',name:'Mũ xanh lá',image_url:'/assets/patch-pink-cap.webp',width_cm:4,height_cm:4,quote:'nhỏ xíu mà có võ',patch_group:'Best Seller',patch_groups:['Best Seller']},
@@ -161,7 +162,8 @@ export default function Home(){
   });
   const lastPlacedPatch=placed.length?catalog.patches.find(p=>p.id===placed[placed.length-1].patchId):null;
   const placedPatchIds=new Set(placed.map(item=>item.patchId));
-  const recommendedPatches=lastPlacedPatch?catalog.patches.filter(p=>p.id!==lastPlacedPatch.id&&!placedPatchIds.has(p.id)&&!patchIsComingSoon(p)).map(p=>({patch:p,score:(lastPlacedPatch.recommended_patch_ids||[]).includes(p.id)?100:0+(p.tags||[]).filter(tag=>(lastPlacedPatch.tags||[]).includes(tag)).length})).filter(item=>item.score>0).sort((a,b)=>b.score-a.score).slice(0,4).map(item=>item.patch):[];
+  const recommendationRules=Array.isArray(catalog.settings.recommendationRules)?catalog.settings.recommendationRules:[];
+  const recommendedPatches=lastPlacedPatch?rankPatchRecommendations(lastPlacedPatch,catalog.patches.filter(p=>p.id!==lastPlacedPatch.id&&!placedPatchIds.has(p.id)&&!patchIsComingSoon(p)),recommendationRules,15):[];
   const viewImages=product?.view_images||{};
   const imageForView=id=>viewImages[id]||viewImages.front||product?.image_url||defaultProduct.image_url;
   const activeImage=imageForView(activeView);

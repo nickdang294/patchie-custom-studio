@@ -1,0 +1,3 @@
+rule_id,source_tags,target_tags,required_shared_prefix,score,active
+large-to-small,size_large,size_small,,5,false
+pet-same-color-flower,pet,flower,color_,8,false

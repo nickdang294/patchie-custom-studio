@@ -56,6 +56,7 @@ export async function GET() {
           patchGroupHighlightEnabled:config.patchGroupHighlightEnabled!==false,
           halloweenThemeEnabled:config.halloweenThemeEnabled!==false,
           halloweenFeatures:normalizeHalloweenFeatures(config.halloweenFeatures),
+          recommendationRules:Array.isArray(config.recommendationRules)?config.recommendationRules:[],
           // Brand & content is stored in the existing settings table as JSON.
           // It must be forwarded here or the storefront can only show defaults.
           brand:config.brand||{}

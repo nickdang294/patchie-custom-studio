@@ -45,7 +45,7 @@ export async function POST(request,{params}) {
         }
       }
     }
-    for(const [key,value] of Object.entries(b)){const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}
+    for(const [key,value] of Object.entries(b)){if(key==='recommendationRules')continue;const {error}=await db.from('settings').upsert({key,value},{onConflict:'key'});if(error)return jsonError(error.message,500);}
     return Response.json({ok:true});
   }
   if(section==='designs') {const {id,status}=b;if(!['processing','new','review','confirmed','completed','closed'].includes(status))return jsonError('Trạng thái không hợp lệ.');const {error}=await db.from('designs').update({status}).eq('id',id);if(error)return jsonError(error.message,500);return Response.json({ok:true});}
