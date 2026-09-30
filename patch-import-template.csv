@@ -1,0 +1,2 @@
+id,name,image_filename,width_cm,height_cm,price,quote,patch_groups,tags,recommended_patch_ids,release_status,active,sort_order
+sample-patch-id,Patch example,sample-patch.webp,6.5,4.2,45000,Your quote here,"Daily;Cute Animal","cute;playful;pastel",other-patch-id,released,true,100

@@ -93,3 +93,8 @@ Sao chép `.env.example` thành `.env.local` và điền cùng bộ Supabase key
 ```bash
 npm run build
 ```
+
+
+## Nhập nhiều patch
+
+Sau khi deploy code có route `/admin/import`, đăng nhập bằng tài khoản admin và mở trang này. Lưu Excel/Google Sheets thành CSV UTF-8 với header `id,name,image_filename,width_cm,height_cm,price,quote,patch_groups,tags,recommended_patch_ids,release_status,active,sort_order`. Danh sách nhiều group/tag/ID gợi ý cách nhau bằng dấu chấm phẩy. Chọn CSV và tất cả ảnh trong một lần; ảnh import được lưu trong bucket `patch-assets`, prefix `Patch Bulk Upload/`, tối đa 4 MB mỗi ảnh. Khi ID đã có trong database, import sẽ cập nhật record đó, vì vậy giữ ID ổn định và rà soát file trước khi chạy.
