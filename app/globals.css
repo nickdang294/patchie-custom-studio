@@ -682,4 +682,18 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .mobile-suggest-strip .price-tag{font-size:9px}
   .mobile-more-suggestions{display:block;width:100%;min-height:31px;padding:6px 10px;border:1px solid #e4dbf3;border-radius:10px;background:#fffefa;color:#625281;font-size:10px;font-weight:800}
   .mobile-suggestion-note{padding:7px 2px 3px;color:#8a8194;font-size:9px;line-height:1.35;text-align:center}
+  .mobile-suggestion-computing{min-height:85px;margin:2px 0 8px;padding:13px 14px;display:flex;align-items:center;justify-content:center;gap:11px;border:1px solid #e7def8;border-radius:13px;background:linear-gradient(110deg,#fffefa,#f3edff,#fbfff1,#fffefa);background-size:220% 100%;animation:patchieMixGlow .8s ease both;color:#51427b}
+  .mobile-suggestion-computing>div{width:130px;display:grid;gap:8px}
+  .mobile-suggestion-computing b{font-size:11px}
+  .mobile-suggestion-computing i{height:4px;overflow:hidden;border-radius:99px;background:#e7def4}
+  .mobile-suggestion-computing i em{display:block;width:35%;height:100%;border-radius:99px;background:linear-gradient(90deg,#d7f45b,#9e84dc);animation:patchieMixProgress .52s ease-in-out both}
+  .computing-spark{color:#927bd0;font-size:20px;animation:patchieMixSpark .62s ease-in-out infinite alternate}
+  .computing-dots{color:#9988bf;font-size:11px;letter-spacing:2px;animation:patchieMixDots .52s ease-in-out infinite alternate}
+  .mobile-suggest-strip.is-revealing{animation:patchieMixReveal .32s ease-out both}
 }
+@keyframes patchieMixGlow{0%{opacity:.5;background-position:100% 0;transform:translateY(3px)}100%{opacity:1;background-position:0 0;transform:translateY(0)}}
+@keyframes patchieMixProgress{0%{transform:translateX(-120%)}100%{transform:translateX(230%)}}
+@keyframes patchieMixSpark{from{transform:rotate(-18deg) scale(.9);opacity:.62}to{transform:rotate(18deg) scale(1.13);opacity:1}}
+@keyframes patchieMixDots{from{opacity:.35}to{opacity:1}}
+@keyframes patchieMixReveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.mobile-suggestion-computing,.mobile-suggestion-computing *,.mobile-suggest-strip.is-revealing{animation:none!important}}
