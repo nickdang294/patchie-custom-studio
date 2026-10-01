@@ -2,6 +2,19 @@
 
 Website độc lập để khách tự phối patch ủi lên áo base, tải mockup và gửi yêu cầu cho shop qua Messenger. Website không thu tiền. Mã nguồn không gọi OpenAI hoặc ChatGPT API.
 
+
+## Scale patch theo từng sản phẩm base
+
+Sản phẩm base mới cần có ba giá trị: `reference_width_cm`, `reference_height_cm` và `image_fit_percent`. Hai kích thước xác định vùng vật lý dùng làm hệ quy chiếu cho patch; `image_fit_percent` cho biết chiều rộng của ảnh sản phẩm chiếm bao nhiêu phần trăm khung vuông preview. Các trường này có thể sửa trong Admin → Sản phẩm base. Sản phẩm cũ để trống sẽ tiếp tục dùng hệ quy chiếu cũ (62.5 × 62.5 cm), không cần tải lại patch. Nếu sửa base cũ, có thể điền thông số để chuyển sang scale mới.
+
+Khi thêm cột vào database đang có, chạy file `supabase/scale-reference-migration.sql` (hoặc dán lệnh dưới) trong Supabase SQL Editor:
+
+```sql
+alter table public.products add column if not exists reference_width_cm numeric(7,2);
+alter table public.products add column if not exists reference_height_cm numeric(7,2);
+alter table public.products add column if not exists image_fit_percent numeric(5,2);
+```
+
 ## Có sẵn
 
 - Studio kéo thả patch, chọn mẫu áo và size, lưu mockup PNG/WebP, tải ảnh về máy.

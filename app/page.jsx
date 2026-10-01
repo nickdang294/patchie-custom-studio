@@ -75,7 +75,7 @@ const VIEW_REFERENCE_CM={
   left_sleeve:{width:62.5,height:62.5},
   right_sleeve:{width:62.5,height:62.5}
 };
-const clampPatchPercent=value=>Math.max(.8,Math.min(35,value));
+const clampPatchPercent=value=>Math.max(.1,Math.min(100,value));
 const clampZoom=value=>Math.max(1,Math.min(3.2,value));
 const makeDraftOrderCode=()=>`PCH-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase()}`;
 const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',product_type:'shirt',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],size_guide:'',price:null};
@@ -185,7 +185,13 @@ export default function Home(){
     }
     show(`${p.name} đã được thêm làm quà tặng ✦`);
   }
-  const patchSizePercent=(p,view=activeView)=>{const ref=VIEW_REFERENCE_CM[view]||VIEW_REFERENCE_CM.front;return {width:clampPatchPercent((Number(p?.width_cm||4)/ref.width)*100),height:clampPatchPercent((Number(p?.height_cm||4)/ref.height)*100)};};
+  const patchSizePercent=(p,view=activeView)=>{
+    const legacy=VIEW_REFERENCE_CM[view]||VIEW_REFERENCE_CM.front;
+    const refW=Number(product?.reference_width_cm)>0?Number(product.reference_width_cm):legacy.width;
+    const refH=Number(product?.reference_height_cm)>0?Number(product.reference_height_cm):legacy.height;
+    const fit=Number(product?.image_fit_percent)>0?Math.min(100,Number(product.image_fit_percent))/100:1;
+    return {width:clampPatchPercent((Number(p?.width_cm||4)/refW)*fit*100),height:clampPatchPercent((Number(p?.height_cm||4)/refH)*fit*100)};
+  };
   const patchPreviewStyle=p=>{const s=patchSizePercent(p);return {width:`${s.width}%`,height:`${s.height}%`,maxWidth:'none',maxHeight:'none'};};
   const patchLabel=p=>`${Number(p?.width_cm||4).toFixed(1).replace('.0','')} × ${Number(p?.height_cm||4).toFixed(1).replace('.0','')} cm`;
   const viewName=id=>VIEWS.find(v=>v.id===id)?.label||'Mặt trước';

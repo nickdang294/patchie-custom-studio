@@ -15,6 +15,10 @@ create table if not exists public.products (
   view_images jsonb not null default '{}'::jsonb,
   sizes text[] not null default array['S','M','L','XL'],
   size_guide text not null default '',
+  -- Optional physical scale reference. Null keeps the existing legacy scale.
+  reference_width_cm numeric(7,2),
+  reference_height_cm numeric(7,2),
+  image_fit_percent numeric(5,2),
   price integer,
   active boolean not null default true,
   created_at timestamptz not null default now()
@@ -69,6 +73,9 @@ create index if not exists designs_expires_at_idx on public.designs(expires_at);
 
 alter table public.products add column if not exists sku text;
 alter table public.products add column if not exists base_key text;
+alter table public.products add column if not exists reference_width_cm numeric(7,2);
+alter table public.products add column if not exists reference_height_cm numeric(7,2);
+alter table public.products add column if not exists image_fit_percent numeric(5,2);
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
 alter table public.products add column if not exists size_guide text not null default '';
