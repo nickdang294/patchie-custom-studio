@@ -618,3 +618,30 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @keyframes patch-group-top-breathe{0%,100%{transform:translateY(0);box-shadow:0 5px 13px #8d77c826}50%{transform:translateY(-2px);box-shadow:0 7px 17px #8d77c83d}}
 @media(max-width:700px){.patch-group-spotlight-on .select-options button:nth-child(1),.patch-group-spotlight-on .select-options button:nth-child(2),.patch-group-spotlight-on .select-options button:nth-child(3){transform:none}.patch-group-spotlight-on .select-options button:nth-child(1):after,.patch-group-spotlight-on .select-options button:nth-child(2):after,.patch-group-spotlight-on .select-options button:nth-child(3):after{right:40px;top:8px}}
 .patch-recommendations{margin:8px 0 12px;padding:11px;background:#f5f1ff;border:1px solid #e7def8;border-radius:12px}.patch-recommendations>b{display:block;font-size:10px;margin-bottom:8px}.patch-recommendations>div{display:flex;gap:7px;overflow-x:auto}.patch-recommendations button{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:6px;min-width:120px;max-width:150px;padding:5px 7px;border:1px solid #e9e5dc;border-radius:9px;background:#fff;text-align:left;font-size:9px}.patch-recommendations img{width:34px;height:34px;object-fit:contain}.patch-recommendations span{font-weight:700;line-height:1.2}
+
+/* Floating mobile patch recommendations */
+.patchie-suggestion-float{display:none}
+@media(max-width:700px){
+  .patchie-suggestion-float{display:block;position:fixed;z-index:80;left:max(12px,env(safe-area-inset-left));bottom:calc(108px + env(safe-area-inset-bottom));width:min(330px,calc(100vw - 24px));animation:patchieSuggestionFloat 3.4s ease-in-out infinite;}
+  .patchie-suggestion-card{overflow:hidden;border:1px solid #d9ccf4;border-radius:18px;background:linear-gradient(145deg,#fffefa 0%,#f5f0ff 72%,#fbfff0 100%);box-shadow:0 12px 36px #34245135,0 0 0 3px #d6c9f640;backdrop-filter:blur(12px);}
+  .patchie-suggestion-head,.patchie-suggestion-pill{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .patchie-suggestion-head{padding:10px 12px 3px;}
+  .patchie-suggestion-head>div,.patchie-suggestion-pill{display:flex;align-items:center;gap:8px;}
+  .patchie-suggestion-head b,.patchie-suggestion-pill b{font-size:12px;color:#45365d;}
+  .patchie-suggestion-spark{display:grid;place-items:center;width:25px;height:25px;border-radius:9px;background:#d7f45b;color:#473b62;font-size:16px;animation:patchieSuggestionSpark 2.3s ease-in-out infinite;}
+  .patchie-suggestion-collapse{width:29px;height:29px;border:1px solid #e3daf2;border-radius:50%;background:#fffefa;color:#55456d;font-size:20px;line-height:1;}
+  .patchie-suggestion-card>p{margin:2px 12px 8px;color:#796e87;font-size:10px;}
+  .patchie-suggestion-card>p strong{color:#45365d;}
+  .patchie-suggestion-list{display:flex;gap:8px;overflow-x:auto;padding:0 10px 10px;scroll-snap-type:x proximity;overscroll-behavior-x:contain;}
+  .patchie-suggestion-item{display:grid;flex:0 0 78px;gap:4px;min-width:0;padding:6px 5px;border:1px solid #e9e2f4;border-radius:12px;background:#fffefa;text-align:center;scroll-snap-align:start;}
+  .patchie-suggestion-item>span{display:grid;place-items:center;height:52px;border-radius:9px;background:#f8f5ff;}
+  .patchie-suggestion-item img{width:48px;height:48px;object-fit:contain;}
+  .patchie-suggestion-item b{overflow:hidden;color:#514765;font-size:9px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap;}
+  .patchie-suggestion-empty{padding:6px 12px 12px;color:#71677c;font-size:10px;}
+  .patchie-suggestion-pill{width:100%;min-height:44px;padding:7px 10px;border:0;background:transparent;text-align:left;}
+  .patchie-suggestion-chevron{margin-left:auto;color:#685783;font-size:17px;}
+  .patchie-suggestion-float.is-collapsed{width:155px;}
+}
+@keyframes patchieSuggestionFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes patchieSuggestionSpark{0%,100%{transform:rotate(-8deg) scale(1);opacity:.82}50%{transform:rotate(8deg) scale(1.08);opacity:1}}
+@media(prefers-reduced-motion:reduce){.patchie-suggestion-float,.patchie-suggestion-spark{animation:none!important}}

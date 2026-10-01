@@ -104,3 +104,7 @@ Sau khi deploy code có route `/admin/import`, đăng nhập bằng tài khoản
 Sau khi deploy, mở `/admin/recommendations` (cũng có nút trong dashboard). Tải `recommendation-rules-template.csv`, sửa các dòng rồi upload; trang sẽ xem trước và báo lỗi trước khi lưu. Upload quy tắc không import ảnh hay cập nhật sản phẩm. Bộ quy tắc được lưu dưới key `recommendationRules` trong bảng `settings` hiện có, không cần chạy migration SQL mới.
 
 CSV dùng các cột `rule_id,source_tags,target_tags,required_shared_prefix,score,active`. Danh sách tag dùng dấu chấm phẩy. Ví dụ `size_large` → `size_small`; hoặc `pet` → `flower` với `required_shared_prefix=color_` để chỉ ghép khi hai patch cùng có tag màu như `color_pink`. Mỗi rule đang tắt có `active=false`; đổi thành `true` để áp dụng. Upload bộ mới sẽ thay toàn bộ bộ đã lưu. Rule gợi ý được cộng điểm cùng với điểm tag trùng; `recommended_patch_ids` vẫn là gợi ý thủ công ưu tiên cao nhất.
+
+### Gợi ý patch trong giao diện mobile
+
+Danh sách gợi ý được hiển thị trong một khung nổi trên giao diện mobile khi khách đã thêm ít nhất một patch. Khách có thể thu gọn khung; nhãn “Patchie gợi ý” vẫn ở góc trái để mở lại. Khung tự ẩn sau khi khách bấm “Đã custom xong rồi”. Bật/tắt tính năng tại **Admin → Cài đặt → Bật Patchie gợi ý trong giao diện custom**. Cài đặt dùng bảng `settings` hiện có, không cần migration SQL.
