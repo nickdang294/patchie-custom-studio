@@ -19,6 +19,8 @@ create table if not exists public.products (
   reference_width_cm numeric(7,2),
   reference_height_cm numeric(7,2),
   image_fit_percent numeric(5,2),
+  snap_points jsonb not null default '[]'::jsonb,
+  snap_guides jsonb not null default '[]'::jsonb,
   price integer,
   active boolean not null default true,
   created_at timestamptz not null default now()
@@ -76,6 +78,8 @@ alter table public.products add column if not exists base_key text;
 alter table public.products add column if not exists reference_width_cm numeric(7,2);
 alter table public.products add column if not exists reference_height_cm numeric(7,2);
 alter table public.products add column if not exists image_fit_percent numeric(5,2);
+alter table public.products add column if not exists snap_points jsonb not null default '[]'::jsonb;
+alter table public.products add column if not exists snap_guides jsonb not null default '[]'::jsonb;
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
 alter table public.products add column if not exists size_guide text not null default '';
