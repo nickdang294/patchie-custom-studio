@@ -5,7 +5,7 @@ Website độc lập để khách tự phối patch ủi lên áo base, tải mo
 
 ## Scale patch theo từng sản phẩm base
 
-Sản phẩm base mới cần có ba giá trị: `reference_width_cm`, `reference_height_cm` và `image_fit_percent`. Admin → Sản phẩm base cũng có editor điểm và đường hút riêng theo từng mặt: chạm để thêm điểm hoặc chọn “Vẽ đường hút” rồi kéo trên ảnh để tạo đường. Hai kích thước xác định vùng vật lý dùng làm hệ quy chiếu cho patch; `image_fit_percent` cho biết chiều rộng của ảnh sản phẩm chiếm bao nhiêu phần trăm khung vuông preview. Các trường này có thể sửa trong Admin → Sản phẩm base. Sản phẩm cũ để trống sẽ tiếp tục dùng hệ quy chiếu cũ (62.5 × 62.5 cm), không cần tải lại patch. Nếu sửa base cũ, có thể điền thông số để chuyển sang scale mới.
+Sản phẩm base mới cần có ba giá trị: `reference_width_cm`, `reference_height_cm` và `image_fit_percent`. Admin → Sản phẩm base có editor điểm hút riêng theo từng mặt: chạm để thêm điểm, kéo điểm để chỉnh vị trí và bấm dấu × để xóa. Khi thêm hoặc di chuyển điểm gần thẳng hàng ngang, dọc hoặc chéo với các điểm khác, admin hiện guide và tự căn giúp bạn. Hai kích thước xác định vùng vật lý dùng làm hệ quy chiếu cho patch; `image_fit_percent` cho biết chiều rộng của ảnh sản phẩm chiếm bao nhiêu phần trăm khung vuông preview. Các trường này có thể sửa trong Admin → Sản phẩm base. Sản phẩm cũ để trống sẽ tiếp tục dùng hệ quy chiếu cũ (62.5 × 62.5 cm), không cần tải lại patch. Nếu sửa base cũ, có thể điền thông số để chuyển sang scale mới.
 
 Khi thêm cột vào database đang có, chạy `supabase/base-scale-and-snap-guides-migration.sql` trong Supabase SQL Editor:
 
