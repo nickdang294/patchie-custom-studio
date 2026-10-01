@@ -63,7 +63,10 @@ const normalizeProductGroups=list=>{
   incoming.filter(item=>item&&(item.id||item.value)&&!merged.some(group=>(group.id||group.value)===(item.id||item.value))).forEach(item=>merged.push({...item,id:item.id||item.value,value:item.value||item.id,label:item.label||item.name||item.id,kind:item.kind==='bag'?'bag':'shirt'}));
   return merged;
 };
-const viewsForProduct=(p,groups=PRODUCT_GROUPS)=>{const group=groups.find(g=>(g.id||g.value)===(p?.product_type||'shirt')),kind=group?.kind||((p?.product_type||'shirt')==='bag'?'bag':'shirt');return VIEWS.filter(v=>(PRODUCT_VIEW_SETS[kind]||PRODUCT_VIEW_SETS.shirt).includes(v.id));};
+const productGroupSlug=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const findProductGroup=(type,groups=PRODUCT_GROUPS)=>{const raw=String(type??'').trim().toLowerCase(),slug=productGroupSlug(type);return groups.find(g=>[g.id,g.value,g.label,g.name].some(value=>{const candidate=String(value??'').trim().toLowerCase();return candidate===raw||(slug&&productGroupSlug(value)===slug);}));};
+const productGroupValue=(type,groups=PRODUCT_GROUPS)=>{const group=findProductGroup(type,groups);return group?(group.id||group.value):type||'shirt';};
+const viewsForProduct=(p,groups=PRODUCT_GROUPS)=>{const type=p?.product_type||'shirt',group=findProductGroup(type,groups),kind=group?.kind||((type==='bag'||type==='tote')?'bag':'shirt');return VIEWS.filter(v=>(PRODUCT_VIEW_SETS[kind]||PRODUCT_VIEW_SETS.shirt).includes(v.id));};
 const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
 
 const VIEW_REFERENCE_CM={
