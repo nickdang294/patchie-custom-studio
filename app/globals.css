@@ -690,10 +690,21 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .computing-spark{color:#927bd0;font-size:20px;animation:patchieMixSpark .62s ease-in-out infinite alternate}
   .computing-dots{color:#9988bf;font-size:11px;letter-spacing:2px;animation:patchieMixDots .52s ease-in-out infinite alternate}
   .mobile-suggest-strip.is-revealing{animation:patchieMixReveal .32s ease-out both}
+  .mobile-patch-dock.is-suggestions .mobile-suggestion-title,
+  .mobile-patch-dock.is-suggestions .mobile-suggest-strip,
+  .mobile-patch-dock.is-suggestions .patchie-suggestion-empty,
+  .mobile-patch-dock.is-suggestions .mobile-suggestion-computing,
+  .mobile-patch-dock.is-suggestions .mobile-more-suggestions,
+  .mobile-patch-dock.is-suggestions .mobile-suggestion-note{animation:patchieDockModeIn .22s cubic-bezier(.2,.75,.25,1) both}
+  .mobile-patch-dock:not(.is-suggestions) .mobile-dock-head,
+  .mobile-patch-dock:not(.is-suggestions) .patch-filter-select,
+  .mobile-patch-dock:not(.is-suggestions) .pretty-select-field,
+  .mobile-patch-dock:not(.is-suggestions)>.mobile-patch-strip{animation:patchieDockModeIn .22s cubic-bezier(.2,.75,.25,1) both}
 }
 @keyframes patchieMixGlow{0%{opacity:.5;background-position:100% 0;transform:translateY(3px)}100%{opacity:1;background-position:0 0;transform:translateY(0)}}
 @keyframes patchieMixProgress{0%{transform:translateX(-120%)}100%{transform:translateX(230%)}}
 @keyframes patchieMixSpark{from{transform:rotate(-18deg) scale(.9);opacity:.62}to{transform:rotate(18deg) scale(1.13);opacity:1}}
 @keyframes patchieMixDots{from{opacity:.35}to{opacity:1}}
 @keyframes patchieMixReveal{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.mobile-suggestion-computing,.mobile-suggestion-computing *,.mobile-suggest-strip.is-revealing{animation:none!important}}
+@keyframes patchieDockModeIn{from{opacity:.4;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.mobile-suggestion-computing,.mobile-suggestion-computing *,.mobile-suggest-strip.is-revealing,.mobile-patch-dock.is-suggestions .mobile-suggestion-title,.mobile-patch-dock.is-suggestions .mobile-suggest-strip,.mobile-patch-dock.is-suggestions .patchie-suggestion-empty,.mobile-patch-dock.is-suggestions .mobile-suggestion-computing,.mobile-patch-dock.is-suggestions .mobile-more-suggestions,.mobile-patch-dock.is-suggestions .mobile-suggestion-note,.mobile-patch-dock:not(.is-suggestions) .mobile-dock-head,.mobile-patch-dock:not(.is-suggestions) .patch-filter-select,.mobile-patch-dock:not(.is-suggestions) .pretty-select-field,.mobile-patch-dock:not(.is-suggestions)>.mobile-patch-strip{animation:none!important}}
