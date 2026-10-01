@@ -646,3 +646,21 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 @keyframes patchieSuggestionFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 @keyframes patchieSuggestionSpark{0%,100%{transform:rotate(-8deg) scale(1);opacity:.82}50%{transform:rotate(8deg) scale(1.08);opacity:1}}
 @media(prefers-reduced-motion:reduce){.patchie-suggestion-float,.patchie-suggestion-spark{animation:none!important}}
+
+/* Compact mobile placement controls */
+.trash-label-mobile,.smart-label-mobile{display:none}
+@media(max-width:700px){
+  .trash-zone{height:32px;min-width:34px;padding:0 9px;gap:5px;font-size:15px;border-radius:12px}
+  .trash-zone.is-active{transform:scale(1.07)}
+  .trash-zone.is-hot{transform:scale(1.12)}
+  .trash-zone .trash-label-desktop{display:none!important}
+  .trash-zone.is-active .trash-label-mobile{display:block;font-size:9px;letter-spacing:0}
+  .sleeve-hotspot{width:66px;min-height:30px;gap:3px;padding:4px 7px;font-size:8px;border-width:1px}
+  .sleeve-hotspot b{font-size:8px}
+  .sleeve-hotspot small{display:none!important}
+  .back-hotspot{right:0;top:72%;width:61px;min-height:28px;padding:4px 6px}
+  .smart-position-toggle{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;border-radius:50%;top:58px;right:10px}
+  .smart-position-toggle .smart-bulb{font-size:17px}
+  .smart-position-toggle .smart-label-desktop{display:none}
+  .smart-position-toggle .smart-label-mobile{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);display:block;font-size:7px;line-height:1;padding:2px 4px;border-radius:999px;background:#fffef0e8;color:#5b477f;box-shadow:0 2px 5px #211d2618;pointer-events:none}
+}
