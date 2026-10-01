@@ -129,3 +129,8 @@ Danh sách gợi ý được hiển thị trong một khung nổi trên giao di�
 ### Default base product
 
 The admin can choose the product/color variation shown when the storefront opens under **Admin → Thương hiệu & nội dung → Thông tin website → Sản phẩm base mở mặc định**. This preference is stored in the existing `settings` key/value table, so no SQL migration is required. If the selected product is disabled or deleted, the storefront falls back to the first active product.
+
+
+### Giới hạn kích thước patch theo sản phẩm base
+
+Trong **Admin → Sản phẩm base**, mỗi SKU/màu có thể đặt chiều rộng và chiều cao tối thiểu/tối đa của patch được phép dùng. Để trống hoặc nhập `0` nghĩa là không giới hạn. Các giới hạn lọc cả danh sách Tự Phối, danh sách Patchie Gợi Ý và patch quà; server cũng từ chối đơn nếu có patch nằm ngoài giới hạn. Với database đang chạy, chạy một lần `supabase/base-patch-dimension-limits-migration.sql` trong Supabase SQL Editor trước khi deploy code.

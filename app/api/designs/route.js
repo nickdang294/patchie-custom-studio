@@ -1,5 +1,5 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
-import { productViews } from '@/lib/products';
+import { productViews, patchFitsProduct } from '@/lib/products';
 
 export async function POST(request) {
   let form;
@@ -14,12 +14,13 @@ export async function POST(request) {
     const db=serviceDb();
     const patchIds=[...new Set(patches.map(x=>String(x.patchId||'')).filter(Boolean))].slice(0,12);
     const [{data:product},{data:validPatches},{data:brandSetting}] = await Promise.all([
-      db.from('products').select('id,sizes,price,product_type').eq('id',productId).eq('active',true).maybeSingle(),
-      db.from('patches').select('id,name,price').in('id',patchIds).eq('active',true),
+      db.from('products').select('id,sizes,price,product_type,min_patch_width_cm,max_patch_width_cm,min_patch_height_cm,max_patch_height_cm').eq('id',productId).eq('active',true).maybeSingle(),
+      db.from('patches').select('id,name,price,width_cm,height_cm').in('id',patchIds).eq('active',true),
       db.from('settings').select('value').eq('key','brand').maybeSingle()
     ]);
     if (!product || !(product.sizes||[]).includes(size)) return jsonError('Sản phẩm base hoặc size vừa thay đổi. Tải lại trang nhé.');
     if (!validPatches || validPatches.length!==patchIds.length) return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
+    if (validPatches.some(p=>!patchFitsProduct(p,product))) return jsonError('Có patch không đúng kích thước cho sản phẩm base này. Quay lại và chọn patch khác.');
     const allowedViews=productViews(product.product_type||'shirt',brandSetting?.value||{});
     const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0);

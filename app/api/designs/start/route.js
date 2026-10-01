@@ -1,5 +1,5 @@
 import { serviceDb, jsonError } from '@/lib/supabase';
-import { productViews } from '@/lib/products';
+import { productViews, patchFitsProduct } from '@/lib/products';
 const newId=()=>`PCH-${crypto.randomUUID().replaceAll('-','').slice(0,12).toUpperCase()}`;
 
 export async function POST(request){
@@ -12,14 +12,15 @@ export async function POST(request){
   try{
     const db=serviceDb(),patchIds=[...new Set(patches.map(x=>String(x?.patchId||'')).filter(Boolean))].slice(0,12);
     const [{data:product},{data:validPatches},{data:retention},{data:giftSetting},{data:brandSetting}]=await Promise.all([
-      db.from('products').select('id,sizes,price,product_type').eq('id',productId).eq('active',true).maybeSingle(),
-      db.from('patches').select('id,name,price').in('id',patchIds).eq('active',true),
+      db.from('products').select('id,sizes,price,product_type,min_patch_width_cm,max_patch_width_cm,min_patch_height_cm,max_patch_height_cm').eq('id',productId).eq('active',true).maybeSingle(),
+      db.from('patches').select('id,name,price,width_cm,height_cm').in('id',patchIds).eq('active',true),
       db.from('settings').select('value').eq('key','retentionDays').maybeSingle(),
       db.from('settings').select('value').eq('key','giftOffer').maybeSingle(),
       db.from('settings').select('value').eq('key','brand').maybeSingle()
     ]);
     if(!product||!(product.sizes||[]).includes(size))return jsonError('Sản phẩm base hoặc size vừa thay đổi. Tải lại trang nhé.');
     if(!validPatches||validPatches.length!==patchIds.length)return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
+    if(validPatches.some(p=>!patchFitsProduct(p,product)))return jsonError('Có patch không đúng kích thước cho sản phẩm base này. Quay lại và chọn patch khác.');
     const allowedViews=productViews(product.product_type||'shirt',brandSetting?.value||{});
     const giftOffer=giftSetting?.value||{},giftEnabled=giftOffer.enabled!==false,giftIds=Array.isArray(giftOffer.patchIds)?giftOffer.patchIds.filter(Boolean):[];
     let giftUsed=false;
