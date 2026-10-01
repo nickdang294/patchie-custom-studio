@@ -24,7 +24,7 @@ const starter = {
     { id:'patch-red', name:'Mũ vàng', image_url:'/assets/patch-red-white.webp', width_cm:4, height_cm:4, price:null, quote:'đội mood vui lên áo', patch_group:'Seasonal', patch_groups:['Seasonal'] },
     { id:'patch-yellow', name:'Mũ xanh dương', image_url:'/assets/patch-yellow-blue.webp', width_cm:4, height_cm:4, price:null, quote:'hôm nay hơi đáng yêu', patch_group:'Cute Animal', patch_groups:['Cute Animal'] }
   ],
-  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, popupCampaigns:DEFAULT_POPUP_CAMPAIGNS, activePopupCampaign:'traditional-gift', defaultPatchGroup:'all', patchGroupOrder:['Best Seller','Chữ Cái','Seasonal','Limited','Cute Animal','Floral'], patchGroupHighlightEnabled:true, patchSuggestionsEnabled:true, halloweenThemeEnabled:true, halloweenFeatures:DEFAULT_HALLOWEEN_FEATURES }
+  settings: { messengerUrl:'', sizes:['S','M','L','XL'], privacyText:'Bản mẫu: shop dùng thông tin này để xử lý yêu cầu thiết kế và xóa sau 30 ngày.', brand:{}, giftOffer:GIFT_DEFAULTS, popupCampaigns:DEFAULT_POPUP_CAMPAIGNS, activePopupCampaign:'traditional-gift', defaultProductId:'base-offwhite', defaultPatchGroup:'all', patchGroupOrder:['Best Seller','Chữ Cái','Seasonal','Limited','Cute Animal','Floral'], patchGroupHighlightEnabled:true, patchSuggestionsEnabled:true, halloweenThemeEnabled:true, halloweenFeatures:DEFAULT_HALLOWEEN_FEATURES }
 };
 
 export async function GET() {
@@ -51,6 +51,7 @@ export async function GET() {
           activePopupCampaign:typeof config.activePopupCampaign==='string'&&config.activePopupCampaign
             ? config.activePopupCampaign
             : popupCampaigns.find(campaign=>campaign.enabled)?.id || popupCampaigns[0]?.id || '',
+          defaultProductId:typeof config.defaultProductId==='string'?config.defaultProductId:'',
           defaultPatchGroup:typeof config.defaultPatchGroup==='string'&&config.defaultPatchGroup?config.defaultPatchGroup:'all',
           patchGroupOrder:Array.isArray(config.patchGroupOrder)?config.patchGroupOrder:[],
           patchGroupHighlightEnabled:config.patchGroupHighlightEnabled!==false,

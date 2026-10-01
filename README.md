@@ -113,7 +113,7 @@ npm run build
 
 ## Nhập nhiều patch
 
-Sau khi deploy code có route `/admin/import`, đăng nhập bằng tài khoản admin và mở trang này. Lưu Excel/Google Sheets thành CSV UTF-8 với header `id,name,image_filename,width_cm,height_cm,price,quote,patch_groups,tags,recommended_patch_ids,release_status,active,sort_order`. Danh sách nhiều group/tag/ID gợi ý cách nhau bằng dấu chấm phẩy. Chọn CSV và tất cả ảnh trong một lần; ảnh import được lưu trong bucket `patch-assets`, prefix `Patch Bulk Upload/`, tối đa 4 MB mỗi ảnh. Khi ID đã có trong database, import sẽ cập nhật record đó, vì vậy giữ ID ổn định và rà soát file trước khi chạy.
+Sau khi deploy code có route `/admin/import`, đăng nhập bằng tài khoản admin và mở trang này. Trang có hai chế độ: `Thêm patch mới` và `Cập nhật patch theo ID`. Tạo mới cần `id,name,width_cm,height_cm` và `image_filename` hoặc `image_url`; ID đã tồn tại sẽ bị từ chối để tránh ghi đè nhầm. Chế độ cập nhật yêu cầu `id`; chỉ các cột có trong CSV được cập nhật, ô trống giữ nguyên giá trị cũ. Có thể thay ảnh bằng `image_filename` (chọn file ảnh cùng tên) hoặc `image_url`. Các cột có thể cập nhật gồm tên, ảnh, kích thước, giá, quote, group, tags, IDs gợi ý, trạng thái release, tồn kho, số đã bán, featured/new, active và sort order. Danh sách cách nhau bằng dấu chấm phẩy. Dùng `__CLEAR__` để xóa giá, quote, tags hoặc IDs gợi ý. Ảnh lưu trong bucket `patch-assets`, prefix `Patch Bulk Upload/`, tối đa 4 MB mỗi ảnh.
 
 ### Upload riêng quy tắc gợi ý
 
@@ -124,3 +124,8 @@ CSV dùng các cột `rule_id,source_tags,target_tags,required_shared_prefix,sco
 ### Gợi ý patch trong giao diện mobile
 
 Danh sách gợi ý được hiển thị trong một khung nổi trên giao diện mobile khi khách đã thêm ít nhất một patch. Khách có thể thu gọn khung; nhãn “Patchie gợi ý” vẫn ở góc trái để mở lại. Khung tự ẩn sau khi khách bấm “Đã custom xong rồi”. Bật/tắt tính năng tại **Admin → Cài đặt → Bật Patchie gợi ý trong giao diện custom**. Cài đặt dùng bảng `settings` hiện có, không cần migration SQL.
+
+
+### Default base product
+
+The admin can choose the product/color variation shown when the storefront opens under **Admin → Thương hiệu & nội dung → Thông tin website → Sản phẩm base mở mặc định**. This preference is stored in the existing `settings` key/value table, so no SQL migration is required. If the selected product is disabled or deleted, the storefront falls back to the first active product.
