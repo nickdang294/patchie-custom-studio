@@ -89,6 +89,19 @@ Không commit `.env.local`; file này đã nằm trong `.gitignore`.
 4. Mở `/admin`, nhập email có trong `ADMIN_EMAILS`, bấm gửi link và đăng nhập từ email.
 5. Trong dashboard, cập nhật Messenger, giá, mẫu áo, size, patch và nội dung riêng tư trước khi công khai site.
 
+## Bật Vercel Web Analytics và Speed Insights
+
+Mã nguồn đã thêm hai công cụ vào layout chung và ghi nhận các thao tác chính: chọn base/màu, thêm patch, mở hoặc làm mới gợi ý, hoàn tất custom, tạo yêu cầu đơn, mở lookbook và thêm patch vào giỏ.
+
+Sau khi deploy:
+
+1. Mở **Vercel → Project → Analytics**, bấm **Enable**.
+2. Mở **Vercel → Project → Speed Insights**, bấm **Enable**.
+3. Vào site đã deploy và thử vài trang/luồng custom. Vercel bắt đầu thu page views, nguồn truy cập, thiết bị và dữ liệu hiệu năng; dữ liệu có thể cần một thời gian mới hiện trong dashboard.
+4. Xem số liệu tại **Analytics** và **Speed Insights** trong project Vercel.
+
+Trên Hobby, Web Analytics cơ bản và Speed Insights có hạn mức miễn phí. Các sự kiện tương tác riêng như `Patch Added`, `Customization Completed` và `Custom Order Created` cần Vercel Pro hoặc Enterprise để xem trong Analytics. Code đã gắn sẵn các sự kiện này để dùng khi tài khoản có hỗ trợ. Website không gửi tên, số điện thoại, địa chỉ hoặc nội dung ghi chú khách hàng sang Analytics.
+
 Khi gắn domain riêng, thêm domain trong **Project → Settings → Domains** trên Vercel rồi cấu hình DNS theo bản ghi Vercel hướng dẫn. Thêm domain đó vào Supabase Auth Site URL/redirect URL.
 
 ## Biến môi trường local
