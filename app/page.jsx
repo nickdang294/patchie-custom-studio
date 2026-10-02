@@ -85,7 +85,7 @@ const makeDraftOrderCode=()=>`PCH-${Array.from(crypto.getRandomValues(new Uint8A
 const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',product_type:'shirt',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],size_guide:'',price:null};
 const BRAND_DEFAULTS={brandName:'Patchie',logoUrl:'',slogan:'Customize your everyday',fontFamily:'DM Sans',heroEyebrow:'YOUR BASE, YOUR LITTLE WORLD',heroTitle:'Tự tạo món đồ',heroAccent:'của riêng bạn.',heroDescription:'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',step1Label:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Title:'Sản phẩm base',step2Label:'02 / CHỌN PATCH BẠN THÍCH HA',step3Label:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepBaseDesktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepBaseMobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepPatchDesktop:'02 / CHỌN PATCH BẠN THÍCH HA',stepPatchMobile:'02 / CHỌN PATCH BẠN THÍCH HA',stepPreviewDesktop:'03 / CÙNG DESIGN HOI',stepPreviewMobile:'03 / CÙNG DESIGN HOI',stepOrderDesktop:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepOrderMobile:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',step1Desktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Mobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step2Desktop:'02 / CHỌN PATCH BẠN THÍCH HA',step2Mobile:'02 / CHỌN PATCH BẠN THÍCH HA',addPatchLabel:'＋ Thêm patch lên mặt đang chọn',mobileAddPatchLabel:'＋ Thêm patch vào mặt đang chọn',productGroupImages:{shirt:'',bag:''},productGroups:PRODUCT_GROUPS};
 const cssContent=value=>JSON.stringify(String(value||''));
-const BrandIdentity=({brand=BRAND_DEFAULTS})=><>{brand.logoUrl?<img className="brand-logo" src={brand.logoUrl} alt=""/>:<span className="brand-mark">P</span>} {brand.brandName||'Patchie'}<span className="brand-studio">STUDIO</span></>;
+const BrandIdentity=({brand=BRAND_DEFAULTS})=><>{brand.logoUrl?<img className="brand-logo" src={brand.logoUrl} alt=""/>:<span className="brand-mark">P</span>} {brand.brandName||'Patchie'}</>;
 
 const StudioHeader=({brand})=><header className="topbar">
   <a className="brand" href="/"><BrandIdentity brand={brand}/></a>
@@ -94,7 +94,6 @@ const StudioHeader=({brand})=><header className="topbar">
     <a href="/patches">Patch Market</a>
     <a href="/looks">Lookbook</a>
   </nav>
-  <div className="studio-header-note"><span>{brand.slogan}</span></div>
 </header>;
 
 const StudioFooter=()=> <footer className="studio-footer"><div><span>Patchie · Customize your everyday</span><span>Chọn patch · Tạo mã đơn · Gửi shop</span></div><a className="admin-footer-link" href="/admin">Quản trị ↗</a></footer>;
