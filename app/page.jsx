@@ -89,8 +89,8 @@ const BrandIdentity=({brand=BRAND_DEFAULTS})=><>{brand.logoUrl?<img className="b
 
 const StudioHeader=({brand})=><header className="topbar">
   <a className="brand" href="/"><BrandIdentity brand={brand}/></a>
-  <nav className="studio-nav" aria-label="Điều hướng chính">
-    <a className="studio-nav-active" href="/">Custom áo</a>
+  <nav className="studio-nav patchie-site-nav" aria-label="Điều hướng chính">
+    <a className="studio-nav-active is-current" href="/" aria-current="page">Custom Workshop</a>
     <a href="/patches">Patch Market</a>
     <a href="/looks">Lookbook</a>
   </nav>
