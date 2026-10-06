@@ -53,6 +53,7 @@ export default function PatchImportPage() {
     const prepared = [];
     for (const [index, row] of rows.entries()) {
       let image_url = String(row.image_url || '').trim();
+      let thumbnail_url = String(row.thumbnail_url || '').trim();
       const fileName = String(row.image_filename || row.image_file || '').trim();
       if (fileName) {
         const file = files.get(fileName);
@@ -62,8 +63,9 @@ export default function PatchImportPage() {
         const result = await upload.json();
         if (!upload.ok) throw new Error(result.error || `Không tải được ${fileName}.`);
         image_url = result.image_url;
+        thumbnail_url = result.thumbnail_url;
       }
-      prepared.push({ ...row, ...(image_url ? { image_url } : {}) });
+      prepared.push({ ...row, ...(image_url ? { image_url } : {}), ...(thumbnail_url ? { thumbnail_url } : {}) });
     }
     return prepared;
   }
@@ -90,7 +92,7 @@ export default function PatchImportPage() {
     <a href="/admin">← Quay lại admin</a><h1>Bulk patch</h1>
     <div style={{ display: 'flex', gap: 8, margin: '18px 0' }}>{modeButton('create', 'Thêm patch mới')}{modeButton('edit', 'Cập nhật patch theo ID')}</div>
     {mode === 'edit' && <p><a href="/patch-edit-template.csv" download style={{ color: '#625281', fontWeight: 800 }}>Tải CSV mẫu cập nhật patch ↓</a></p>}
-    {mode === 'create' ? <><p>Thêm patch mới bằng CSV và ảnh. Ảnh sẽ lưu trong bucket <code>patch-assets</code>, thư mục <code>Patch Bulk Upload</code>. PNG, JPG hoặc WebP, tối đa 4 MB mỗi ảnh.</p><p><b>Cột bắt buộc:</b> <code>id, name, width_cm, height_cm</code> và một trong <code>image_filename</code> / <code>image_url</code>. Các cột khác: <code>price, quote, patch_groups, tags, recommended_patch_ids, release_status, stock_quantity, sold_count, is_featured, is_new, active, sort_order</code>.</p></> : <><p>Cập nhật patch hiện có bằng ID. Chỉ những cột có trong CSV mới được cập nhật; ô trống giữ nguyên dữ liệu cũ. ID không được đổi. Nếu cần thay ảnh, điền <code>image_filename</code> kèm tên file ảnh hoặc điền <code>image_url</code>.</p><p><b>Các cột được cập nhật:</b> <code>id, name, image_filename, image_url, width_cm, height_cm, price, quote, patch_group, patch_groups, tags, recommended_patch_ids, release_status, stock_quantity, sold_count, is_featured, is_new, active, sort_order</code>. Danh sách ngăn cách bằng dấu chấm phẩy. Với giá, quote, tags hoặc danh sách gợi ý, dùng <code>__CLEAR__</code> để xóa giá trị; patch group sẽ về Best Seller.</p></>}
+    {mode === 'create' ? <><p>Thêm patch mới bằng CSV và ảnh. Ảnh gốc và thumbnail WebP sẽ tự lưu trong bucket <code>patch-assets</code>, thư mục <code>Patch Bulk Upload/ngày-upload</code>. PNG, JPG hoặc WebP, tối đa 4 MB mỗi ảnh.</p><p><b>Cột bắt buộc:</b> <code>id, name, width_cm, height_cm</code> và một trong <code>image_filename</code> / <code>image_url</code>. Các cột khác: <code>price, quote, patch_groups, tags, recommended_patch_ids, release_status, stock_quantity, sold_count, is_featured, is_new, active, sort_order</code>.</p></> : <><p>Cập nhật patch hiện có bằng ID. Chỉ những cột có trong CSV mới được cập nhật; ô trống giữ nguyên dữ liệu cũ. ID không được đổi. Nếu cần thay ảnh, điền <code>image_filename</code> kèm tên file ảnh hoặc điền <code>image_url</code>.</p><p><b>Các cột được cập nhật:</b> <code>id, name, image_filename, image_url, width_cm, height_cm, price, quote, patch_group, patch_groups, tags, recommended_patch_ids, release_status, stock_quantity, sold_count, is_featured, is_new, active, sort_order</code>. Danh sách ngăn cách bằng dấu chấm phẩy. Với giá, quote, tags hoặc danh sách gợi ý, dùng <code>__CLEAR__</code> để xóa giá trị; patch group sẽ về Best Seller.</p></>}
     <label style={{ display: 'block', margin: '20px 0' }}>File CSV<br/><input type="file" accept=".csv,text/csv" onChange={event => event.target.files?.[0] && preview(event.target.files[0])}/></label>
     <label style={{ display: 'block', margin: '20px 0' }}>Ảnh patch {mode === 'edit' && '(không bắt buộc nếu không thay ảnh)'}<br/><input type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={event => setImages(event.target.files)}/></label>
     {rows.length > 0 && <><p>Đã đọc <b>{rows.length}</b> dòng từ <b>{csv?.name}</b>. {mode === 'edit' && 'Sẽ cập nhật các trường đã điền.'}</p><div style={{ overflowX: 'auto', maxHeight: 260, border: '1px solid #eee7dd', borderRadius: 9 }}><table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}><thead><tr>{Object.keys(rows[0]).map(key => <th key={key} style={{ position: 'sticky', top: 0, background: '#f4f1eb', padding: 8, textAlign: 'left' }}>{key}</th>)}</tr></thead><tbody>{rows.slice(0, 12).map((row, index) => <tr key={index}>{Object.keys(rows[0]).map(key => <td key={key} style={{ borderTop: '1px solid #eee7dd', padding: 8 }}>{row[key]}</td>)}</tr>)}</tbody></table></div>{rows.length > 12 && <small>Đang hiển thị 12 dòng đầu trong preview.</small>}</>}

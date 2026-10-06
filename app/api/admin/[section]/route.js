@@ -23,7 +23,8 @@ export async function POST(request,{params}) {
   const auth=await requireAdmin();if(auth.error)return jsonError(auth.error,auth.status);
   const {section}=await params, db=serviceDb();
   if(section==='upload'){
-    const f=await request.formData(),file=f.get('file');if(!(file instanceof File)||file.size>4*1024*1024||!['image/png','image/jpeg','image/webp'].includes(file.type))return jsonError('Chọn PNG, JPG hoặc WebP tối đa 4 MB.');
+    const f=await request.formData(),file=f.get('file');
+    if(!(file instanceof File)||file.size>4*1024*1024||!['image/png','image/jpeg','image/webp'].includes(file.type))return jsonError('Chọn PNG, JPG hoặc WebP tối đa 4 MB.');
     const ext=file.type.split('/')[1].replace('jpeg','jpg'),path=`${crypto.randomUUID()}.${ext}`;
     const {error}=await db.storage.from('patch-assets').upload(path,file,{contentType:file.type,upsert:false});if(error)return jsonError(error.message,500);
     const {data}=db.storage.from('patch-assets').getPublicUrl(path);return Response.json({image_url:data.publicUrl});

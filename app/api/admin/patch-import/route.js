@@ -1,8 +1,11 @@
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
+import { uploadPatchWithThumbnail } from '@/lib/patch-image-upload';
+
+export const runtime = 'nodejs';
 
 const text = value => String(value ?? '').trim();
 const CLEAR = '__CLEAR__';
-const EDITABLE = ['name','image_filename','image_url','width_cm','height_cm','price','quote','patch_group','patch_groups','tags','recommended_patch_ids','release_status','stock_quantity','sold_count','is_featured','is_new','active','sort_order'];
+const EDITABLE = ['name','image_filename','image_url','thumbnail_url','width_cm','height_cm','price','quote','patch_group','patch_groups','tags','recommended_patch_ids','release_status','stock_quantity','sold_count','is_featured','is_new','active','sort_order'];
 const arrayValue = value => Array.isArray(value) ? value.map(text).filter(Boolean) : typeof value === 'string' ? value.split(/[;,|]/).map(text).filter(Boolean) : [];
 const hasValue = value => value !== undefined && value !== null && text(value) !== '';
 const isClear = value => text(value).toUpperCase() === CLEAR;
@@ -56,6 +59,7 @@ function mergeUpdateRows(rows, byId) {
     for (const [field, raw] of Object.entries(row)) {
       if (field === 'id' || !EDITABLE.includes(field) || field === 'image_filename' || !hasValue(raw)) continue;
       if (field === 'image_url') { item.image_url = text(raw); continue; }
+      if (field === 'thumbnail_url') { item.thumbnail_url = text(raw) || null; continue; }
       if (field === 'name') { item.name = text(raw); if (!item.name) errors.push(`Dòng ${line}: name không được để trống.`); continue; }
       if (field === 'quote') { item.quote = isClear(raw) ? '' : text(raw); continue; }
       if (field === 'release_status') {
@@ -75,7 +79,7 @@ function mergeUpdateRows(rows, byId) {
         else item[field] = values;
       }
     }
-    if (hasValue(row.image_url)) item.image_url = text(row.image_url);
+    if (hasValue(row.image_url)) { item.image_url = text(row.image_url); if (!hasValue(row.thumbnail_url)) item.thumbnail_url = null; }
     if (!item.image_url) errors.push(`Dòng ${line}: image_url sau cập nhật không được để trống.`);
     merged.push(item);
   });
@@ -89,12 +93,8 @@ export async function POST(request) {
 
   if (request.headers.get('content-type')?.includes('multipart/form-data')) {
     const form = await request.formData(), file = form.get('file');
-    if (!(file instanceof File) || file.size > 4 * 1024 * 1024 || !['image/png','image/jpeg','image/webp'].includes(file.type)) return jsonError('Chọn PNG, JPG hoặc WebP tối đa 4 MB.');
-    const ext = file.type.split('/')[1].replace('jpeg','jpg'), path = `Patch Bulk Upload/${crypto.randomUUID()}.${ext}`;
-    const { error } = await db.storage.from('patch-assets').upload(path, file, { contentType: file.type, upsert: false });
-    if (error) return jsonError(error.message, 500);
-    const { data } = db.storage.from('patch-assets').getPublicUrl(path);
-    return Response.json({ image_url: data.publicUrl, storage_path: path });
+    try { return Response.json(await uploadPatchWithThumbnail(db,file)); }
+    catch(error) { return jsonError(error.message||'Không xử lý được ảnh patch.',400); }
   }
 
   let body;
@@ -141,7 +141,7 @@ export async function POST(request) {
     const groups = arrayValue(row.patch_groups ?? row.patch_group), tags = arrayValue(row.tags), recommendations = arrayValue(row.recommended_patch_ids);
     const release_status = text(row.release_status || 'released');
     if (!['released','coming_soon'].includes(release_status)) errors.push(`Dòng ${index + 2}: release_status phải là released hoặc coming_soon.`);
-    items.push({ id, name, image_url, width_cm, height_cm, price, quote: text(row.quote), patch_group: groups[0] || 'Best Seller', patch_groups: groups.length ? groups : ['Best Seller'], tags, recommended_patch_ids: recommendations, release_status, active: row.active === false || String(row.active).toLowerCase() === 'false' ? false : true, stock_quantity, sold_count, is_featured: row.is_featured === true || String(row.is_featured).toLowerCase() === 'true', is_new: row.is_new === true || String(row.is_new).toLowerCase() === 'true', sort_order });
+    items.push({ id, name, image_url, thumbnail_url: text(row.thumbnail_url)||null, width_cm, height_cm, price, quote: text(row.quote), patch_group: groups[0] || 'Best Seller', patch_groups: groups.length ? groups : ['Best Seller'], tags, recommended_patch_ids: recommendations, release_status, active: row.active === false || String(row.active).toLowerCase() === 'false' ? false : true, stock_quantity, sold_count, is_featured: row.is_featured === true || String(row.is_featured).toLowerCase() === 'true', is_new: row.is_new === true || String(row.is_new).toLowerCase() === 'true', sort_order });
   }
   if (errors.length) return Response.json({ error: 'Có dòng cần sửa trước khi thêm patch.', details: errors }, { status: 400 });
   const { data: existing, error: existingError } = await db.from('patches').select('id').in('id', items.map(item => item.id));

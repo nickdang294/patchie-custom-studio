@@ -140,3 +140,10 @@ The admin can choose the product/color variation shown when the storefront opens
 ### Giới hạn kích thước patch theo sản phẩm base
 
 Trong **Admin → Sản phẩm base**, mỗi SKU/màu có thể đặt chiều rộng và chiều cao tối thiểu/tối đa của patch được phép dùng. Để trống hoặc nhập `0` nghĩa là không giới hạn. Các giới hạn lọc cả danh sách Tự Phối, danh sách Patchie Gợi Ý và patch quà; server cũng từ chối đơn nếu có patch nằm ngoài giới hạn. Với database đang chạy, chạy một lần `supabase/base-patch-dimension-limits-migration.sql` trong Supabase SQL Editor trước khi deploy code.
+
+
+## Patch thumbnails
+
+Run `supabase/patch-thumbnail-migration.sql` once before deploying this update. Patch uploads from the admin editor and bulk import create a full-size original plus a transparent WebP thumbnail automatically. Both are stored under `Patch Bulk Upload/YYYY-MM-DD/`; thumbnails are placed in that day's `thumbnail/` subfolder. The picker and suggestion cards use the thumbnail, while mockups continue to use the original.
+
+After deployment, open Admin → Thư viện patch and use **Tạo thumbnail còn thiếu** once for existing patches. The backfill runs in batches of five and leaves original images untouched. New uploads create both files without changing the CSV template.

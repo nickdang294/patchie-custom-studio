@@ -35,6 +35,7 @@ create table if not exists public.patches (
   id text primary key default ('patch-' || replace(gen_random_uuid()::text,'-','')),
   name text not null,
   image_url text not null,
+  thumbnail_url text,
   width_cm numeric(5,2) not null default 1,
   height_cm numeric(5,2) not null default 1,
   patch_group text not null default 'Best Seller',
@@ -98,6 +99,7 @@ alter table public.products add column if not exists view_images jsonb not null 
 alter table public.products add column if not exists size_guide text not null default '';
 alter table public.products drop constraint if exists products_product_type_check;
 alter table public.patches add column if not exists quote text not null default '';
+alter table public.patches add column if not exists thumbnail_url text;
 alter table public.patches add column if not exists release_status text not null default 'released';
 alter table public.patches add column if not exists patch_group text not null default 'Best Seller';
 alter table public.patches add column if not exists patch_groups text[] not null default array['Best Seller'];
