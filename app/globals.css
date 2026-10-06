@@ -880,3 +880,4 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .patchie-site-nav>a{transition:none!important}
   .patchie-site-nav>a:hover{transform:none!important}
 }
+.product-active-toggle input[type=checkbox]{width:17px!important;height:17px;padding:0;border:0;accent-color:var(--coral);flex:0 0 auto}
