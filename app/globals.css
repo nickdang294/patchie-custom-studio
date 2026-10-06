@@ -578,6 +578,7 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .coming-soon-mini-tag{display:inline-flex!important;width:max-content;margin-top:3px;padding:3px 6px;border-radius:999px;background:#f2eafa;color:#78668d;font-size:8px!important;font-style:normal;font-weight:900;letter-spacing:.06em}
 .admin-patch .release-tag{display:inline-flex;align-self:flex-start;margin:7px 0 0;padding:4px 7px;border-radius:999px;background:#e9f5b8;color:#536126;font-size:8px;font-style:normal;font-weight:900;letter-spacing:.06em}
 .admin-patch .release-tag.is-coming-soon{background:#f0e7f8;color:#745689}
+.admin-patch .release-tag.is-out-of-stock{background:#fde7e5;color:#9d3932}
 .patch-release-field{display:grid;gap:6px;grid-column:span 2;font-size:11px;font-weight:800}
 .patch-release-field select{width:100%;border:1px solid var(--line);background:#fffefa;border-radius:9px;padding:10px 11px;font-size:12px;outline-color:#b8a5e6}
 .patch-release-field .admin-help{margin:0}
