@@ -19,6 +19,7 @@ create table if not exists public.products (
   reference_width_cm numeric(7,2),
   reference_height_cm numeric(7,2),
   image_fit_percent numeric(5,2),
+  image_fit_height_percent numeric(5,2),
   min_patch_width_cm numeric(5,2),
   max_patch_width_cm numeric(5,2),
   min_patch_height_cm numeric(5,2),
@@ -82,6 +83,7 @@ alter table public.products add column if not exists base_key text;
 alter table public.products add column if not exists reference_width_cm numeric(7,2);
 alter table public.products add column if not exists reference_height_cm numeric(7,2);
 alter table public.products add column if not exists image_fit_percent numeric(5,2);
+alter table public.products add column if not exists image_fit_height_percent numeric(5,2);
 alter table public.products add column if not exists min_patch_width_cm numeric(5,2);
 alter table public.products add column if not exists max_patch_width_cm numeric(5,2);
 alter table public.products add column if not exists min_patch_height_cm numeric(5,2);

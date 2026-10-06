@@ -204,8 +204,10 @@ export default function Home(){
     const legacy=VIEW_REFERENCE_CM[view]||VIEW_REFERENCE_CM.front;
     const refW=Number(product?.reference_width_cm)>0?Number(product.reference_width_cm):legacy.width;
     const refH=Number(product?.reference_height_cm)>0?Number(product.reference_height_cm):legacy.height;
-    const fit=Number(product?.image_fit_percent)>0?Math.min(100,Number(product.image_fit_percent))/100:1;
-    return {width:clampPatchPercent((Number(p?.width_cm||4)/refW)*fit*100),height:clampPatchPercent((Number(p?.height_cm||4)/refH)*fit*100)};
+    const fitW=Number(product?.image_fit_percent)>0?Math.min(100,Number(product.image_fit_percent))/100:1;
+    const rawFitH=Number(product?.image_fit_height_percent);
+    const fitH=rawFitH>0?Math.min(100,rawFitH)/100:fitW;
+    return {width:clampPatchPercent((Number(p?.width_cm||4)/refW)*fitW*100),height:clampPatchPercent((Number(p?.height_cm||4)/refH)*fitH*100)};
   };
   const patchPreviewStyle=p=>{const s=patchSizePercent(p);return {width:`${s.width}%`,height:`${s.height}%`,maxWidth:'none',maxHeight:'none'};};
   const patchLabel=p=>`${Number(p?.width_cm||4).toFixed(1).replace('.0','')} × ${Number(p?.height_cm||4).toFixed(1).replace('.0','')} cm`;
