@@ -7,7 +7,6 @@ import BatsBurst from './bats-burst';
 import PumpkinFireworks from './pumpkin-fireworks';
 import HeartsBurst from './hearts-burst';
 import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
-import { previewImageUrl } from '@/lib/image-utils';
 import { rankPatchRecommendations } from '@/lib/recommendation-rules';
 import { trackEvent } from '@/lib/analytics';
 
@@ -240,9 +239,9 @@ export default function Home(){
   useEffect(()=>{if(colorVariants.length===1&&colorVariants[0].id!==productId)setProductId(colorVariants[0].id);const availableSizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];if(availableSizes.length===1&&size!==availableSizes[0])setSize(availableSizes[0]);},[productId,selectedBaseKey,catalog.products,product?.sizes,catalog.settings.sizes,size]);
   useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
   useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift),hasRequiredSize=!sizeRequired||Boolean(size),ready=placed.length>0&&(!hasGift||hasPaidPatch)&&hasRequiredSize;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':!hasRequiredSize?'Hãy chọn size':hasGift?'Thêm ít nhất 1 patch mua':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed,size,sizeRequired,catalogReady]);
-  // Load the selected base product's views; patch thumbnails are requested by visible cards.
-  // Full-resolution patch files are fetched only after a patch is placed on the mockup.
-  useEffect(()=>{preloadImageSources(activeViews.map(v=>imageForView(v.id)));},[productId,catalog.products]);
+  // Load only the selected base product's current view at full resolution.
+  // Color/product selectors use Supabase-rendered previews via productThumb.
+  useEffect(()=>{preloadImageSources([imageForView(activeView)]);},[productId,activeView,catalog.products]);
   useEffect(()=>{setStageZoom({scale:1,x:0,y:0});setTrashActive(false);setTrashHot(false);pinch.current=null;drag.current=null;pan.current=null;},[activeView,productId]);
   useEffect(()=>{const preference=window.localStorage.getItem('patchie-smart-position');if(preference!==null)setSmartPositionEnabled(preference==='true');},[]);
 
@@ -314,7 +313,7 @@ export default function Home(){
   function changeProductBase(key){
     const variants=catalog.products.filter(p=>productBaseKey(p)===key);
     const next=variants.find(p=>p.color===product?.color)||variants[0];
-    preloadImageSources(variants.map(item=>previewImageUrl((item.view_images||{}).front||item.image_url,420)));
+    preloadImageSources([next?.thumbnail_images?.front]);
     if(next&&key!==selectedBaseKey)trackEvent('Base Product Selected',{product_type:next.product_type||'shirt',base_key:String(key)});
     if(next)changeProduct(next.id);
   }
@@ -450,7 +449,7 @@ export default function Home(){
     setMessengerPrompt(false);
   }
   const MiniPreview=()=> <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v=>{const shirt=(product?.view_images||{})[v.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url,inView=placed.filter(x=>(x.view||'front')===v.id);return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label}/>{inView.map((item,i)=>{const p=catalog.patches.find(x=>x.id===item.patchId),s=patchSizePercent(p,v.id);return p?<span key={item.uid} className="mini-placed" style={{left:`${item.x*100}%`,top:`${item.y*100}%`,width:`${s.width}%`,height:`${s.height}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`}}><img src={p.image_url} alt={p.name} loading="lazy" decoding="async"/></span>:null})}<em>{v.short}</em></div>})}</div></div>;
-  const productThumb=p=>previewImageUrl((p?.view_images||{}).front||p?.image_url||defaultProduct.image_url,420);
+  const productThumb=p=>(p?.thumbnail_images||{}).front||(p?.view_images||{}).front||p?.image_url||defaultProduct.image_url;
   const productsByGroup=type=>catalog.products.filter(p=>(p.product_type||'shirt')===type);
   const productBasesByGroup=type=>Array.from(productsByGroup(type).reduce((map,p)=>{const key=productBaseKey(p);map.set(key,[...(map.get(key)||[]),p]);return map;},new Map()).entries()).map(([key,list])=>{const current=list.find(p=>p.id===productId)||list[0],prices=list.map(p=>Number(p.price)).filter(Number.isFinite);return {value:key,label:current.name,sub:`${list.length} màu`,price:prices.length?`từ ${money(Math.min(...prices))}`:'Chưa set',image:productThumb(current)};});
   const productGroups=brand.productGroups;
@@ -462,7 +461,7 @@ export default function Home(){
   const CuteSelect=({label,value,options,note,sheetKey,onOpen})=>{const current=options.find(o=>o.value===value)||options[0];return <div className="pretty-select-field"><span>{label}</span><button type="button" className={`pretty-select-button ${current?.image?'has-thumb':''}`} onClick={()=>{onOpen?.();setSelectSheet(sheetKey);}}>{current?.image&&<span className="select-thumb"><img src={current.image} alt=""/></span>}<span className="select-copy"><b>{current?.label||'Chọn'}</b>{current?.sub&&<small>{current.sub}</small>}{current?.comingSoon&&<em className="coming-soon-mini-tag">COMING SOON</em>}</span>{current?.price&&<strong className="select-price">{current.price}</strong>}<i>⌄</i></button>{note&&<small className="field-note">{note}</small>}</div>};
   const PatchGroupSelect=()=> <CuteSelect label="Nhóm patch" value={activePatchGroup} sheetKey="patchGroup" options={patchGroupOptions}/>;
   const ProductSelect=()=> <div className="form-field product-select-field"><CuteSelect label="Sản phẩm base" value={selectedBaseKey} sheetKey="productGroup" onOpen={()=>setProductSheetGroup(product?.product_type||'shirt')} options={[{value:selectedBaseKey,label:product?.name||'Sản phẩm base',sub:product?.color||'',price:money(product?.price),image:productThumb(product)}]}/></div>;
-  const ColorSelect=()=> <div className="form-field color-field"><label>Màu</label><div className="color-row">{colorVariants.map(v=><button type="button" key={v.id} className={`color-chip ${v.id===productId?'on':''}`} onPointerEnter={()=>preloadImageSources([previewImageUrl((v.view_images||{}).front||v.image_url,420)])} onFocus={()=>preloadImageSources([previewImageUrl((v.view_images||{}).front||v.image_url,420)])} onClick={()=>changeProductColor(v.id)} title={`${v.color||'Màu'} ${v.hex||''}`}><span className="color-swatch" style={{backgroundColor:v.hex||'#f5f1e8'}}></span><b>{v.color}</b></button>)}</div></div>;
+  const ColorSelect=()=> <div className="form-field color-field"><label>Màu</label><div className="color-row">{colorVariants.map(v=><button type="button" key={v.id} className={`color-chip ${v.id===productId?'on':''}`} onPointerEnter={()=>preloadImageSources([(v.thumbnail_images||{}).front])} onFocus={()=>preloadImageSources([(v.thumbnail_images||{}).front])} onClick={()=>changeProductColor(v.id)} title={`${v.color||'Màu'} ${v.hex||''}`}>{v.thumbnail_images?.front?<img src={v.thumbnail_images.front} alt="" loading="lazy" decoding="async"/>:<span className="color-swatch" style={{backgroundColor:v.hex||'#f5f1e8'}}></span>}<b>{v.color}</b></button>)}</div></div>;
   const SizeSelect=()=> <div className="form-field size-field"><label>Size</label><div className="size-row">{sizes.map(s=><button type="button" key={s} className={`size ${size===s?'on':''}`} onClick={()=>setSize(s)}>{s}</button>)}</div>{size&&sizeGuide&&<small className="size-guide-note">{sizeGuide}</small>}</div>;
   const BaseConfig=()=> {const baseReady=Boolean(productId&&product?.color&&size);return <section className={`base-config${baseCollapsed?' is-collapsed':''}`} aria-label="Cấu hình sản phẩm base">{baseCollapsed&&<div className="base-config-heading"><div><small>SẢN PHẨM BASE</small><b>Đã chọn sản phẩm</b></div><button type="button" className="base-config-toggle is-edit" onClick={()=>setBaseCollapsed(false)}>Chỉnh sửa <span>⌄</span></button></div>}{baseCollapsed?<div className="base-config-summary"><img src={productThumb(product)} alt=""/><div><b>{product?.name||'Sản phẩm base'}</b><small>{product?.color||'Chưa chọn màu'}{size?` · Size ${size}`:''}</small></div><strong>{money(product?.price)}</strong></div>:<div className="base-config-fields"><ProductSelect/>{colorVariants.length>1&&<ColorSelect/>}{sizes.length>1&&<SizeSelect/>}{baseReady&&<button type="button" className="choose-patch-cta" onClick={()=>{setBaseCollapsed(true);if(halloweenThemeEnabled&&halloweenFeatures.bats&&!batBurst)setBatBurst(1);}}>Chọn patch</button>}</div>}</section>};
 

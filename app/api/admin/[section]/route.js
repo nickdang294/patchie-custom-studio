@@ -1,4 +1,5 @@
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
+import sharp from 'sharp';
 
 export async function GET(request,{params}) {
   const auth=await requireAdmin(); if(auth.error)return jsonError(auth.error,auth.status);
@@ -22,12 +23,48 @@ export async function GET(request,{params}) {
 export async function POST(request,{params}) {
   const auth=await requireAdmin();if(auth.error)return jsonError(auth.error,auth.status);
   const {section}=await params, db=serviceDb();
+  if(section==='base-thumbnails'){
+    const {data:products,error}=await db.from('products').select('id,view_images,thumbnail_images').order('created_at').limit(200);
+    if(error)return jsonError(error.message,500);
+    const jobs=[];
+    for(const product of products||[]){
+      const views=product.view_images||{},thumbs={...(product.thumbnail_images||{})};
+      for(const [view,url] of Object.entries(views))if(url&&!thumbs[view]&&String(url).startsWith('http'))jobs.push({productId:product.id,view,url,thumbs});
+    }
+    const batch=jobs.slice(0,4);
+    for(const job of batch){
+      try{
+        const response=await fetch(job.url,{cache:'no-store'});if(!response.ok)throw new Error(`Tải ảnh nguồn thất bại (${response.status})`);
+        const source=Buffer.from(await response.arrayBuffer());
+        const thumb=await sharp(source).rotate().resize({width:420,height:420,fit:'inside',withoutEnlargement:true}).webp({quality:72,effort:4}).toBuffer();
+        const path=`base-thumbnails/${crypto.randomUUID()}.webp`;
+        const {error:uploadError}=await db.storage.from('patch-assets').upload(path,thumb,{contentType:'image/webp',cacheControl:'31536000',upsert:false});if(uploadError)throw uploadError;
+        const {data:publicData}=db.storage.from('patch-assets').getPublicUrl(path);
+        const current=(products||[]).find(product=>product.id===job.productId);
+        const next={...(current?.thumbnail_images||{}),[job.view]:publicData.publicUrl};
+        const {error:updateError}=await db.from('products').update({thumbnail_images:next}).eq('id',job.productId);if(updateError)throw updateError;
+        current.thumbnail_images=next;
+      }catch(error){return jsonError(`Không tạo được thumbnail cho sản phẩm ${job.productId} (${job.view}): ${error.message}`,500);}
+    }
+    return Response.json({processed:batch.length,remaining:Math.max(0,jobs.length-batch.length)});
+  }
   if(section==='upload'){
     const f=await request.formData(),file=f.get('file');
     if(!(file instanceof File)||file.size>4*1024*1024||!['image/png','image/jpeg','image/webp'].includes(file.type))return jsonError('Chọn PNG, JPG hoặc WebP tối đa 4 MB.');
     const ext=file.type.split('/')[1].replace('jpeg','jpg'),path=`${crypto.randomUUID()}.${ext}`;
-    const {error}=await db.storage.from('patch-assets').upload(path,file,{contentType:file.type,upsert:false});if(error)return jsonError(error.message,500);
-    const {data}=db.storage.from('patch-assets').getPublicUrl(path);return Response.json({image_url:data.publicUrl});
+    const {error}=await db.storage.from('patch-assets').upload(path,file,{contentType:file.type,cacheControl:'31536000',upsert:false});if(error)return jsonError(error.message,500);
+    const {data}=db.storage.from('patch-assets').getPublicUrl(path);
+    if(f.get('make_thumbnail')==='true'){
+      try{
+        const thumbPath=`base-thumbnails/${crypto.randomUUID()}.webp`;
+        const thumb=await sharp(Buffer.from(await file.arrayBuffer())).rotate().resize({width:420,height:420,fit:'inside',withoutEnlargement:true}).webp({quality:72,effort:4}).toBuffer();
+        const {error:thumbError}=await db.storage.from('patch-assets').upload(thumbPath,thumb,{contentType:'image/webp',cacheControl:'31536000',upsert:false});
+        if(thumbError)return jsonError(`Đã tải ảnh gốc nhưng không lưu được thumbnail: ${thumbError.message}`,500);
+        const {data:thumbnail}=db.storage.from('patch-assets').getPublicUrl(thumbPath);
+        return Response.json({image_url:data.publicUrl,thumbnail_url:thumbnail.publicUrl});
+      }catch(error){return jsonError(`Không tạo được thumbnail base: ${error.message}`,500);}
+    }
+    return Response.json({image_url:data.publicUrl});
   }
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
   if(section==='settings') {

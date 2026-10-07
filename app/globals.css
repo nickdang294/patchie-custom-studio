@@ -884,3 +884,4 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .product-active-toggle input[type=checkbox]{width:17px!important;height:17px;padding:0;border:0;accent-color:var(--coral);flex:0 0 auto}
 
 .patch-list-sentinel{grid-column:1/-1;width:100%;height:1px;pointer-events:none}
+.color-chip img{width:30px;height:30px;object-fit:contain;border-radius:8px;background:#fff}

@@ -13,6 +13,7 @@ create table if not exists public.products (
   hex text not null default '#f5f1e8',
   image_url text not null default '/assets/blank-tee.webp',
   view_images jsonb not null default '{}'::jsonb,
+  thumbnail_images jsonb not null default '{}'::jsonb,
   sizes text[] not null default array['S','M','L','XL'],
   size_guide text not null default '',
   -- Optional physical scale reference. Null keeps the existing legacy scale.
@@ -96,6 +97,7 @@ alter table public.products add column if not exists snap_attraction_enabled boo
 alter table public.products add column if not exists snap_strength_percent numeric(5,2) not null default 45;
 alter table public.products add column if not exists product_type text not null default 'shirt';
 alter table public.products add column if not exists view_images jsonb not null default '{}'::jsonb;
+alter table public.products add column if not exists thumbnail_images jsonb not null default '{}'::jsonb;
 alter table public.products add column if not exists size_guide text not null default '';
 alter table public.products drop constraint if exists products_product_type_check;
 alter table public.patches add column if not exists quote text not null default '';
