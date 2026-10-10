@@ -147,3 +147,10 @@ Trong **Admin → Sản phẩm base**, mỗi SKU/màu có thể đặt chiều r
 Run `supabase/patch-thumbnail-migration.sql` once before deploying this update. Patch uploads from the admin editor and bulk import create a full-size original plus a transparent WebP thumbnail automatically. Both are stored under `Patch Bulk Upload/YYYY-MM-DD/`; thumbnails are placed in that day's `thumbnail/` subfolder. The picker and suggestion cards use the thumbnail, while mockups continue to use the original.
 
 After deployment, open Admin → Thư viện patch and use **Tạo thumbnail còn thiếu** once for existing patches. The backfill runs in batches of five and leaves original images untouched. New uploads create both files without changing the CSV template.
+
+
+## Mẫu phối sẵn
+
+Admin có thể tạo mẫu tại `/admin/product-designs`. Chọn đúng biến thể base/màu, thêm và kéo patch trên từng mặt, đặt ngưỡng patch trùng rồi lưu. Mẫu chỉ được gợi ý khi khách đang chọn cùng `product_id`; danh sách tối đa 9 mẫu, xếp theo số patch trùng rồi theo ưu tiên admin. Khách có thể ẩn gợi ý cho phiên hiện tại, làm mới danh sách, xem preview dựng từ base/patch và xác nhận trước khi thay toàn bộ patch đang đặt. Mẫu và preview không hiển thị giá.
+
+Trước khi deploy lên database hiện có, chạy `supabase/product-design-suggestions-migration.sql` một lần. Thumbnail WebP được lưu trong bucket `product-design-thumbnails` tại `product-design-thumbnails/YYYY-MM-DD/<design-id>.webp`; hệ thống thử nén xuống tối đa 30 KB. Mỗi mẫu lưu ngày tạo và ngày cập nhật. Khi cập nhật, ngày tạo và folder ban đầu được giữ nguyên.
