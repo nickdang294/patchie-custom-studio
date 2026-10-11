@@ -1096,3 +1096,24 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .design-result-slot .product-design-image{border-radius:13px 13px 0 0;background:#faf8f2}
 .design-result-slot .product-design-card>.design-card-name{display:flex;align-items:center;min-height:56px;margin:0;padding:9px 12px;box-sizing:border-box;background:#f4eee5;color:#33283e;font-size:15px;font-weight:800;line-height:19px;letter-spacing:-.15px;text-align:left}
 .design-card-name>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+
+/* Mobile dock uses overlapping panes so swapping DIY and design suggestions
+   never changes the dock's measured height. */
+@media(max-width:700px){
+  .mobile-dock-panels{display:grid;min-width:0;grid-template-areas:"panel"}
+  .mobile-dock-panel{grid-area:panel;min-width:0;visibility:hidden;pointer-events:none}
+  /* Inactive panes still contribute to grid sizing, but never take input. */
+  .mobile-dock-panel:not(.is-active){visibility:hidden}
+  .mobile-dock-panel.is-active{visibility:visible;pointer-events:auto}
+  .mobile-dock-design .mobile-product-design-suggestions{margin:0;padding:8px;border:0;border-radius:11px;background:transparent;box-shadow:none}
+  .mobile-dock-design .product-design-suggestions-head{margin-bottom:6px}
+  .mobile-dock-design .design-result-slot{height:170px}
+  .mobile-dock-design .product-design-strip{height:100%;padding:0 0 4px}
+  .mobile-dock-design .product-design-card{flex-basis:112px;overflow:hidden}
+  .mobile-dock-design .product-design-image{height:106px;border-radius:9px}
+  .mobile-dock-design .product-design-refresh{min-height:32px;margin-top:5px;padding:6px 8px}
+  .mobile-dock-design .design-skeleton{padding:4px 0}
+  .mobile-dock-design .design-skeleton i{flex-basis:112px}
+  .mobile-dock-panel .mobile-suggest-strip,.mobile-dock-panel .mobile-suggestion-title,.mobile-dock-panel .mobile-more-suggestions,.mobile-dock-panel .mobile-patch-strip,.mobile-dock-panel .patch-filter-select,.mobile-dock-panel .pretty-select-field{animation:none!important}
+  .mobile-dock-panel .mobile-suggest-strip,.mobile-dock-panel .mobile-suggestion-title,.mobile-dock-panel .mobile-more-suggestions,.mobile-dock-panel .mobile-patch-strip,.mobile-dock-panel .patch-filter-select,.mobile-dock-panel .pretty-select-field{animation:none!important}
+}
