@@ -952,3 +952,12 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .base-config-heading{display:none}
 .base-config-summary{display:none}
 @media(max-width:700px){.mobile-config .base-config-heading{display:flex}.mobile-config .base-config-summary{display:grid}}
+
+/* Let the complete base card fold up and unfold with the scroll direction. */
+@media(max-width:700px){
+  .mobile-config{max-height:680px;overflow:hidden;transition:max-height .48s cubic-bezier(.22,.72,.24,1),opacity .3s ease,transform .42s cubic-bezier(.22,.72,.24,1);will-change:max-height,transform}
+  .mobile-config.is-collapsed{max-height:170px;transform:translateY(-3px)}
+  .mobile-config .base-config-fields{max-height:650px}
+  .mobile-config .base-config.is-collapsed .base-config-fields{max-height:0}
+}
+@media(prefers-reduced-motion:reduce){.mobile-config{transition:none!important;will-change:auto}}
