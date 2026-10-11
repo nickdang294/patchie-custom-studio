@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductDesignAdmin() {
   const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]);
-  const [productId, setProductId] = useState(''), [name, setName] = useState(''), [minMatches, setMinMatches] = useState(1), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
+  const [productId, setProductId] = useState(''), [name, setName] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
   const [dragId, setDragId] = useState(''), [editingId, setEditingId] = useState(''), [editingCreatedAt, setEditingCreatedAt] = useState('');
   const product = products.find(p => p.id === productId);
   const views = useMemo(() => product?.product_type === 'bag' ? [['front','Mặt trước'],['back','Mặt sau']] : [['front','Mặt trước'],['left_sleeve','Tay áo trái'],['right_sleeve','Tay áo phải'],['back','Mặt sau']], [product]);
@@ -31,15 +31,14 @@ export default function ProductDesignAdmin() {
     e.preventDefault();
     if (!product || !product.image_url || !product.view_images) return setMsg('Base cần có ảnh và cấu hình mặt trước.');
     if (!placements.length) return setMsg('Thêm ít nhất một patch.');
-    if (Number(minMatches) > new Set(placements.map(p => p.patch_id)).size) return setMsg('Ngưỡng trùng không thể lớn hơn số patch khác nhau trong mẫu.');
     setMsg('Đang tạo thumbnail và lưu mẫu…');
     try {
-      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: Number(minMatches), priority: Number(priority) }) });
+      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: 1, priority: Number(priority) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Không lưu được mẫu.');
       setItems(a => [data.item, ...a.filter(x => x.id !== data.item.id)]); setName(''); setPlacements([]); setEditingId(''); setEditingCreatedAt(''); setMsg('Đã lưu mẫu phối.');
     } catch (error) { setMsg(error.message); }
   }
-  function edit(item) { setEditingId(item.id); setEditingCreatedAt(item.created_at); setName(item.name); setProductId(item.product_id); setPlacements(item.placements.map(p => ({ ...p, uid: crypto.randomUUID() }))); setMinMatches(item.min_matches); setPriority(item.priority || 0); setView('front'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function edit(item) { setEditingId(item.id); setEditingCreatedAt(item.created_at); setName(item.name); setProductId(item.product_id); setPlacements(item.placements.map(p => ({ ...p, uid: crypto.randomUUID() }))); setPriority(item.priority || 0); setView('front'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   async function remove(id) { if (!confirm('Xóa mẫu phối này và thumbnail?')) return; const response = await fetch(`/api/admin/product-designs?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.filter(x => x.id !== id)); }
   async function toggle(item) { const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...item, active: !item.active }) }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.map(x => x.id === item.id ? data.item : x)); }
   return <main className="admin-shell">
@@ -51,7 +50,7 @@ export default function ProductDesignAdmin() {
       <div className="settings-form">
         <label>Tên mẫu<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Ví dụ: Daily mood"/></label>
         <label>Sản phẩm base<select required value={productId} onChange={e=>{setProductId(e.target.value);setPlacements([]);}}><option value="">Chọn đúng biến thể / màu</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} · {p.color||p.sku||p.id}</option>)}</select></label>
-        <label>Patch trùng tối thiểu<input type="number" min="1" max="12" value={minMatches} onChange={e=>setMinMatches(e.target.value)}/><small className="admin-help">Mẫu chỉ hiện khi khách đã chọn ít nhất số patch này.</small></label>
+        <p className="admin-help">Mẫu được gợi ý cho đúng sản phẩm và màu. Mẫu trùng nhiều patch được ưu tiên trước; các mẫu còn lại bổ sung tối đa 9 gợi ý.</p>
         <label>Ưu tiên khi số patch trùng bằng nhau<input type="number" value={priority} onChange={e=>setPriority(e.target.value)}/></label>
       </div>
       {product && <>
@@ -68,6 +67,6 @@ export default function ProductDesignAdmin() {
         <button className="button dark">Lưu mẫu phối</button>
       </>}
     </form>
-    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2><div className="patch-admin-grid">{items.map(item=><article className="admin-patch" key={item.id}><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tối thiểu {item.min_matches} patch trùng</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><label><input type="checkbox" checked={item.active} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}</section>
+    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2><div className="patch-admin-grid">{items.map(item=><article className="admin-patch" key={item.id}><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><label><input type="checkbox" checked={item.active} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}</section>
   </main>;
 }

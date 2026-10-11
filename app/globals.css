@@ -1051,3 +1051,12 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 
 /* Clip transformed artwork, while keeping the surrounding controls accessible. */
 .stage-zoom-viewport{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
+
+/* v49: compact async status; result panels only expand on a customer action. */
+.design-suggestion-status{height:36px;margin:0;display:flex;align-items:center;font-size:12px;line-height:16px;color:var(--muted,#756a62);overflow:hidden}
+.product-design-switch:disabled{opacity:.45;cursor:default}
+.product-design-suggestions>.product-design-refresh{width:100%;min-height:40px;margin-top:8px}
+.patch-suggestions-refresh{width:100%;min-height:40px;flex-shrink:0}
+.patch-recommendations>.patch-suggestions-refresh{margin-top:8px}
+
+.patch-recommendations>.patch-suggestions-refresh,.product-design-suggestions>.product-design-refresh{display:block;max-width:none;padding:8px 10px;border:1px solid #e4dbf3;border-radius:10px;background:#fffefa;color:#625281;font-size:11px;font-weight:800;text-align:center}
