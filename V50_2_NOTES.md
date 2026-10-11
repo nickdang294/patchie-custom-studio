@@ -7,3 +7,7 @@
 - No backend, database, asset, or recommendation-fetch behavior changed.
 
 Validation: source edits reviewed. Build/browser testing was not completed because dependencies are not installed and npm offline cache lacks `tslib`; no production URL or Supabase data was changed.
+
+## Follow-up CLS adjustment
+
+The prior CLS selector list also showed `mobile-patch-dock` and `preview-card` moving. The design cards are now outside that dock, but the remaining patch chooser and recommended-patch panels can still have slightly different heights. v50.2 follow-up reserves 312 px for the dock only when its two tabs are present, clamps the dynamic suggestion title to one line, and removes entrance transforms from tab-switched rows. This avoids adding blank height before any paid patch is selected.
