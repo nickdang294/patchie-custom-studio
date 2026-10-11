@@ -23,11 +23,11 @@ export default function DesignSuggestions({mobile=false,enabled,onToggle,loading
   return <section className={`product-design-suggestions ${mobile?'mobile-product-design-suggestions':''}`}>
     <div className="product-design-suggestions-head"><div><b>Mẫu phối hợp gu</b></div><button type="button" role="switch" className={`product-design-switch ${enabled?'is-on':'is-off'}`} aria-checked={enabled} aria-label="Bật hoặc tắt gợi ý mẫu phối" onClick={()=>onToggle(!enabled)}><span/></button></div>
     <p className="design-suggestion-announcement" role="status">{status}</p>
-    {enabled&&<div className="design-result-slot" aria-busy={loading}>
+    <div className="design-result-slot" aria-busy={loading} hidden={!enabled}>
       {designs.length>0?<DesignCards designs={designs} loading={loading} onPreview={onPreview}/>:loading?<div className="design-skeleton" aria-hidden="true"><i/><i/></div>:!error?<p className="admin-help product-design-empty">Chưa có mẫu phối sẵn.</p>:null}
       {loading&&<div className="suggestion-status-overlay" aria-hidden="true"><b>Patchie đang tìm mẫu phối…</b></div>}
       {error&&!loading&&<div className="suggestion-error"><span>{error}</span><button type="button" onClick={onRefresh}>Thử lại</button></div>}
-    </div>}
+    </div>
     <button type="button" className="mobile-more-suggestions product-design-refresh" disabled={!canRefresh} onClick={onRefresh}>{loading?'Đang tìm mẫu phối…':error?'Thử lại gợi ý mẫu phối':'✦ Gợi ý thêm mẫu phối'}</button>
   </section>;
 }

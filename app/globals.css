@@ -1049,6 +1049,16 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
  .suggestion-status-overlay{font-size:12px}
 }
 
+/* Mobile design suggestions sit below the mockup, outside the switching dock. */
+.desktop-design-suggestions{display:block}
+@media(max-width:700px){
+  .desktop-design-suggestions{display:none}
+  .mobile-product-design-suggestions{order:5;margin:10px 0 4px}
+  .mobile-product-design-suggestions .design-result-slot[hidden]{display:block!important;visibility:hidden;pointer-events:none}
+  .mobile-product-design-suggestions .design-result-slot[hidden]>*{visibility:hidden}
+}
+@media(min-width:701px){.mobile-product-design-suggestions{display:none}}
+
 /* Clip transformed artwork, while keeping the surrounding controls accessible. */
 .stage-zoom-viewport{position:absolute;inset:0;overflow:hidden;border-radius:inherit}
 
