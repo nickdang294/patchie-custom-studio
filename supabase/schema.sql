@@ -12,6 +12,7 @@ create table if not exists public.products (
   color text not null,
   hex text not null default '#f5f1e8',
   image_url text not null default '/assets/blank-tee.webp',
+  thumbnail_url text,
   view_images jsonb not null default '{}'::jsonb,
   sizes text[] not null default array['S','M','L','XL'],
   size_guide text not null default '',
@@ -30,6 +31,8 @@ create table if not exists public.products (
   active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.products add column if not exists thumbnail_url text;
 
 create table if not exists public.patches (
   id text primary key default ('patch-' || replace(gen_random_uuid()::text,'-','')),

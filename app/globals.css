@@ -945,3 +945,5 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .base-config-summary{display:none}
 @media(max-width:700px){.mobile-config .base-config-heading{display:flex}}
 
+
+.product-thumbnail-field{grid-column:1/-1;display:grid;gap:8px;min-width:0;margin:0;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fffaf4}.product-thumbnail-field legend{padding:0 5px;font-size:11px;font-weight:850}.product-thumbnail-field .admin-help{margin:0;text-align:left}.product-thumbnail-field input{width:100%;min-width:0}.product-thumbnail-preview{width:88px;height:88px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;padding:4px}
