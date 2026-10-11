@@ -8,7 +8,7 @@ import PumpkinFireworks from './pumpkin-fireworks';
 import HeartsBurst from './hearts-burst';
 import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
 import { previewImageUrl } from '@/lib/image-utils';
-import { rankPatchRecommendations } from '@/lib/recommendation-rules';
+import { rankPatchRecommendations, rankProductDesignPatchRecommendations } from '@/lib/recommendation-rules';
 import { trackEvent } from '@/lib/analytics';
 
 const STARTER=[
@@ -176,10 +176,15 @@ export default function Home(){
   const loadedPatchCards=visiblePatches.slice(0,patchCardLimit);
   const lastPlacedPatch=placed.length?catalog.patches.find(p=>p.id===placed[placed.length-1].patchId):null;
   const suggestionAnchor=suggestionAnchorId?catalog.patches.find(p=>p.id===suggestionAnchorId):lastPlacedPatch;
-  const placedPatchIds=new Set(placed.map(item=>item.patchId));
+  const placedPatchIds=new Set(placed.map(item=>String(item.patchId)));
   const recommendationRules=Array.isArray(catalog.settings.recommendationRules)?catalog.settings.recommendationRules:[];
-  const recommendedPatches=lastPlacedPatch?rankPatchRecommendations(lastPlacedPatch,eligiblePatches.filter(p=>p.id!==lastPlacedPatch.id&&!placedPatchIds.has(p.id)&&!patchIsComingSoon(p)),recommendationRules,15):[];
-  const mobileRecommendedPatches=suggestionIds.map(id=>catalog.patches.find(p=>p.id===id)).filter(p=>p&&patchFitsBase(p));
+  const recommendationCandidates=eligiblePatches.filter(p=>!placedPatchIds.has(String(p.id))&&!patchIsComingSoon(p));
+  const designPatchRecommendations=designSuggestionEnabled?rankProductDesignPatchRecommendations(productDesigns,[...placedPatchIds],recommendationCandidates,15):[];
+  const rulePatchRecommendations=lastPlacedPatch?rankPatchRecommendations(lastPlacedPatch,recommendationCandidates.filter(p=>String(p.id)!==String(lastPlacedPatch.id)),recommendationRules,15):[];
+  const mergePatchRecommendations=(primary,secondary)=>{const seen=new Set(),merged=[];for(const patch of [...primary,...secondary]){const id=String(patch.id);if(seen.has(id))continue;seen.add(id);merged.push(patch);if(merged.length>=15)break;}return merged;};
+  const recommendedPatches=mergePatchRecommendations(designPatchRecommendations,rulePatchRecommendations);
+  const mobileRulePatches=suggestionIds.map(id=>catalog.patches.find(p=>String(p.id)===String(id))).filter(p=>p&&patchFitsBase(p));
+  const mobileRecommendedPatches=mergePatchRecommendations(designPatchRecommendations,mobileRulePatches);
   const canRequestMoreSuggestions=Boolean(pendingSuggestionUid&&placed.some(item=>item.uid===pendingSuggestionUid&&!item.gift));
   const hasMobileSuggestionContext=catalog.settings.patchSuggestionsEnabled!==false&&placed.some(item=>!item.gift);
   const suggestionIntroPlayed=useRef(false);
