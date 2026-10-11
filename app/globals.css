@@ -1185,3 +1185,8 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .mobile-dock-design .design-result-slot .product-design-card>.design-card-name{grid-template-columns:16px minmax(0,1fr);gap:5px;min-height:30px;margin:0 6px 6px;padding:4px 7px;font-size:10px}
   .mobile-dock-design .design-result-slot .design-card-name>i{width:15px;height:15px;border-radius:5px;font-size:9px}
 }
+
+/* v50.11: inset design thumbnails so edge artwork is never flush to card clipping. */
+.design-result-slot .product-design-image{padding:10px;box-sizing:border-box}
+.design-result-slot .product-design-image img{display:block;width:100%;height:100%;object-fit:contain;object-position:center}
+@media(max-width:700px){.mobile-dock-design .design-result-slot .product-design-image{padding:6px}}
