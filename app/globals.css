@@ -1152,3 +1152,10 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .mobile-dock-design .product-design-card>.design-card-name{font-size:12px;padding:6px 8px;grid-template-columns:19px minmax(0,1fr);gap:6px}
   .mobile-dock-design .design-card-name>i{width:18px;height:18px;border-radius:7px;font-size:10px}
 }
+
+/* Keep the patch picker useful when its current result set is empty. */
+.patch-empty-state{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:112px;padding:14px 12px;box-sizing:border-box;text-align:center;border:1px dashed #dfd5ed;border-radius:13px;background:linear-gradient(145deg,#fffefa,#faf7ff);color:var(--muted)}
+.patch-empty-state>span{display:grid;place-items:center;width:26px;height:26px;border-radius:9px;background:#eee7fb;color:#8d77c8;font-size:14px}
+.patch-empty-state>b{font-size:11px;color:var(--ink)}
+.patch-empty-state>small{font-size:10px;line-height:1.4}
+@media(max-width:700px){.mobile-patch-strip .patch-empty-state{flex:1 0 100%;min-height:88px;padding:9px}.mobile-patch-strip .patch-empty-state>span{width:22px;height:22px}}
