@@ -921,15 +921,8 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .mobile-patch-dock .pretty-select-field>span{display:none!important}
   .mobile-config .product-select-field:before{display:none!important}
   .mobile-config .product-select-field .pretty-select-field>span{display:none!important}
-  .mobile-config .base-config{gap:8px}
   .mobile-config .base-config-heading{min-height:25px}
   .mobile-config .base-config-heading small{font-size:10px;letter-spacing:.12em}
-  .mobile-config .base-config-fields{max-height:360px;opacity:1;transform:translateY(0);overflow:hidden;transition:max-height .36s cubic-bezier(.2,.75,.25,1),opacity .22s ease,transform .3s ease}
-  .mobile-config .base-config-summary{max-height:0;min-height:0;padding:0 8px;border-color:transparent;opacity:0;transform:translateY(-6px);overflow:hidden;transition:max-height .34s cubic-bezier(.2,.75,.25,1),padding .28s ease,opacity .2s ease,transform .28s ease,border-color .2s ease}
-  .mobile-config .base-config.is-collapsed .base-config-fields{max-height:0;opacity:0;transform:translateY(-6px)}
-  .mobile-config .base-config.is-collapsed .base-config-summary{max-height:70px;min-height:54px;padding:8px;border-color:#e5d9f7;opacity:1;transform:translateY(0)}
-  .mobile-config .base-config.is-collapsed{gap:5px}
-  .mobile-config .base-config-toggle{padding:5px 9px}
   .mobile-patch-strip .patch-card,.mobile-suggest-strip .patchie-suggestion-item{display:flex;flex-direction:column;align-items:stretch}
   .mobile-patch-strip .patch-card .price-tag,.mobile-suggest-strip .patchie-suggestion-item .price-tag{display:block;width:100%;margin:4px 0 1px;padding:5px 3px;text-align:center}
   .mobile-patch-strip .patch-card>b,.mobile-suggest-strip .patchie-suggestion-item>b{text-align:left}
@@ -948,16 +941,7 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .product-design-switch.is-on>span{transform:translateX(18px);background:#fff}
 .product-design-switch.is-off>span{transform:translateX(0);background:#fff}
 @media(max-width:700px){.product-design-switch{flex-basis:46px;width:46px;height:27px}.product-design-switch>span{width:19px;height:19px}.product-design-switch.is-on>span{transform:translateX(19px)}}
-@media(prefers-reduced-motion:reduce){.mobile-config .base-config-fields,.mobile-config .base-config-summary,.product-design-switch,.product-design-switch>span,.suggestion-button-in{transition:none!important;animation:none!important}}
 .base-config-heading{display:none}
 .base-config-summary{display:none}
-@media(max-width:700px){.mobile-config .base-config-heading{display:flex}.mobile-config .base-config-summary{display:grid}}
+@media(max-width:700px){.mobile-config .base-config-heading{display:flex}}
 
-/* Let the complete base card fold up and unfold with the scroll direction. */
-@media(max-width:700px){
-  .mobile-config{max-height:680px;overflow:hidden;transition:max-height .48s cubic-bezier(.22,.72,.24,1),opacity .3s ease,transform .42s cubic-bezier(.22,.72,.24,1);will-change:max-height,transform}
-  .mobile-config.is-collapsed{max-height:170px;transform:translateY(-3px)}
-  .mobile-config .base-config-fields{max-height:650px}
-  .mobile-config .base-config.is-collapsed .base-config-fields{max-height:0}
-}
-@media(prefers-reduced-motion:reduce){.mobile-config{transition:none!important;will-change:auto}}
