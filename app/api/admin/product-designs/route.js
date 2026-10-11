@@ -19,6 +19,13 @@ export async function POST(request) {
   let body;
   try { body = await request.json(); } catch { return jsonError('Dữ liệu mẫu phối không hợp lệ.'); }
   const name = String(body.name || '').trim().slice(0, 80);
+  const shopeeUrl = String(body.shopee_url || '').trim();
+  if (shopeeUrl) {
+    let parsed;
+    try { parsed = new URL(shopeeUrl); } catch { return jsonError('Link Shopee không hợp lệ.'); }
+    const host = parsed.hostname.toLowerCase();
+    if (parsed.protocol !== 'https:' || !(host === 'shopee.vn' || host.endsWith('.shopee.vn') || host === 'shopee.com' || host.endsWith('.shopee.com') || host === 'shp.ee' || host.endsWith('.shp.ee'))) return jsonError('Hãy nhập đường dẫn HTTPS của Shopee.');
+  }
   const productId = String(body.product_id || '');
   const placements = Array.isArray(body.placements) ? body.placements : [];
   const minMatches = Number(body.min_matches);
@@ -44,7 +51,7 @@ export async function POST(request) {
     if (uploadError) throw uploadError;
     const updatedAt = new Date().toISOString();
     const thumbnailUrl = `${db.storage.from('product-design-thumbnails').getPublicUrl(path).data.publicUrl}?v=${Date.parse(updatedAt)}`;
-    const record = { id, name, product_id: productId, placements, min_matches: minMatches, priority: Number(body.priority) || 0, active: body.active !== false, thumbnail_path: path, thumbnail_url: thumbnailUrl, created_at: createdAt, updated_at: updatedAt };
+    const record = { id, name, shopee_url: shopeeUrl || null, product_id: productId, placements, min_matches: minMatches, priority: Number(body.priority) || 0, active: body.active !== false, thumbnail_path: path, thumbnail_url: thumbnailUrl, created_at: createdAt, updated_at: updatedAt };
     const { data, error } = await db.from('product_designs').upsert(record).select().single();
     if (error) throw error;
     return Response.json({ item: data });

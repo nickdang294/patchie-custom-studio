@@ -64,6 +64,7 @@ create table if not exists public.settings (
 create table if not exists public.product_designs (
   id text primary key default replace(gen_random_uuid()::text, '-', ''),
   name text not null,
+  shopee_url text,
   product_id text not null references public.products(id) on delete cascade,
   placements jsonb not null default '[]'::jsonb,
   min_matches integer not null default 1 check (min_matches > 0),
@@ -74,6 +75,7 @@ create table if not exists public.product_designs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.product_designs add column if not exists shopee_url text;
 create index if not exists product_designs_lookup_idx on public.product_designs(product_id, active, priority desc);
 
 create table if not exists public.designs (

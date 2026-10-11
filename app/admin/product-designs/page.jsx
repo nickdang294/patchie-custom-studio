@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductDesignAdmin() {
   const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]);
-  const [productId, setProductId] = useState(''), [name, setName] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
+  const [productId, setProductId] = useState(''), [name, setName] = useState(''), [shopeeUrl, setShopeeUrl] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
   const [dragId, setDragId] = useState(''), [editingId, setEditingId] = useState(''), [editingCreatedAt, setEditingCreatedAt] = useState('');
   const product = products.find(p => p.id === productId);
   const views = useMemo(() => product?.product_type === 'bag' ? [['front','Mặt trước'],['back','Mặt sau']] : [['front','Mặt trước'],['left_sleeve','Tay áo trái'],['right_sleeve','Tay áo phải'],['back','Mặt sau']], [product]);
@@ -33,12 +33,12 @@ export default function ProductDesignAdmin() {
     if (!placements.length) return setMsg('Thêm ít nhất một patch.');
     setMsg('Đang tạo thumbnail và lưu mẫu…');
     try {
-      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: 1, priority: Number(priority) }) });
+      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, shopee_url: shopeeUrl.trim(), product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: 1, priority: Number(priority) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Không lưu được mẫu.');
-      setItems(a => [data.item, ...a.filter(x => x.id !== data.item.id)]); setName(''); setPlacements([]); setEditingId(''); setEditingCreatedAt(''); setMsg('Đã lưu mẫu phối.');
+      setItems(a => [data.item, ...a.filter(x => x.id !== data.item.id)]); setName(''); setShopeeUrl(''); setPlacements([]); setEditingId(''); setEditingCreatedAt(''); setMsg('Đã lưu mẫu phối.');
     } catch (error) { setMsg(error.message); }
   }
-  function edit(item) { setEditingId(item.id); setEditingCreatedAt(item.created_at); setName(item.name); setProductId(item.product_id); setPlacements(item.placements.map(p => ({ ...p, uid: crypto.randomUUID() }))); setPriority(item.priority || 0); setView('front'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function edit(item) { setEditingId(item.id); setEditingCreatedAt(item.created_at); setName(item.name); setShopeeUrl(item.shopee_url||''); setProductId(item.product_id); setPlacements(item.placements.map(p => ({ ...p, uid: crypto.randomUUID() }))); setPriority(item.priority || 0); setView('front'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   async function remove(id) { if (!confirm('Xóa mẫu phối này và thumbnail?')) return; const response = await fetch(`/api/admin/product-designs?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.filter(x => x.id !== id)); }
   async function toggle(item) { const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...item, active: !item.active }) }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.map(x => x.id === item.id ? data.item : x)); }
   return <main className="admin-shell">
@@ -50,6 +50,7 @@ export default function ProductDesignAdmin() {
       <div className="settings-form">
         <label>Tên mẫu<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Ví dụ: Daily mood"/></label>
         <label>Sản phẩm base<select required value={productId} onChange={e=>{setProductId(e.target.value);setPlacements([]);}}><option value="">Chọn đúng biến thể / màu</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} · {p.color||p.sku||p.id}</option>)}</select></label>
+        <label className="design-shopee-field">Link Shopee của mẫu này<input type="url" value={shopeeUrl} onChange={e=>setShopeeUrl(e.target.value)} placeholder="https://shopee.vn/..."/><small className="admin-help">Nút mua trong popup sẽ mở đúng sản phẩm này trên Shopee.</small></label>
         <p className="admin-help">Mẫu được gợi ý cho đúng sản phẩm và màu. Mẫu trùng nhiều patch được ưu tiên trước; các mẫu còn lại bổ sung tối đa 9 gợi ý.</p>
         <label>Ưu tiên khi số patch trùng bằng nhau<input type="number" value={priority} onChange={e=>setPriority(e.target.value)}/></label>
       </div>

@@ -12,7 +12,7 @@ export async function GET(request) {
   try {
     const db = serviceDb();
     const [{data:designs,error:designError},{data:product,error:productError}]=await Promise.all([
-      db.from('product_designs').select('id,name,product_id,thumbnail_url,placements,priority,active').eq('product_id',productId).eq('active',true),
+      db.from('product_designs').select('id,name,shopee_url,product_id,thumbnail_url,placements,priority,active').eq('product_id',productId).eq('active',true),
       db.from('products').select('id').eq('id',productId).eq('active',true).maybeSingle()
     ]);
     if(designError||productError)throw new Error('Không tải được mẫu phối.');
