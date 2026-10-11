@@ -179,7 +179,7 @@ export default function Home(){
   const placedPatchIds=new Set(placed.map(item=>String(item.patchId)));
   const recommendationRules=Array.isArray(catalog.settings.recommendationRules)?catalog.settings.recommendationRules:[];
   const recommendationCandidates=eligiblePatches.filter(p=>!placedPatchIds.has(String(p.id))&&!patchIsComingSoon(p));
-  const designPatchRecommendations=designSuggestionEnabled?rankProductDesignPatchRecommendations(productDesigns,[...placedPatchIds],recommendationCandidates,15):[];
+  const designPatchRecommendations=rankProductDesignPatchRecommendations(productDesigns,[...placedPatchIds],recommendationCandidates,15);
   const rulePatchRecommendations=lastPlacedPatch?rankPatchRecommendations(lastPlacedPatch,recommendationCandidates.filter(p=>String(p.id)!==String(lastPlacedPatch.id)),recommendationRules,15):[];
   const mergePatchRecommendations=(primary,secondary)=>{const seen=new Set(),merged=[];for(const patch of [...primary,...secondary]){const id=String(patch.id);if(seen.has(id))continue;seen.add(id);merged.push(patch);if(merged.length>=15)break;}return merged;};
   const recommendedPatches=mergePatchRecommendations(designPatchRecommendations,rulePatchRecommendations);
