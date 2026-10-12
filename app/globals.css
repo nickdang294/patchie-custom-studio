@@ -178,6 +178,26 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
   .admin-footer-link{padding:8px 10px;font-size:9px}
 }
 
+/* Patch name search in multi-patch admin tools and design-template editor. */
+.bulk-form .bulk-patch-search{grid-column:1/-1;position:relative;display:flex;align-items:center;gap:8px;min-width:0;padding:0 11px;border:1px solid #e7dcf2;border-radius:12px;background:linear-gradient(110deg,#fffefa,#faf6ff);color:#8b79a8}
+.bulk-patch-search>span,.design-patch-search>span{font-size:19px;line-height:1}
+.bulk-form .bulk-patch-search input,.design-patch-search input{width:100%;min-width:0;height:42px;padding:0;border:0;outline:0;background:transparent;box-shadow:none;color:var(--ink);font-size:12px}
+.bulk-form .bulk-patch-search input:focus,.design-patch-search input:focus{box-shadow:none}
+.bulk-patch-search>button,.design-patch-search>button{flex:0 0 auto;width:25px;height:25px;border:0;border-radius:50%;background:#eee7f7;color:#69558e;font-size:16px;line-height:1}
+.design-patch-picker{display:grid;grid-template-rows:auto auto minmax(0,1fr);gap:8px;min-width:0;max-height:560px}
+.design-patch-picker-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.design-patch-picker-head b{font-size:12px}
+.design-patch-picker-head small{padding:4px 8px;border-radius:999px;background:#f2ecfa;color:#79678f;font-size:9px;font-weight:800}
+.design-patch-search{display:flex;align-items:center;gap:8px;min-width:0;padding:0 10px;border:1px solid #e7dcf2;border-radius:12px;background:linear-gradient(110deg,#fffefa,#faf6ff);color:#8b79a8}
+.design-patch-options{display:grid;align-content:start;gap:7px;min-height:120px;max-height:460px;overflow:auto;padding:2px 3px 2px 0;overscroll-behavior:contain}
+.design-patch-options>button{display:flex;align-items:center;gap:9px;min-width:0;padding:7px;border:1px solid #eee8f3;border-radius:11px;background:#fffefa;text-align:left;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.design-patch-options>button:hover{transform:translateY(-1px);border-color:#cbb9ef;background:#faf7ff}
+.design-patch-options>button>img{flex:0 0 auto;width:40px;height:40px;object-fit:contain;border-radius:8px;background:#f8f6ef}
+.design-patch-options>button>span:nth-child(2){min-width:0;overflow-wrap:anywhere;font-size:11px;font-weight:750;color:#393343}
+.design-patch-add{display:grid;place-items:center;flex:0 0 auto;width:24px;height:24px;margin-left:auto;border-radius:8px;background:#eaf5bd;color:#5c6e29;font-size:15px;font-weight:900}
+.design-patch-no-results{margin:0;padding:15px 8px;text-align:center}
+@media(max-width:760px){.design-patch-picker{max-height:370px}.design-patch-options{max-height:270px;grid-template-columns:1fr 1fr}.design-patch-options>button{gap:6px;padding:6px}.design-patch-options>button>img{width:34px;height:34px}.design-patch-options>button>span:nth-child(2){font-size:10px}.design-patch-add{width:20px;height:20px}}
+
 /* Keep the public page switcher available while users scroll.  The same
    treatment is shared by Custom Studio and Patch Market so navigation never
    disappears on long mockup, library, or checkout pages. */
