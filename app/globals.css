@@ -1258,3 +1258,16 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
  .design-preview-actions>a,.design-preview-actions>button{min-height:47px;border-radius:14px;font-size:12px}
  .design-preview-loading{min-height:260px}
 }
+
+/* Wordmark frame: uploaded artwork 2162 × 727, never cropped. */
+.brand .brand-wordmark{display:block;flex:0 0 auto;width:156px;aspect-ratio:2162/727;position:relative}
+.brand-wordmark img{display:block;width:100%;height:100%;object-fit:contain;border:0;border-radius:0;background:transparent}
+.brand-wordmark-placeholder{display:block;width:100%;height:100%;border:1px dashed #c9b9d7;border-radius:8px;background:#f0eaff55}
+.design-rotation{display:grid;gap:10px;padding:16px;border:1px solid #e3d7ed;border-radius:14px;background:#faf6ff;max-width:560px}
+.design-rotation label{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px}
+.design-rotation input{grid-column:1/-1;width:100%;accent-color:#9272b8}
+.design-rotation>div{display:flex;gap:8px}
+.design-rotation button{border:1px solid #d8c8e6;border-radius:10px;background:#fffefa;padding:8px 12px}
+.design-rotation button:disabled{opacity:.4}
+.design-rotation small{color:#796988}
+@media(max-width:700px){.brand .brand-wordmark{width:119px}}

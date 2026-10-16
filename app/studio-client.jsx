@@ -11,6 +11,7 @@ import { previewImageUrl } from '@/lib/image-utils';
 import { trackEvent } from '@/lib/analytics';
 
 import {useSuggestions} from '@/lib/hooks/use-suggestions';
+import {snapRotation} from '@/lib/rotation';
 import {useStageZoom} from '@/lib/hooks/use-stage-zoom';
 import DesignSuggestions from './components/design-suggestions';
 
@@ -91,7 +92,7 @@ const makeDraftOrderCode=()=>`PCH-${Array.from(crypto.getRandomValues(new Uint8A
 const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',product_type:'shirt',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],size_guide:'',price:null};
 const BRAND_DEFAULTS={brandName:'Patchie',logoUrl:'',slogan:'Customize your everyday',fontFamily:'DM Sans',heroEyebrow:'YOUR BASE, YOUR LITTLE WORLD',heroTitle:'Tự tạo món đồ',heroAccent:'của riêng bạn.',heroDescription:'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',step1Label:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Title:'Sản phẩm base',step2Label:'02 / CHỌN PATCH BẠN THÍCH HA',step3Label:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepBaseDesktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepBaseMobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepPatchDesktop:'02 / CHỌN PATCH BẠN THÍCH HA',stepPatchMobile:'02 / CHỌN PATCH BẠN THÍCH HA',stepPreviewDesktop:'03 / CÙNG DESIGN HOI',stepPreviewMobile:'03 / CÙNG DESIGN HOI',stepOrderDesktop:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepOrderMobile:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',step1Desktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Mobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step2Desktop:'02 / CHỌN PATCH BẠN THÍCH HA',step2Mobile:'02 / CHỌN PATCH BẠN THÍCH HA',addPatchLabel:'＋ Thêm patch lên mặt đang chọn',mobileAddPatchLabel:'＋ Thêm patch vào mặt đang chọn',productGroupImages:{shirt:'',bag:''},productGroups:PRODUCT_GROUPS};
 const cssContent=value=>JSON.stringify(String(value||''));
-const BrandIdentity=({brand=BRAND_DEFAULTS})=><>{brand.logoUrl?<img className="brand-logo" src={brand.logoUrl} alt=""/>:<span className="brand-mark">P</span>} {brand.brandName||'Patchie'}</>;
+const BrandIdentity=({brand=BRAND_DEFAULTS})=><span className="brand-wordmark" aria-label={brand.brandName||'Patchie'}>{brand.logoUrl?<img src={brand.logoUrl} alt={brand.brandName||'Patchie'}/>:<span className="brand-wordmark-placeholder" aria-hidden="true"/>}</span>;
 
 const StudioHeader=({brand})=><header className="topbar">
   <a className="brand" href="/"><BrandIdentity brand={brand}/></a>
@@ -350,7 +351,7 @@ export default function Home({initialCatalog=null}){
   function changeProductColor(id){if(id!==productId){const next=catalog.products.find(item=>item.id===id);trackEvent('Base Color Selected',{product_type:next?.product_type||'shirt',color:String(next?.color||'unknown')});changeProduct(id,{keepCustom:true});}}
   function beginRotate(){if(!selectedItem||rotating.current)return;remember();rotating.current=true;}
   function endRotate(){rotating.current=false;}
-  function rotateSelected(value){if(!selectedUid)return;const rotation=normalizeRotation(value);setOrder(null);setPlaced(a=>a.map(x=>x.uid===selectedUid?{...x,rotation}:x));}
+  function rotateSelected(value){if(!selectedUid)return;const rotation=normalizeRotation(snapRotation(value));setOrder(null);setPlaced(a=>a.map(x=>x.uid===selectedUid?{...x,rotation}:x));}
   function nudgeRotate(delta){if(!selectedItem)return show('Chọn patch cần xoay trước nhé.');remember();rotateSelected((Number(selectedItem.rotation)||0)+delta);}
   const touchPoint=(t,r)=>({x:t.clientX-r.left,y:t.clientY-r.top});
   const touchDistance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);

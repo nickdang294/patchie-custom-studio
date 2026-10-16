@@ -1,11 +1,15 @@
 'use client';
 
+import {snapRotation} from '@/lib/rotation';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductDesignAdmin() {
   const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]);
   const [productId, setProductId] = useState(''), [name, setName] = useState(''), [shopeeUrl, setShopeeUrl] = useState(''), [patchSearch, setPatchSearch] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
   const [dragId, setDragId] = useState(''), [editingId, setEditingId] = useState(''), [editingCreatedAt, setEditingCreatedAt] = useState('');
+  const [selectedUid, setSelectedUid] = useState('');
+  const selected = placements.find(p=>p.uid===selectedUid && p.view===view);
+  const rotate = value => setPlacements(a=>a.map(p=>p.uid===selectedUid?{...p,rotation:snapRotation(value)}:p));
   const product = products.find(p => p.id === productId);
   const views = useMemo(() => product?.product_type === 'bag' ? [['front','Mặt trước'],['back','Mặt sau']] : [['front','Mặt trước'],['left_sleeve','Tay áo trái'],['right_sleeve','Tay áo phải'],['back','Mặt sau']], [product]);
   const image = view === 'front' ? (product?.view_images?.front || product?.image_url) : (product?.view_images?.[view] || '');
@@ -23,7 +27,8 @@ export default function ProductDesignAdmin() {
   const filteredPatches = patches.filter(p => normalizeSearch(p.name).includes(normalizedPatchSearch));
   function addPatch(id) {
     if (placements.length >= 12) return setMsg('Tối đa 12 patch trong một mẫu.');
-    setPlacements(a => [...a, { uid: crypto.randomUUID(), patch_id: id, view, x: .5, y: .45, rotation: 0 }]);
+    const uid=crypto.randomUUID(); setSelectedUid(uid);
+    setPlacements(a => [...a, { uid, patch_id: id, view, x: .5, y: .45, rotation: 0 }]);
   }
   function movePlacement(e, uid) {
     if (!dragId) return;
@@ -60,14 +65,20 @@ export default function ProductDesignAdmin() {
       {product && <>
         <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{views.map(([id,label])=><button type="button" className="button light" key={id} onClick={()=>setView(id)} aria-pressed={view===id}>{label}</button>)}</div>
         <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(220px,300px)',gap:16,alignItems:'start'}}>
-          <div onPointerMove={e=>dragId&&movePlacement(e,dragId)} onPointerUp={()=>setDragId('')} style={{position:'relative',width:'100%',maxWidth:560,aspectRatio:'1/1',overflow:'hidden',background:'#f5f1e8',borderRadius:14,touchAction:'none'}}>
+          <div onPointerMove={e=>dragId&&movePlacement(e,dragId)} onPointerUp={()=>setDragId('')} onPointerCancel={()=>setDragId('')} style={{position:'relative',width:'100%',maxWidth:560,aspectRatio:'1/1',overflow:'hidden',background:'#f5f1e8',borderRadius:14,touchAction:'none'}}>
             {image ? <img src={image} alt="Base preview" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : <p>Base chưa có ảnh cho mặt này.</p>}
-            {placements.filter(p=>p.view===view).map(item=>{const patch=patchById(item.patch_id);return <img key={item.uid} src={patch?.image_url} alt={patch?.name} onPointerDown={e=>{e.preventDefault();setDragId(item.uid);e.currentTarget.setPointerCapture(e.pointerId);}} style={{position:'absolute',left:`${item.x*100}%`,top:`${item.y*100}%`,...patchStyle(patch),objectFit:'contain',transform:`translate(-50%,-50%) rotate(${item.rotation}deg)`,cursor:'grab',touchAction:'none'}}/>})}
+            {placements.filter(p=>p.view===view).map(item=>{const patch=patchById(item.patch_id);return <img key={item.uid} src={patch?.image_url} alt={patch?.name} onPointerDown={e=>{e.preventDefault();setSelectedUid(item.uid);setDragId(item.uid);e.currentTarget.setPointerCapture(e.pointerId);}} style={{position:'absolute',left:`${item.x*100}%`,top:`${item.y*100}%`,...patchStyle(patch),objectFit:'contain',transform:`translate(-50%,-50%) rotate(${item.rotation}deg)`,outline:selectedUid===item.uid?'2px dashed #9d78bb':'none',outlineOffset:3,cursor:'grab',touchAction:'none'}}/>})}
           </div>
           <div className="design-patch-picker"><div className="design-patch-picker-head"><b>Thêm patch · {placements.length}/12</b><small>{filteredPatches.length} patch</small></div><label className="design-patch-search"><span aria-hidden="true">⌕</span><input type="search" value={patchSearch} onChange={e=>setPatchSearch(e.target.value)} placeholder="Tìm theo tên patch…" aria-label="Tìm patch theo tên"/>{patchSearch&&<button type="button" onClick={()=>setPatchSearch('')} aria-label="Xóa tìm kiếm">×</button>}</label><div className="design-patch-options">{filteredPatches.map(p=><button key={p.id} type="button" onClick={()=>addPatch(p.id)}><img src={p.thumbnail_url||p.image_url} alt=""/><span>{p.name}</span><span className="design-patch-add" aria-hidden="true">＋</span></button>)}{!filteredPatches.length&&<p className="admin-help design-patch-no-results">Không tìm thấy patch phù hợp.</p>}</div></div>
         </div>
-        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{placements.map((p,i)=><span key={p.uid} style={{padding:'5px 8px',background:'#f0eaff',borderRadius:8,fontSize:11}}>{patchById(p.patch_id)?.name} · {views.find(v=>v[0]===p.view)?.[1]} <button type="button" onClick={()=>setPlacements(a=>a.filter(x=>x.uid!==p.uid))}>×</button></span>)}</div>
-        <p className="admin-help">Kéo patch để đặt vị trí. Thumbnail ưu tiên mặt trước; nếu chưa có thì dùng mặt đầu tiên; dữ liệu lưu đủ vị trí cho từng mặt. Mẫu không lưu giá.</p>
+        <div className="design-rotation">
+          <b>{selected ? patchById(selected.patch_id)?.name : 'Chọn patch trên hình để xoay'}</b>
+          <label>Góc xoay <output>{selected?.rotation||0}°</output><input aria-label="Góc xoay patch" type="range" min="-180" max="180" step="1" disabled={!selected} value={selected ? ((Number(selected.rotation)+540)%360)-180 : 0} onChange={e=>rotate(e.target.value)}/></label>
+          <div><button type="button" disabled={!selected} onClick={()=>rotate((Number(selected.rotation)||0)-15)}>↶ 15°</button><button type="button" disabled={!selected} onClick={()=>rotate(0)}>Về 0°</button><button type="button" disabled={!selected} onClick={()=>rotate((Number(selected.rotation)||0)+15)}>15° ↷</button></div>
+          <small>Tự hút vào mốc mỗi 15° khi ở gần.</small>
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{placements.map((p,i)=><span key={p.uid} style={{padding:'5px 8px',background:'#f0eaff',borderRadius:8,fontSize:11}}>{patchById(p.patch_id)?.name} · {views.find(v=>v[0]===p.view)?.[1]} <button type="button" onClick={()=>{setPlacements(a=>a.filter(x=>x.uid!==p.uid));if(selectedUid===p.uid)setSelectedUid('');}}>×</button></span>)}</div>
+        <p className="admin-help">Kéo patch để đặt vị trí; chọn patch rồi dùng thanh xoay bên dưới. Thumbnail ưu tiên mặt trước; nếu chưa có thì dùng mặt đầu tiên; dữ liệu lưu đủ vị trí cho từng mặt. Mẫu không lưu giá.</p>
         <button className="button dark">Lưu mẫu phối</button>
       </>}
     </form>
