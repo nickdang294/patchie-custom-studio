@@ -11,7 +11,12 @@ import { previewImageUrl } from '@/lib/image-utils';
 import { trackEvent } from '@/lib/analytics';
 
 import {useSuggestions} from '@/lib/hooks/use-suggestions';
-import {snapRotation} from '@/lib/rotation';
+function snapRotation(value) {
+  const angle = Math.round(Number(value) || 0);
+  const target = Math.round(angle / 15) * 15;
+  return Math.abs(angle - target) <= 3 ? target : angle;
+}
+
 import {useStageZoom} from '@/lib/hooks/use-stage-zoom';
 import DesignSuggestions from './components/design-suggestions';
 
