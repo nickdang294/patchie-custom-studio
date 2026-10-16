@@ -1271,3 +1271,5 @@ button,.patch-card,.pretty-select-button,.method,.size,.sleeve-hotspot,.mobile-f
 .design-rotation button:disabled{opacity:.4}
 .design-rotation small{color:#796988}
 @media(max-width:700px){.brand .brand-wordmark{width:119px}}
+
+.mockup-load-status{position:absolute;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:16px;touch-action:none}.mockup-load-status span,.mockup-load-status button{border:1px solid #dfd2ec;background:#fffefaf2;border-radius:14px;padding:8px 12px;font-size:12px;color:#625281}
