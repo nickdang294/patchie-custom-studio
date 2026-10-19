@@ -5,5 +5,5 @@ export const revalidate=0;
 export default async function Page(){
   let catalog=null;
   try{catalog=await loadInitialCatalog();}catch{}
-  return <Studio initialCatalog={catalog}/>;
+  return <Studio initialCatalog={catalog} embedded={Boolean(catalog)}/>;
 }
