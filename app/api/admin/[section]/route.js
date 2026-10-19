@@ -1,3 +1,4 @@
+import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 
 export async function GET(request,{params}) {
@@ -19,7 +20,7 @@ export async function GET(request,{params}) {
   return jsonError('Không tìm thấy mục quản trị.',404);
 }
 
-export async function POST(request,{params}) {
+async function handlePOST(request,{params}) {
   const auth=await requireAdmin();if(auth.error)return jsonError(auth.error,auth.status);
   const {section}=await params, db=serviceDb();
   if(section==='upload'){
@@ -72,7 +73,7 @@ export async function POST(request,{params}) {
   return jsonError('Không tìm thấy mục quản trị.',404);
 }
 
-export async function DELETE(request,{params}) {
+async function handleDELETE(request,{params}) {
   const auth=await requireAdmin();if(auth.error)return jsonError(auth.error,auth.status);
   const {section}=await params, id=new URL(request.url).searchParams.get('id');if(!id)return jsonError('Thiếu mã mục.');
   const db=serviceDb();
@@ -92,3 +93,7 @@ export async function DELETE(request,{params}) {
   }
   if(error)return jsonError(error.message,500);return Response.json({ok:true});
 }
+
+export const POST = withCatalogInvalidation(handlePOST);
+
+export const DELETE = withCatalogInvalidation(handleDELETE);

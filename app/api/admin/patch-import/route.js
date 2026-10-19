@@ -1,3 +1,4 @@
+import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 import { uploadPatchWithThumbnail } from '@/lib/patch-image-upload';
 
@@ -86,7 +87,7 @@ function mergeUpdateRows(rows, byId) {
   return { merged, errors };
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   const auth = await requireAdmin();
   if (auth.error) return jsonError(auth.error, auth.status);
   const db = serviceDb();
@@ -153,3 +154,5 @@ export async function POST(request) {
   if (error) return jsonError(error.message, 500);
   return Response.json({ ok: true, count: data?.length || items.length });
 }
+
+export const POST = withCatalogInvalidation(handlePOST);

@@ -1,3 +1,5 @@
+import { revalidateTag } from 'next/cache';
+import { CATALOG_CACHE_TAG } from '@/lib/catalog-cache';
 import { serviceDb, jsonError } from '@/lib/supabase';
 
 export const dynamic='force-dynamic';
@@ -21,6 +23,7 @@ export async function POST(request){
       const message=error.message||'Chưa tạo được đơn patch.';
       return jsonError(message,/chỉ còn|không còn bán|giỏ hàng/i.test(message)?409:500);
     }
+    revalidateTag(CATALOG_CACHE_TAG);
     const id=result?.id,total_price=Number(result?.total_price)||0,rows=Array.isArray(result?.items)?result.items:[];
     const lines=rows.map(row=>`- ${row.name} × ${row.quantity} · ${new Intl.NumberFormat('vi-VN').format(Number(row.line_total)||0)}đ`).join('\n');
     const message=`Chào Patchie! Mình muốn mua patch riêng.\nMã đơn: ${id}\nTên: ${name}\nSĐT: ${phone}\nĐịa chỉ: ${address}\nPatch:\n${lines}\nTổng tạm tính: ${new Intl.NumberFormat('vi-VN').format(total_price)}đ\nGhi chú: ${note||'Không có'}`;

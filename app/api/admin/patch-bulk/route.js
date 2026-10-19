@@ -1,8 +1,9 @@
+import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 
 const MAX_BULK_PATCHES = 500;
 
-export async function POST(request) {
+async function handlePOST(request) {
   const auth = await requireAdmin();
   if (auth.error) return jsonError(auth.error, auth.status);
 
@@ -43,3 +44,5 @@ export async function POST(request) {
   }
   return Response.json({ ok: true, count: ids.length, action });
 }
+
+export const POST = withCatalogInvalidation(handlePOST);

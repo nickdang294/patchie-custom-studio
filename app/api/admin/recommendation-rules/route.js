@@ -1,3 +1,4 @@
+import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 
 const cleanTags = value => Array.isArray(value)
@@ -13,7 +14,7 @@ export async function GET() {
   return Response.json({ rules: Array.isArray(data?.value) ? data.value : [] });
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   const auth = await requireAdmin();
   if (auth.error) return jsonError(auth.error, auth.status);
 
@@ -47,3 +48,5 @@ export async function POST(request) {
   if (error) return jsonError(error.message, 500);
   return Response.json({ ok: true, count: rules.length, activeCount: rules.filter(rule => rule.active).length });
 }
+
+export const POST = withCatalogInvalidation(handlePOST);
