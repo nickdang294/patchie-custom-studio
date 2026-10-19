@@ -1,9 +1,10 @@
+import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 import { createPatchThumbnail, patchUploadDateFolder } from '@/lib/patch-image-upload';
 
 export const runtime = 'nodejs';
 
-export async function POST(request) {
+async function handlePOST(request) {
   const auth = await requireAdmin();
   if (auth.error) return jsonError(auth.error, auth.status);
   let body;
@@ -45,3 +46,5 @@ export async function POST(request) {
   }
   return Response.json({ ok: failed.length === 0, created, failed });
 }
+
+export const POST = withCatalogInvalidation(handlePOST);
