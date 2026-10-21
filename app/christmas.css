@@ -1,0 +1,11 @@
+/* Static, decorative accents: no network requests or animation loop. */
+.theme-christmas{--christmas-pine:#446b59;--christmas-berry:#b75468;--christmas-cream:#fffaf1}
+.theme-christmas .topbar,.theme-christmas .market-header,.theme-christmas .gallery-header{border-bottom-color:#d6c9df}
+.theme-christmas .hero,.theme-christmas .market-hero,.theme-christmas .gallery-hero{position:relative;isolation:isolate}
+.theme-christmas .hero::before,.theme-christmas .market-hero::before,.theme-christmas .gallery-hero::before{content:"✧  ✦  ❄";position:absolute;right:24px;top:14px;font-size:24px;letter-spacing:12px;color:#698b76;pointer-events:none;opacity:.62;z-index:-1}
+.theme-christmas .hero::after{content:"";position:absolute;right:34px;bottom:22px;width:64px;height:76px;background:linear-gradient(160deg,#9db9a3,#557961);clip-path:polygon(50% 0,80% 36%,67% 36%,94% 69%,73% 69%,100% 100%,0 100%,27% 69%,6% 69%,33% 36%,20% 36%);opacity:.19;pointer-events:none;z-index:-1}
+.theme-christmas .hero-eyebrow,.theme-christmas .gallery-eyebrow{color:var(--christmas-pine)}
+.theme-christmas .hero h1 em{color:var(--christmas-berry)}
+.theme-christmas .preview-card{border-color:#b8cbbc}
+@media(max-width:700px){.theme-christmas .hero::before{font-size:16px;right:4px;top:5px;letter-spacing:8px}.theme-christmas .hero::after{width:40px;height:48px;right:12px;bottom:8px}}
+@media(prefers-reduced-motion:reduce){.confetti-burst{display:none}}

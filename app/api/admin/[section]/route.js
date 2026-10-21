@@ -1,3 +1,4 @@
+import {cleanSettings, normalizeBestsellers, selectBestsellers, RETIRED_SETTINGS} from '@/lib/bestsellers';
 import { withCatalogInvalidation } from '@/lib/catalog-cache';
 import { requireAdmin, serviceDb, jsonError } from '@/lib/supabase';
 
@@ -5,7 +6,7 @@ export async function GET(request,{params}) {
   const auth=await requireAdmin(); if(auth.error)return jsonError(auth.error,auth.status);
   const {section}=await params, db=serviceDb(), url=new URL(request.url);
   if(section==='bootstrap') return Response.json({email:auth.user.email});
-  if(section==='settings') {const {data,error}=await db.from('settings').select('key,value');if(error)return jsonError(error.message,500);return Response.json({settings:Object.fromEntries(data.map(x=>[x.key,x.value]))});}
+  if(section==='settings') {const {data,error}=await db.from('settings').select('key,value');if(error)return jsonError(error.message,500);return Response.json({settings:cleanSettings(Object.fromEntries(data.map(x=>[x.key,x.value])))});}
   if(section==='patch-orders') {const {data,error}=await db.from('patch_orders').select('*,patch_order_items(*)').order('created_at',{ascending:false}).limit(200);if(error)return jsonError(error.message,500);return Response.json({items:data||[]});}
   if(section==='products'||section==='patches') {let query=db.from(section).select('*');query=section==='patches'?query.order('patch_group').order('sort_order'):query.order('created_at');const {data,error}=await query;if(error)return jsonError(error.message,500);return Response.json({items:data});}
   if(section==='designs'||section==='summary') {
@@ -32,6 +33,24 @@ async function handlePOST(request,{params}) {
   }
   let b={};try{b=await request.json();}catch{return jsonError('Dữ liệu không hợp lệ.');}
   if(section==='settings') {
+    b=cleanSettings(b);
+    if ('bestsellers' in b) {
+      b.bestsellers=normalizeBestsellers(b.bestsellers);
+      if (b.bestsellers.enabled && b.bestsellers.designIds.length !== 3) return jsonError('Chọn đủ 3 mẫu trước khi bật popup.');
+      if (b.bestsellers.enabled && b.bestsellers.designIds.length) {
+        const [designs,products,patches,brand] = await Promise.all([
+          db.from('product_designs').select('*').in('id',b.bestsellers.designIds),
+          db.from('products').select('*').eq('active',true),
+          db.from('patches').select('id,active,release_status,stock_quantity,width_cm,height_cm').eq('active',true),
+          db.from('settings').select('value').eq('key','brand').maybeSingle()
+        ]);
+        if (designs.error || products.error || patches.error || brand.error) return jsonError('Chưa kiểm tra được các mẫu. Thử lại nhé.',503);
+        const available=selectBestsellers({...b.bestsellers,enabled:true},designs.data || [],products.data || [],patches.data || [],brand.data?.value || {});
+        if (available.length !== b.bestsellers.designIds.length) return jsonError('Có mẫu bị ẩn, thiếu thumbnail, patch hết hàng hoặc không phù hợp base. Kiểm tra lại mẫu đã chọn.');
+      }
+    }
+    const {error:cleanupError}=await db.from('settings').delete().in('key',RETIRED_SETTINGS);
+    if(cleanupError)return jsonError(cleanupError.message,500);
     if(b.brand?.productGroups){
       const groups=b.brand.productGroups;
       const ids=groups.map(group=>String(group?.id||group?.value||'').trim()).filter(Boolean);

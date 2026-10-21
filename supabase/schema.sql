@@ -197,13 +197,8 @@ insert into public.settings(key,value) values
 ('retentionDays','30'::jsonb),
 ('privacyText','"Shop dùng thông tin này để xử lý yêu cầu thiết kế. Bản mẫu lưu 30 ngày."'::jsonb),
 ('adminEmails','[]'::jsonb),
-('halloweenThemeEnabled','true'::jsonb),
-('halloweenFeatures','{"spider":true,"cobwebs":true,"bats":true,"fireworks":true}'::jsonb),
-('giftOffer','{"enabled":true,"eyebrow":"QUÀ NHỎ KHAI TRƯƠNG","title":"Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen","description":"Bạn thích patch nào thì chọn heee 💖","buttonLabel":"Nhận patch này","patchIds":["patch-pink","patch-black"]}'::jsonb)
-on conflict (key) do nothing;
-insert into public.settings(key,value) values
-('activePopupCampaign','"traditional-gift"'::jsonb),
-('popupCampaigns','[{"id":"traditional-gift","type":"traditional","enabled":true,"eyebrow":"QUÀ NHỎ KHAI TRƯƠNG","title":"Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen","description":"Bạn thích patch nào thì chọn heee 💖","buttonLabel":"Nhận patch này","patchIds":["patch-pink","patch-black"]},{"id":"halloween-tarot","type":"tarot","enabled":false,"eyebrow":"HALLOWEEN TAROT","title":"Lá bài nào đang gọi tên bạn?","description":"Chọn một lá bài để lật ra patch miễn phí của riêng bạn.","buttonLabel":"Nhận patch này","patchIds":["patch-pink","patch-black","patch-red"],"cards":[{"id":"ghost","label":"The Ghost","patchId":"patch-pink"},{"id":"witch","label":"The Witch","patchId":"patch-black"},{"id":"monster","label":"The Monster","patchId":"patch-red"}]}]'::jsonb)
+('christmasThemeEnabled','true'::jsonb),
+('bestsellers','{"enabled":false,"title":"Best-seller tháng này","designIds":[]}'::jsonb)
 on conflict (key) do nothing;
 insert into public.settings(key,value) values
 ('market','{"brand":"Patch Market","eyebrow":"PATCHIE MARKET","title":"Những miếng patch bạn thích, mua riêng cũng được.","subtitle":"Chọn patch lẻ, gom vào giỏ và gửi mã đơn cho shop qua Messenger.","bannerImageUrl":"","bannerLink":"","bannerBadge":"NEW DROP"}'::jsonb)

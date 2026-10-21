@@ -17,7 +17,7 @@ Sản phẩm base có editor điểm hút riêng theo từng mặt: chạm để
 - Hai cách hoàn thiện: khách tự ủi tại nhà hoặc shop ủi theo mockup.
 - Form lưu yêu cầu vào Supabase; nút gửi shop sao chép thông tin để khách dán vào Messenger.
 - Dashboard quản trị tại `/admin`: xem yêu cầu và mockup, đổi trạng thái, thêm/xóa mẫu áo và patch, chỉnh Messenger, size, nội dung quyền riêng tư và thời hạn lưu.
-- Dashboard quản trị có campaign popup tặng patch: bật/tắt popup truyền thống hoặc Halloween Tarot, chọn campaign đang chạy, chỉnh nội dung và gán patch quà cho từng event/lá bài. Admin cũng có thể bật/tắt lớp theme Halloween cho toàn bộ Studio, Patch Market và Lookbook, rồi toggle riêng Pumpkin Spider, mạng nhện, đàn dơi và pháo hoa bí ngô.
+- Admin → Best-seller tháng này: chọn 3 mẫu phối, đổi thứ tự và bật popup. Khách có thể custom hoặc mở Shopee của từng mẫu. Theme Christmas bật/tắt trong Website & Christmas. Xem `HUONG_DAN_V51.md` để cập nhật từ v50.20.
 - Khi thêm hoặc sửa patch, admin chọn trạng thái `Đã release` hoặc `Coming soon`. Patch Coming soon vẫn xuất hiện trong Studio và collection nhưng được làm mờ, hiện nhãn thay giá và không thể thêm vào mockup.
 - Admin có thể chỉnh thứ tự các nhóm patch và bật/tắt spotlight nhẹ cho 3 nhóm đầu; mỗi nhóm đầu dùng một accent Patchie khác nhau.
 - Chạm/click vào patch sẽ thêm ngay vào mockup ở cả desktop và mobile; không còn nút thêm patch riêng.
@@ -42,7 +42,7 @@ Nếu chưa điền Supabase, trang vẫn mở bằng danh mục mẫu để xem
 1. Tạo project mới trên Supabase.
 2. Mở **SQL Editor**, dán toàn bộ `supabase/schema.sql`, rồi chạy. Script tạo bảng, policy đọc catalog công khai, hai storage bucket, dữ liệu mẫu và hàm tạo đơn patch atomic.
 3. Nếu project đã chạy schema cũ, chạy thêm `supabase/fast-order.sql` để mở WebP, bỏ constraint nhóm sản phẩm cũ và hỗ trợ luồng tạo đơn nhanh.
-4. Nếu project đã chạy trước khi có campaign popup, chạy thêm `supabase/popup-campaigns.sql` một lần.
+4. Bản v51 không cần bảng mới. Các cấu hình quà tặng/Halloween cũ tự được xóa khi lưu settings; có thể chạy riêng `supabase/v51-remove-gifts.sql` để dọn ngay.
 5. Nếu project đã có database và chưa có cột release patch, chạy thêm `supabase/release-status.sql` một lần.
 6. Trong **Project Settings → API**, lấy Project URL, `anon`/publishable key và `service_role`/secret key.
 7. Trong **Authentication → URL Configuration**, đặt Site URL là domain Vercel sau khi deploy. Thêm redirect URL `https://TEN-MIEN/auth/callback` và URL preview Vercel nếu cần thử đăng nhập ở preview.
@@ -139,7 +139,7 @@ The admin can choose the product/color variation shown when the storefront opens
 
 ### Giới hạn kích thước patch theo sản phẩm base
 
-Trong **Admin → Sản phẩm base**, mỗi SKU/màu có thể đặt chiều rộng và chiều cao tối thiểu/tối đa của patch được phép dùng. Để trống hoặc nhập `0` nghĩa là không giới hạn. Các giới hạn lọc cả danh sách Tự Phối, danh sách Patchie Gợi Ý và patch quà; server cũng từ chối đơn nếu có patch nằm ngoài giới hạn. Với database đang chạy, chạy một lần `supabase/base-patch-dimension-limits-migration.sql` trong Supabase SQL Editor trước khi deploy code.
+Trong **Admin → Sản phẩm base**, mỗi SKU/màu có thể đặt chiều rộng và chiều cao tối thiểu/tối đa của patch được phép dùng. Để trống hoặc nhập `0` nghĩa là không giới hạn. Các giới hạn lọc cả danh sách Tự Phối, danh sách Design Gợi Ý và best-seller; server cũng từ chối đơn nếu có patch nằm ngoài giới hạn. Với database đang chạy, chạy một lần `supabase/base-patch-dimension-limits-migration.sql` trong Supabase SQL Editor trước khi deploy code.
 
 
 ## Patch thumbnails
