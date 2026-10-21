@@ -1,4 +1,5 @@
 'use client';
+import PasswordLogin from './password-login';
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -107,7 +108,6 @@ export default function Admin() {
     setTab(['requests', 'products', 'patches', 'brand', 'settings'].includes(next) ? next : 'requests');
   }, [params]);
   const [user, setUser] = useState(null),
-    [email, setEmail] = useState(''),
     [loading, setLoading] = useState(true),
     [tab, setTab] = useState('requests'),
     [items, setItems] = useState([]),
@@ -151,6 +151,10 @@ export default function Admin() {
           user: u
         }
       } = await supa().auth.getUser();
+      if(u){
+        const access=await fetch('/api/admin/bootstrap');
+        if(!access.ok){await supa().auth.signOut();setUser(null);setMsg('Email này chưa được cấp quyền quản trị.');return;}
+      }
       setUser(u);
       if (u) {
         // Keep the main dashboard usable even when an older Supabase project has
@@ -217,19 +221,6 @@ export default function Admin() {
     });
     return () => cleanups.forEach(cleanup => cleanup());
   }, [tab, patchOrders]);
-  async function login(e) {
-    e.preventDefault();
-    setMsg('Đang gửi link đăng nhập…');
-    const {
-      error
-    } = await supa().auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${location.origin}/auth/callback`
-      }
-    });
-    setMsg(error?.message || 'Đã gửi link đăng nhập vào email.');
-  }
   async function status(id, status) {
     await call('designs', {
       method: 'POST',
@@ -946,7 +937,7 @@ export default function Admin() {
     productGroups: normalizeProductGroups(savedBrand.productGroups)
   };
   if (loading) return <main className="admin-shell"><div className="admin-loading">Đang tải dashboard…</div></main>;
-  if (!user) return <main className="admin-shell"><div className="login-card"><a className="brand" href="/"><AdminBrandMark brand={brand} /> <span>{brand.brandName || 'Patchie'}</span></a><div className="eyebrow">KHU VỰC QUẢN TRỊ</div><h1>Đăng nhập shop</h1><p>Đăng nhập bằng email được thêm vào biến <code>ADMIN_EMAILS</code>.</p><form onSubmit={login}><label>Email quản trị<input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ban@patchie.vn" /></label><button className="button dark full">Gửi link đăng nhập</button></form>{msg && <p className="admin-msg">{msg}</p>}<a className="back-link" href="/">← Về studio</a></div></main>;
+  if (!user) return <PasswordLogin onSuccess={refresh} initialMessage={msg}/>;
   return <main className="admin-shell"><header className="admin-top"><a className="brand" href="/"><span className="brand-mark">P</span> Patchie <small>ADMIN</small></a><div>{user.email}<button className="admin-logout" onClick={async () => {
           await supa().auth.signOut();
           setUser(null);
