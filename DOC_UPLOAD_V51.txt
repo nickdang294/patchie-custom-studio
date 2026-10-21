@@ -1,0 +1,28 @@
+GÓI CẬP NHẬT PATCHIE v50.20 → v51
+
+Gồm 31 file code/tài liệu mới hoặc thay đổi + hướng dẫn này = 32 file.
+Gói này để cập nhật repo hiện tại đang có v50.20, không phải source đầy đủ để tạo repo mới.
+Không xóa toàn bộ repo hoặc thư mục app/lib trước khi upload.
+
+CÁCH UPLOAD TRÊN GITHUB
+1. Giải nén ZIP, mở thư mục patchie-v51-update.
+2. Trên GitHub, chọn nhánh patchie-v51 đã tạo. Nếu chưa có, tạo nhánh này từ main đang chạy v50.20.
+3. Về gốc repo, nơi có package.json. Chọn Add file → Upload files.
+4. Kéo TOÀN BỘ NỘI DUNG BÊN TRONG patchie-v51-update lên. Đừng kéo nguyên thư mục patchie-v51-update hoặc file ZIP.
+   GitHub cập nhật file trùng đường dẫn; các file khác giữ nguyên. Có thể upload lại gói này nếu lần trước mới upload một phần.
+5. Commit changes. Xóa 7 file cũ ở danh sách bên dưới nếu chúng còn tồn tại, rồi commit.
+6. Chờ Vercel Preview Ready. Vào Admin → Best-seller tháng này, chọn đủ 3 mẫu → bật → Lưu.
+7. Thử popup bằng cửa sổ ẩn danh. Khi Preview ổn, tạo Pull request từ patchie-v51 vào main và merge.
+
+FILE CŨ CẦN XÓA (NẾU CÒN)
+app/bats-burst.jsx
+app/hearts-burst.jsx
+app/pumpkin-fireworks.jsx
+app/pumpkin-spider.jsx
+lib/halloween-theme.js
+lib/popup-campaigns.js
+supabase/popup-campaigns.sql
+
+Code mới không import 7 file này; upload sẽ không tự xóa chúng.
+Không cần SQL mới. Không chạy lại schema.sql trên database đang chạy.
+Thông tin chi tiết và checklist nằm trong HUONG_DAN_V51.md.

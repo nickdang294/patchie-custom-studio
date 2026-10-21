@@ -1,526 +1,1567 @@
 'use client';
 
-import {BRAND_DEFAULTS, PRODUCT_GROUPS, normalizeProductGroups, getStudioBrand} from '@/lib/studio-brand';
-import {StudioHeader, StudioHero, LoadingAnimation, StudioContainer} from './components/studio-chrome';
+import { BRAND_DEFAULTS, PRODUCT_GROUPS, normalizeProductGroups, getStudioBrand } from '@/lib/studio-brand';
+import { StudioHeader, StudioHero, LoadingAnimation, StudioContainer } from './components/studio-chrome';
 import DialogBoundary from './components/dialog-boundary';
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { campaignPatchIds, getActivePopupCampaign, normalizePopupCampaigns } from '@/lib/popup-campaigns';
-import PumpkinSpider from './pumpkin-spider';
-import BatsBurst from './bats-burst';
-import PumpkinFireworks from './pumpkin-fireworks';
-import HeartsBurst from './hearts-burst';
-import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
+import { useEffect, useRef, useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { previewImageUrl } from '@/lib/image-utils';
 import { trackEvent } from '@/lib/analytics';
-
-import {useSuggestions} from '@/lib/hooks/use-suggestions';
+import { useSuggestions } from '@/lib/hooks/use-suggestions';
+const BestsellerPopup = lazy(() => import('./components/bestseller-popup'));
 function snapRotation(value) {
   const angle = Math.round(Number(value) || 0);
   const target = Math.round(angle / 15) * 15;
   return Math.abs(angle - target) <= 3 ? target : angle;
 }
-
-import {useStageZoom} from '@/lib/hooks/use-stage-zoom';
+import { useStageZoom } from '@/lib/hooks/use-stage-zoom';
 import DesignSuggestions from './components/design-suggestions';
-
-const normalizeRotation=value=>((Math.round(Number(value)||0)%360)+360)%360;
-const STARTER=[
-  {id:'patch-pink',name:'Mũ xanh lá',image_url:'/assets/patch-pink-cap.webp',width_cm:4,height_cm:4,quote:'nhỏ xíu mà có võ',patch_group:'Best Seller',patch_groups:['Best Seller']},
-  {id:'patch-black',name:'Mặt nạ xanh',image_url:'/assets/patch-black-green.webp',width_cm:4,height_cm:4,quote:'bí ẩn một chút mới vui',patch_group:'Limited',patch_groups:['Limited']},
-  {id:'patch-red',name:'Mũ vàng',image_url:'/assets/patch-red-white.webp',width_cm:4,height_cm:4,quote:'đội mood vui lên áo',patch_group:'Seasonal',patch_groups:['Seasonal']},
-  {id:'patch-yellow',name:'Mũ xanh dương',image_url:'/assets/patch-yellow-blue.webp',width_cm:4,height_cm:4,quote:'hôm nay hơi đáng yêu',patch_group:'Cute Animal',patch_groups:['Cute Animal']}
-];
-
-const GIFT_DEFAULTS={
-  enabled:true,
-  eyebrow:'QUÀ NHỎ KHAI TRƯƠNG',
-  title:'Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen',
-  description:'Bạn thích patch nào thì chọn heee 💖',
-  buttonLabel:'Nhận patch này',
-  patchIds:['patch-pink','patch-black']
+const normalizeRotation = value => (Math.round(Number(value) || 0) % 360 + 360) % 360;
+const STARTER = [{
+  id: 'patch-pink',
+  name: 'Mũ xanh lá',
+  image_url: '/assets/patch-pink-cap.webp',
+  width_cm: 4,
+  height_cm: 4,
+  quote: 'nhỏ xíu mà có võ',
+  patch_group: 'Best Seller',
+  patch_groups: ['Best Seller']
+}, {
+  id: 'patch-black',
+  name: 'Mặt nạ xanh',
+  image_url: '/assets/patch-black-green.webp',
+  width_cm: 4,
+  height_cm: 4,
+  quote: 'bí ẩn một chút mới vui',
+  patch_group: 'Limited',
+  patch_groups: ['Limited']
+}, {
+  id: 'patch-red',
+  name: 'Mũ vàng',
+  image_url: '/assets/patch-red-white.webp',
+  width_cm: 4,
+  height_cm: 4,
+  quote: 'đội mood vui lên áo',
+  patch_group: 'Seasonal',
+  patch_groups: ['Seasonal']
+}, {
+  id: 'patch-yellow',
+  name: 'Mũ xanh dương',
+  image_url: '/assets/patch-yellow-blue.webp',
+  width_cm: 4,
+  height_cm: 4,
+  quote: 'hôm nay hơi đáng yêu',
+  patch_group: 'Cute Animal',
+  patch_groups: ['Cute Animal']
+}];
+const PATCH_GROUPS = ['Best Seller', 'Chữ Cái', 'Seasonal', 'Limited', 'Cute Animal', 'Floral'];
+const cleanGroups = list => Array.from(new Set((Array.isArray(list) ? list : String(list || '').split(',')).map(x => String(x).trim()).filter(Boolean)));
+const normalizePatchGroupOrder = (value, available) => {
+  const requested = Array.isArray(value) ? value : String(value || '').split(',');
+  return Array.from(new Set([...requested, ...PATCH_GROUPS, ...available])).map(x => String(x).trim()).filter(x => x && available.includes(x));
+};
+const patchGroupsOf = p => cleanGroups(p?.patch_groups?.length ? p.patch_groups : p?.patch_group || 'Best Seller');
+const patchGroup = p => patchGroupsOf(p)[0] || 'Best Seller';
+const patchIsComingSoon = p => p?.release_status === 'coming_soon';
+const patchInStock = p => Number(p?.stock_quantity ?? 20) > 0;
+const VIEWS = [{
+  id: 'front',
+  label: 'Mặt trước',
+  short: 'Trước'
+}, {
+  id: 'left_sleeve',
+  label: 'Tay áo trái',
+  short: 'Tay trái'
+}, {
+  id: 'right_sleeve',
+  label: 'Tay áo phải',
+  short: 'Tay phải'
+}, {
+  id: 'back',
+  label: 'Lưng áo',
+  short: 'Lưng'
+}];
+const PRODUCT_VIEW_SETS = {
+  shirt: ['front', 'left_sleeve', 'right_sleeve', 'back'],
+  bag: ['front', 'back']
 };
 
-const PATCH_GROUPS=['Best Seller','Chữ Cái','Seasonal','Limited','Cute Animal','Floral'];
-const cleanGroups=list=>Array.from(new Set((Array.isArray(list)?list:String(list||'').split(',')).map(x=>String(x).trim()).filter(Boolean)));
-const normalizePatchGroupOrder=(value,available)=>{const requested=Array.isArray(value)?value:String(value||'').split(',');return Array.from(new Set([...requested,...PATCH_GROUPS,...available])).map(x=>String(x).trim()).filter(x=>x&&available.includes(x));};
-const patchGroupsOf=p=>cleanGroups(p?.patch_groups?.length?p.patch_groups:(p?.patch_group||'Best Seller'));
-const patchGroup=p=>patchGroupsOf(p)[0]||'Best Seller';
-const patchIsComingSoon=p=>p?.release_status==='coming_soon';
-const patchInStock=p=>Number(p?.stock_quantity??20)>0;
-
-const VIEWS=[
-  {id:'front',label:'Mặt trước',short:'Trước'},
-  {id:'left_sleeve',label:'Tay áo trái',short:'Tay trái'},
-  {id:'right_sleeve',label:'Tay áo phải',short:'Tay phải'},
-  {id:'back',label:'Lưng áo',short:'Lưng'}
-];
-const PRODUCT_VIEW_SETS={shirt:['front','left_sleeve','right_sleeve','back'],bag:['front','back']};
-
 // Share in-flight requests between the visible mockup and the background queue.
-const baseImageCache=new Map();
-function loadBaseImage(src,priority='low'){
-  if(!src||typeof window==='undefined')return Promise.resolve();
-  const cached=baseImageCache.get(src);
-  if(cached){if(priority==='high')cached.image.fetchPriority='high';return cached.promise;}
-  const image=new Image();image.decoding='async';image.fetchPriority=priority;
-  const entry={image,promise:null};
-  entry.promise=new Promise((resolve,reject)=>{
-    const timeout=setTimeout(()=>{baseImageCache.delete(src);image.src='';reject(new Error('Image timeout'));},20000);
-    image.onload=async()=>{try{await image.decode();}catch{}clearTimeout(timeout);resolve();};
-    image.onerror=()=>{clearTimeout(timeout);baseImageCache.delete(src);reject(new Error('Image unavailable'));};
-    image.src=src;
+const baseImageCache = new Map();
+function loadBaseImage(src, priority = 'low') {
+  if (!src || typeof window === 'undefined') return Promise.resolve();
+  const cached = baseImageCache.get(src);
+  if (cached) {
+    if (priority === 'high') cached.image.fetchPriority = 'high';
+    return cached.promise;
+  }
+  const image = new Image();
+  image.decoding = 'async';
+  image.fetchPriority = priority;
+  const entry = {
+    image,
+    promise: null
+  };
+  entry.promise = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      baseImageCache.delete(src);
+      image.src = '';
+      reject(new Error('Image timeout'));
+    }, 20000);
+    image.onload = async () => {
+      try {
+        await image.decode();
+      } catch {}
+      clearTimeout(timeout);
+      resolve();
+    };
+    image.onerror = () => {
+      clearTimeout(timeout);
+      baseImageCache.delete(src);
+      reject(new Error('Image unavailable'));
+    };
+    image.src = src;
   });
-  baseImageCache.set(src,entry);return entry.promise;
+  baseImageCache.set(src, entry);
+  return entry.promise;
 }
-const baseFront=p=>p?.view_images?.front||p?.image_url||defaultProduct.image_url;
-const baseThumb=p=>p?.thumbnail_url?String(p.thumbnail_url).trim():previewImageUrl(baseFront(p),420);
-
-const productGroupSlug=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-const findProductGroup=(type,groups=PRODUCT_GROUPS)=>{const raw=String(type??'').trim().toLowerCase(),slug=productGroupSlug(type);return groups.find(g=>[g.id,g.value,g.label,g.name].some(value=>{const candidate=String(value??'').trim().toLowerCase();return candidate===raw||(slug&&productGroupSlug(value)===slug);}));};
-const productGroupValue=(type,groups=PRODUCT_GROUPS)=>{const group=findProductGroup(type,groups);return group?(group.id||group.value):type||'shirt';};
-const viewsForProduct=(p,groups=PRODUCT_GROUPS)=>{const type=p?.product_type||'shirt',group=findProductGroup(type,groups),kind=group?.kind||((type==='bag'||type==='tote')?'bag':'shirt');return VIEWS.filter(v=>(PRODUCT_VIEW_SETS[kind]||PRODUCT_VIEW_SETS.shirt).includes(v.id));};
-const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
-
-
-const VIEW_REFERENCE_CM={
-  front:{width:62.5,height:62.5},
-  back:{width:62.5,height:62.5},
+const baseFront = p => p?.view_images?.front || p?.image_url || defaultProduct.image_url;
+const baseThumb = p => p?.thumbnail_url ? String(p.thumbnail_url).trim() : previewImageUrl(baseFront(p), 420);
+const productGroupSlug = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const findProductGroup = (type, groups = PRODUCT_GROUPS) => {
+  const raw = String(type ?? '').trim().toLowerCase(),
+    slug = productGroupSlug(type);
+  return groups.find(g => [g.id, g.value, g.label, g.name].some(value => {
+    const candidate = String(value ?? '').trim().toLowerCase();
+    return candidate === raw || slug && productGroupSlug(value) === slug;
+  }));
+};
+const productGroupValue = (type, groups = PRODUCT_GROUPS) => {
+  const group = findProductGroup(type, groups);
+  return group ? group.id || group.value : type || 'shirt';
+};
+const viewsForProduct = (p, groups = PRODUCT_GROUPS) => {
+  const type = p?.product_type || 'shirt',
+    group = findProductGroup(type, groups),
+    kind = group?.kind || (type === 'bag' || type === 'tote' ? 'bag' : 'shirt');
+  return VIEWS.filter(v => (PRODUCT_VIEW_SETS[kind] || PRODUCT_VIEW_SETS.shirt).includes(v.id));
+};
+const productBaseKey = p => p?.base_key || `${p?.product_type || 'shirt'}::${String(p?.name || '').trim().toLowerCase()}`;
+const VIEW_REFERENCE_CM = {
+  front: {
+    width: 62.5,
+    height: 62.5
+  },
+  back: {
+    width: 62.5,
+    height: 62.5
+  },
   // Keep sleeve sizing on the same visual cm scale as the body mockups. The
   // sleeve photo is already shown in perspective, so using a smaller
   // reference width would make real 6–7cm patches look oversized.
-  left_sleeve:{width:62.5,height:62.5},
-  right_sleeve:{width:62.5,height:62.5}
+  left_sleeve: {
+    width: 62.5,
+    height: 62.5
+  },
+  right_sleeve: {
+    width: 62.5,
+    height: 62.5
+  }
 };
-const clampPatchPercent=value=>Math.max(.1,Math.min(100,value));
-const clampZoom=value=>Math.max(1,Math.min(3.2,value));
-const makeDraftOrderCode=()=>`PCH-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase()}`;
-const defaultProduct={id:'base-offwhite',sku:'BASE-OFFWHITE',product_type:'shirt',name:'Áo thun oversized',color:'Off-white',hex:'#f5f1e8',image_url:'/assets/blank-tee.webp',view_images:{front:'/assets/blank-tee.webp'},sizes:['S','M','L','XL'],size_guide:'',price:null};
-
-const cssContent=value=>JSON.stringify(String(value||''));
-
-const StudioFooter=()=> <footer className="studio-footer"><div><span>Patchie · Customize your everyday</span><span>Chọn patch · Tạo mã đơn · Gửi shop</span></div><a className="admin-footer-link" href="/admin">Quản trị ↗</a></footer>;
-
-
-
-
-
-
-
-const CuteSelect=({label,value,options,note,sheetKey,onOpen,setSelectSheet})=>{const current=options.find(o=>o.value===value)||options[0];return <div className="pretty-select-field"><span>{label}</span><button type="button" className={`pretty-select-button ${current?.image?'has-thumb':''}`} onClick={()=>{onOpen?.();setSelectSheet(sheetKey);}}>{current?.image&&<span className="select-thumb"><img src={current.image} alt=""/></span>}<span className="select-copy"><b>{current?.label||'Chọn'}</b>{current?.sub&&<small>{current.sub}</small>}{current?.comingSoon&&<em className="coming-soon-mini-tag">COMING SOON</em>}</span>{current?.price&&<strong className="select-price">{current.price}</strong>}<i>⌄</i></button>{note&&<small className="field-note">{note}</small>}</div>};
-const PatchGroupSelect=({activePatchGroup,patchGroupOptions,setSelectSheet})=> <CuteSelect setSelectSheet={setSelectSheet} label="Nhóm patch" value={activePatchGroup} sheetKey="patchGroup" options={patchGroupOptions}/>;
-const ProductSelect=({selectedBaseKey,setProductSheetGroup,product,money,productThumb,setSelectSheet})=> <div className="form-field product-select-field"><CuteSelect setSelectSheet={setSelectSheet} label="Sản phẩm base" value={selectedBaseKey} sheetKey="productGroup" onOpen={()=>setProductSheetGroup(product?.product_type||'shirt')} options={[{value:selectedBaseKey,label:product?.name||'Sản phẩm base',sub:product?.color||'',price:money(product?.price),image:productThumb(product)}]}/></div>;
-const ColorSelect=({colorVariants,productId,changeProductColor})=> <div className="form-field color-field"><label>Màu</label><div className="color-row">{colorVariants.map(v=><button type="button" key={v.id} className={`color-chip ${v.id===productId?'on':''}`} onClick={()=>changeProductColor(v.id)} title={`${v.color||'Màu'} ${v.hex||''}`}><span className="color-swatch" style={{backgroundColor:v.hex||'#f5f1e8'}}></span><b>{v.color}</b></button>)}</div></div>;
-const SizeSelect=({sizes,size,setSize,sizeGuide})=> <div className="form-field size-field"><label>Size</label><div className="size-row">{sizes.map(s=><button type="button" key={s} className={`size ${size===s?'on':''}`} onClick={()=>setSize(s)}>{s}</button>)}</div>{size&&sizeGuide&&<small className="size-guide-note">{sizeGuide}</small>}</div>;
-const BaseConfig=({selectedBaseKey,setProductSheetGroup,product,money,productThumb,setSelectSheet,colorVariants,productId,changeProductColor,sizes,size,setSize,sizeGuide})=> <section className="base-config" aria-label="Cấu hình sản phẩm base"><div className="base-config-heading"><div><small>01 / CHỌN SẢN PHẨM BASE</small></div></div><div className="base-config-fields"><ProductSelect selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet}/>{colorVariants.length>1&&<ColorSelect colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor}/>}{sizes.length>1&&<SizeSelect sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide}/>}</div></section>;
-const MiniPreview=({placed,activeViews,product,catalog,patchSizePercent})=> <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v=>{const shirt=(product?.view_images||{})[v.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url,inView=placed.filter(x=>(x.view||'front')===v.id);return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label}/>{inView.map((item,i)=>{const p=catalog.patches.find(x=>x.id===item.patchId),s=patchSizePercent(p,v.id);return p?<span key={item.uid} className="mini-placed" style={{left:`${item.x*100}%`,top:`${item.y*100}%`,width:`${s.width}%`,height:`${s.height}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`}}><img src={p.image_url} alt={p.name} loading="lazy" decoding="async"/></span>:null})}<em>{v.short}</em></div>})}</div></div>;
-
-
-export default function Home({initialCatalog=null,embedded=false}){
-  const catalogSeed=initialCatalog&&Array.isArray(initialCatalog.products)&&Array.isArray(initialCatalog.patches)&&initialCatalog.settings&&typeof initialCatalog.settings==='object'?initialCatalog:null;
-  const initialProduct=catalogSeed?.products?.find(p=>p.id===catalogSeed.settings?.defaultProductId)||catalogSeed?.products?.[0]||defaultProduct;
-  const [catalog,setCatalog]=useState(catalogSeed||{products:[defaultProduct],patches:STARTER,settings:{sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',brand:BRAND_DEFAULTS,giftOffer:GIFT_DEFAULTS,popupCampaigns:normalizePopupCampaigns(null,GIFT_DEFAULTS),activePopupCampaign:'traditional-gift',defaultPatchGroup:'all',patchGroupOrder:PATCH_GROUPS,patchGroupHighlightEnabled:true,halloweenThemeEnabled:true,halloweenFeatures:DEFAULT_HALLOWEEN_FEATURES,patchSuggestionsEnabled:true}});
-  const [chosen,setChosen]=useState(STARTER[0].id),[activePatchGroup,setActivePatchGroup]=useState(catalogSeed?.settings?.defaultPatchGroup||'all'),[placed,setPlaced]=useState([]),[history,setHistory]=useState([]),[selectedUid,setSelectedUid]=useState(''),[activeView,setActiveView]=useState('front'),[flowDone,setFlowDone]=useState(false),[trashActive,setTrashActive]=useState(false),[trashHot,setTrashHot]=useState(false),[mode,setMode]=useState('shop'),[productId,setProductId]=useState(initialProduct.id),[productSheetGroup,setProductSheetGroup]=useState(initialProduct.product_type),[size,setSize]=useState(''),[name,setName]=useState(''),[phone,setPhone]=useState(''),[draftOrderCode,setDraftOrderCode]=useState(''),[address,setAddress]=useState(''),[note,setNote]=useState(''),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[uploadingMockup,setUploadingMockup]=useState(false),[orderProgress,setOrderProgress]=useState(''),[toast,setToast]=useState(''),[order,setOrder]=useState(null),[copied,setCopied]=useState(false),[messengerPrompt,setMessengerPrompt]=useState(false),[quotePatch,setQuotePatch]=useState(''),[celebrate,setCelebrate]=useState(false),[batBurst,setBatBurst]=useState(0),[heartBurst,setHeartBurst]=useState(0),[undoAsk,setUndoAsk]=useState(false),[undoAsked,setUndoAsked]=useState(false),[selectSheet,setSelectSheet]=useState(null),[giftPopupOpen,setGiftPopupOpen]=useState(false),[giftPatchId,setGiftPatchId]=useState(''),[giftPreviewId,setGiftPreviewId]=useState(''),[campaignCardId,setCampaignCardId]=useState(''),[catalogReady,setCatalogReady]=useState(Boolean(catalogSeed)),[mobilePatchMode,setMobilePatchMode]=useState('browse'),[snapGuide,setSnapGuide]=useState(null),[smartPositionEnabled,setSmartPositionEnabled]=useState(null),[smartPositionPromptOpen,setSmartPositionPromptOpen]=useState(false),[queuedSnap,setQueuedSnap]=useState(null),[patchCardLimit,setPatchCardLimit]=useState(9),[selectedProductDesign,setSelectedProductDesign]=useState(null),[designPreviewLoading,setDesignPreviewLoading]=useState(false),[designPreviewView,setDesignPreviewView]=useState('front');
-  const stage=useRef(null),trash=useRef(null),drag=useRef(null),pan=useRef(null),rotating=useRef(false),pinch=useRef(null),desktopPatchSentinel=useRef(null),suggestionAutoScrollUsed=useRef(false),suggestionAutoScrollSuppressed=useRef(false),suggestionTouchStart=useRef(null);
-  const [stageZoom,setStageZoom]=useStageZoom(stage);
+const clampPatchPercent = value => Math.max(.1, Math.min(100, value));
+const clampZoom = value => Math.max(1, Math.min(3.2, value));
+const makeDraftOrderCode = () => `PCH-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+const defaultProduct = {
+  id: 'base-offwhite',
+  sku: 'BASE-OFFWHITE',
+  product_type: 'shirt',
+  name: 'Áo thun oversized',
+  color: 'Off-white',
+  hex: '#f5f1e8',
+  image_url: '/assets/blank-tee.webp',
+  view_images: {
+    front: '/assets/blank-tee.webp'
+  },
+  sizes: ['S', 'M', 'L', 'XL'],
+  size_guide: '',
+  price: null
+};
+const cssContent = value => JSON.stringify(String(value || ''));
+const StudioFooter = () => <footer className="studio-footer"><div><span>Patchie · Customize your everyday</span><span>Chọn patch · Tạo mã đơn · Gửi shop</span></div><a className="admin-footer-link" href="/admin">Quản trị ↗</a></footer>;
+const CuteSelect = ({
+  label,
+  value,
+  options,
+  note,
+  sheetKey,
+  onOpen,
+  setSelectSheet
+}) => {
+  const current = options.find(o => o.value === value) || options[0];
+  return <div className="pretty-select-field"><span>{label}</span><button type="button" className={`pretty-select-button ${current?.image ? 'has-thumb' : ''}`} onClick={() => {
+      onOpen?.();
+      setSelectSheet(sheetKey);
+    }}>{current?.image && <span className="select-thumb"><img src={current.image} alt="" /></span>}<span className="select-copy"><b>{current?.label || 'Chọn'}</b>{current?.sub && <small>{current.sub}</small>}{current?.comingSoon && <em className="coming-soon-mini-tag">COMING SOON</em>}</span>{current?.price && <strong className="select-price">{current.price}</strong>}<i>⌄</i></button>{note && <small className="field-note">{note}</small>}</div>;
+};
+const PatchGroupSelect = ({
+  activePatchGroup,
+  patchGroupOptions,
+  setSelectSheet
+}) => <CuteSelect setSelectSheet={setSelectSheet} label="Nhóm patch" value={activePatchGroup} sheetKey="patchGroup" options={patchGroupOptions} />;
+const ProductSelect = ({
+  selectedBaseKey,
+  setProductSheetGroup,
+  product,
+  money,
+  productThumb,
+  setSelectSheet
+}) => <div className="form-field product-select-field"><CuteSelect setSelectSheet={setSelectSheet} label="Sản phẩm base" value={selectedBaseKey} sheetKey="productGroup" onOpen={() => setProductSheetGroup(product?.product_type || 'shirt')} options={[{
+    value: selectedBaseKey,
+    label: product?.name || 'Sản phẩm base',
+    sub: product?.color || '',
+    price: money(product?.price),
+    image: productThumb(product)
+  }]} /></div>;
+const ColorSelect = ({
+  colorVariants,
+  productId,
+  changeProductColor
+}) => <div className="form-field color-field"><label>Màu</label><div className="color-row">{colorVariants.map(v => <button type="button" key={v.id} className={`color-chip ${v.id === productId ? 'on' : ''}`} onClick={() => changeProductColor(v.id)} title={`${v.color || 'Màu'} ${v.hex || ''}`}><span className="color-swatch" style={{
+        backgroundColor: v.hex || '#f5f1e8'
+      }}></span><b>{v.color}</b></button>)}</div></div>;
+const SizeSelect = ({
+  sizes,
+  size,
+  setSize,
+  sizeGuide
+}) => <div className="form-field size-field"><label>Size</label><div className="size-row">{sizes.map(s => <button type="button" key={s} className={`size ${size === s ? 'on' : ''}`} onClick={() => setSize(s)}>{s}</button>)}</div>{size && sizeGuide && <small className="size-guide-note">{sizeGuide}</small>}</div>;
+const BaseConfig = ({
+  selectedBaseKey,
+  setProductSheetGroup,
+  product,
+  money,
+  productThumb,
+  setSelectSheet,
+  colorVariants,
+  productId,
+  changeProductColor,
+  sizes,
+  size,
+  setSize,
+  sizeGuide
+}) => <section className="base-config" aria-label="Cấu hình sản phẩm base"><div className="base-config-heading"><div><small>01 / CHỌN SẢN PHẨM BASE</small></div></div><div className="base-config-fields"><ProductSelect selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} />{colorVariants.length > 1 && <ColorSelect colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} />}{sizes.length > 1 && <SizeSelect sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide} />}</div></section>;
+const MiniPreview = ({
+  placed,
+  activeViews,
+  product,
+  catalog,
+  patchSizePercent
+}) => <div className="order-preview"><div className="order-preview-title"><b>Preview mockup</b><span>{placed.length} patch</span></div><div className="order-preview-grid">{activeViews.map(v => {
+      const shirt = (product?.view_images || {})[v.id] || (product?.view_images || {}).front || product?.image_url || defaultProduct.image_url,
+        inView = placed.filter(x => (x.view || 'front') === v.id);
+      return <div className="order-preview-tile" key={v.id}><img src={shirt} alt={v.label} />{inView.map((item, i) => {
+          const p = catalog.patches.find(x => x.id === item.patchId),
+            s = patchSizePercent(p, v.id);
+          return p ? <span key={item.uid} className="mini-placed" style={{
+            left: `${item.x * 100}%`,
+            top: `${item.y * 100}%`,
+            width: `${s.width}%`,
+            height: `${s.height}%`,
+            zIndex: i + 1,
+            transform: `translate(-50%,-50%) rotate(${normalizeRotation(item.rotation)}deg)`
+          }}><img src={p.image_url} alt={p.name} loading="lazy" decoding="async" /></span> : null;
+        })}<em>{v.short}</em></div>;
+    })}</div></div>;
+export default function Home({
+  initialCatalog = null,
+  embedded = false
+}) {
+  const catalogSeed = initialCatalog && Array.isArray(initialCatalog.products) && Array.isArray(initialCatalog.patches) && initialCatalog.settings && typeof initialCatalog.settings === 'object' ? initialCatalog : null;
+  const initialProduct = catalogSeed?.products?.find(p => p.id === catalogSeed.settings?.defaultProductId) || catalogSeed?.products?.[0] || defaultProduct;
+  const [catalog, setCatalog] = useState(catalogSeed || {
+    products: [defaultProduct],
+    patches: STARTER,
+    settings: {
+      sizes: ['S', 'M', 'L', 'XL'],
+      messengerUrl: '',
+      privacyText: 'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',
+      brand: BRAND_DEFAULTS,
+      defaultPatchGroup: 'all',
+      patchGroupOrder: PATCH_GROUPS,
+      patchGroupHighlightEnabled: true,
+      christmasThemeEnabled: true,
+      patchSuggestionsEnabled: true
+    }
+  });
+  const [chosen, setChosen] = useState(STARTER[0].id),
+    [activePatchGroup, setActivePatchGroup] = useState(catalogSeed?.settings?.defaultPatchGroup || 'all'),
+    [placed, setPlaced] = useState([]),
+    [history, setHistory] = useState([]),
+    [selectedUid, setSelectedUid] = useState(''),
+    [activeView, setActiveView] = useState('front'),
+    [flowDone, setFlowDone] = useState(false),
+    [trashActive, setTrashActive] = useState(false),
+    [trashHot, setTrashHot] = useState(false),
+    [mode, setMode] = useState('shop'),
+    [productId, setProductId] = useState(initialProduct.id),
+    [productSheetGroup, setProductSheetGroup] = useState(initialProduct.product_type),
+    [size, setSize] = useState(''),
+    [name, setName] = useState(''),
+    [phone, setPhone] = useState(''),
+    [draftOrderCode, setDraftOrderCode] = useState(''),
+    [address, setAddress] = useState(''),
+    [note, setNote] = useState(''),
+    [consent, setConsent] = useState(false),
+    [busy, setBusy] = useState(false),
+    [uploadingMockup, setUploadingMockup] = useState(false),
+    [orderProgress, setOrderProgress] = useState(''),
+    [toast, setToast] = useState(''),
+    [order, setOrder] = useState(null),
+    [copied, setCopied] = useState(false),
+    [messengerPrompt, setMessengerPrompt] = useState(false),
+    [quotePatch, setQuotePatch] = useState(''),
+    [celebrate, setCelebrate] = useState(false),
+    [undoAsk, setUndoAsk] = useState(false),
+    [undoAsked, setUndoAsked] = useState(false),
+    [selectSheet, setSelectSheet] = useState(null),
+    [catalogReady, setCatalogReady] = useState(Boolean(catalogSeed)),
+    [mobilePatchMode, setMobilePatchMode] = useState('browse'),
+    [snapGuide, setSnapGuide] = useState(null),
+    [smartPositionEnabled, setSmartPositionEnabled] = useState(null),
+    [smartPositionPromptOpen, setSmartPositionPromptOpen] = useState(false),
+    [queuedSnap, setQueuedSnap] = useState(null),
+    [patchCardLimit, setPatchCardLimit] = useState(9),
+    [selectedProductDesign, setSelectedProductDesign] = useState(null),
+    [designPreviewLoading, setDesignPreviewLoading] = useState(false),
+    [designPreviewView, setDesignPreviewView] = useState('front');
+  const [welcomeReady,setWelcomeReady]=useState(false);
+  const welcomeDismissed=useRef(false);
   useEffect(()=>{
-    const suppressAutoScroll=()=>{if(suggestionAutoScrollUsed.current)suggestionAutoScrollSuppressed.current=true;};
-    const onWheel=event=>{if(Math.abs(event.deltaY)>2)suppressAutoScroll();};
-    const onTouchStart=event=>{const touch=event.touches?.[0];if(touch)suggestionTouchStart.current={x:touch.clientX,y:touch.clientY};};
-    const onTouchMove=event=>{const touch=event.touches?.[0],start=suggestionTouchStart.current;if(!touch||!start)return;const dx=touch.clientX-start.x,dy=touch.clientY-start.y;if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.25)suppressAutoScroll();};
-    const onKeyDown=event=>{if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End',' '].includes(event.key)&&!['INPUT','TEXTAREA','SELECT'].includes(event.target?.tagName))suppressAutoScroll();};
-    window.addEventListener('wheel',onWheel,{passive:true});window.addEventListener('touchstart',onTouchStart,{passive:true});window.addEventListener('touchmove',onTouchMove,{passive:true});window.addEventListener('keydown',onKeyDown);
-    return()=>{window.removeEventListener('wheel',onWheel);window.removeEventListener('touchstart',onTouchStart);window.removeEventListener('touchmove',onTouchMove);window.removeEventListener('keydown',onKeyDown);};
-  },[]);
-  const openProductDesignPreview=async design=>{setDesignPreviewView(design.placements.some(item=>item.view==='front')?'front':(design.placements[0]?.view||'front'));setSelectedProductDesign(design);setDesignPreviewLoading(true);try{const urls=[...new Set(design.placements.map(item=>catalog.patches.find(p=>p.id===item.patch_id)?.image_url).filter(Boolean))];await Promise.all(urls.map(src=>new Promise(resolve=>{const img=new Image();img.onload=img.onerror=resolve;img.src=src;})));}finally{setDesignPreviewLoading(false);}};
-  const applyProductDesign=design=>{if(!design)return;remember();setPlaced(design.placements.map(item=>({uid:crypto.randomUUID(),patchId:item.patch_id,view:item.view,x:Number(item.x),y:Number(item.y),rotation:Number(item.rotation)||0,gift:false})));setActiveView(design.placements.some(item=>item.view==='front')?'front':(design.placements[0]?.view||'front'));setMobilePatchMode('browse');setSelectedProductDesign(null);setFlowDone(false);setOrder(null);};
-  const product=catalog.products.find(x=>x.id===productId)||catalog.products[0]||defaultProduct;
-  const brand=getStudioBrand(catalog.settings);
-  const halloweenThemeEnabled=catalog.settings.halloweenThemeEnabled!==false;
-  const halloweenFeatures=normalizeHalloweenFeatures(catalog.settings.halloweenFeatures);
-  const selectedBaseKey=productBaseKey(product);
-  const colorVariants=catalog.products.filter(p=>productBaseKey(p)===selectedBaseKey);
-  const sizeGuide=String(product?.size_guide||colorVariants.map(p=>p?.size_guide).find(value=>String(value||'').trim())||'').trim();
-  const activeViews=viewsForProduct(product,brand.productGroups);
-  const sizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];
-  const isFreeSize=sizes.length===1&&/free\s*size|one\s*size/i.test(String(sizes[0]||''));
-  const sizeRequired=!isFreeSize;
-  const chosenPatch=catalog.patches.find(x=>x.id===chosen);
-  const patchFitsBase=useCallback((patch,base=product)=>{const fits=(value,min,max)=>{const lower=Number(min)||0,upper=Number(max)||0,dimension=Number(value);if(!Number.isFinite(dimension)||dimension<=0)return lower<=0&&upper<=0;return (lower<=0||dimension>=lower)&&(upper<=0||dimension<=upper);};return Boolean(patch)&&fits(patch.width_cm,base?.min_patch_width_cm,base?.max_patch_width_cm)&&fits(patch.height_cm,base?.min_patch_height_cm,base?.max_patch_height_cm);},[product]);
-  const eligiblePatches=useMemo(()=>catalog.patches.filter(p=>patchFitsBase(p)&&patchInStock(p)),[catalog.patches,patchFitsBase]);
-  const hasPatchSizeLimits=[product?.min_patch_width_cm,product?.max_patch_width_cm,product?.min_patch_height_cm,product?.max_patch_height_cm].some(value=>Number(value)>0);
-  const popupCampaigns=normalizePopupCampaigns(catalog.settings.popupCampaigns,catalog.settings.giftOffer||GIFT_DEFAULTS);
-  const activeCampaign=getActivePopupCampaign(popupCampaigns,catalog.settings.activePopupCampaign);
-  const giftOffer={...GIFT_DEFAULTS,...(activeCampaign||catalog.settings.giftOffer||{})};
-  const configuredGiftPatches=campaignPatchIds(activeCampaign);
+    if(!catalogReady || catalog.settings.bestsellers?.enabled !== true) return;
+    let idle,timer;
+    const prepare=()=>{timer=setTimeout(()=>{
+      const start=()=>{
+        try {if(sessionStorage.getItem('patchie-bestsellers-'+new Date().toISOString().slice(0,7)))return;}catch{}
+        if(!welcomeDismissed.current)setWelcomeReady(true);
+      };
+      if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:3000});else start();
+    },0);};
+    if(document.readyState==='complete')prepare();else window.addEventListener('load',prepare,{once:true});
+    return ()=>{clearTimeout(timer);if(idle)window.cancelIdleCallback(idle);window.removeEventListener('load',prepare);};
+  },[catalogReady,catalog.settings.bestsellers?.enabled]);
+  const closeWelcome=()=>{welcomeDismissed.current=true;setWelcomeReady(false);};
+  const stage = useRef(null),
+    trash = useRef(null),
+    drag = useRef(null),
+    pan = useRef(null),
+    rotating = useRef(false),
+    pinch = useRef(null),
+    desktopPatchSentinel = useRef(null),
+    suggestionAutoScrollUsed = useRef(false),
+    suggestionAutoScrollSuppressed = useRef(false),
+    suggestionTouchStart = useRef(null);
+  const [stageZoom, setStageZoom] = useStageZoom(stage);
+  useEffect(() => {
+    const suppressAutoScroll = () => {
+      if (suggestionAutoScrollUsed.current) suggestionAutoScrollSuppressed.current = true;
+    };
+    const onWheel = event => {
+      if (Math.abs(event.deltaY) > 2) suppressAutoScroll();
+    };
+    const onTouchStart = event => {
+      const touch = event.touches?.[0];
+      if (touch) suggestionTouchStart.current = {
+        x: touch.clientX,
+        y: touch.clientY
+      };
+    };
+    const onTouchMove = event => {
+      const touch = event.touches?.[0],
+        start = suggestionTouchStart.current;
+      if (!touch || !start) return;
+      const dx = touch.clientX - start.x,
+        dy = touch.clientY - start.y;
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx) * 1.25) suppressAutoScroll();
+    };
+    const onKeyDown = event => {
+      if (['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End', ' '].includes(event.key) && !['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target?.tagName)) suppressAutoScroll();
+    };
+    window.addEventListener('wheel', onWheel, {
+      passive: true
+    });
+    window.addEventListener('touchstart', onTouchStart, {
+      passive: true
+    });
+    window.addEventListener('touchmove', onTouchMove, {
+      passive: true
+    });
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('wheel', onWheel);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, []);
+  const openProductDesignPreview = async design => {
+    setDesignPreviewView(design.placements.some(item => item.view === 'front') ? 'front' : design.placements[0]?.view || 'front');
+    closeWelcome();
+    setSelectedProductDesign(design);
+    setDesignPreviewLoading(true);
+    try {
+      const urls = [...new Set(design.placements.map(item => catalog.patches.find(p => p.id === item.patch_id)?.image_url).filter(Boolean))];
+      await Promise.all(urls.map(src => new Promise(resolve => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = src;
+      })));
+    } finally {
+      setDesignPreviewLoading(false);
+    }
+  };
+  const applyProductDesign = design => {
+    if (!design) return;
+    const target = catalog.products.find(p=>p.id===design.product_id);
+    if(!target || !design.placements.every(item=>{const patch=catalog.patches.find(p=>p.id===item.patch_id);return patch && patchInStock(patch) && !patchIsComingSoon(patch) && patchFitsBase(patch,target);})) {show('Mẫu vừa thay đổi, bạn tải lại trang nhé.');return false;}
+    if(target.id!==productId){setProductId(target.id);setSize(target.sizes?.length===1?target.sizes[0]:'');setHistory([]);}else remember();
+    closeWelcome();setSelectedUid('');
+    setPlaced(design.placements.map(item => ({
+      uid: crypto.randomUUID(),
+      patchId: item.patch_id,
+      view: item.view,
+      x: Number(item.x),
+      y: Number(item.y),
+      rotation: Number(item.rotation) || 0
+    })));
+    setActiveView(design.placements.some(item => item.view === 'front') ? 'front' : design.placements[0]?.view || 'front');
+    setMobilePatchMode('browse');
+    setSelectedProductDesign(null);
+    setFlowDone(false);
+    setOrder(null);
+    requestAnimationFrame(()=>document.querySelector('.preview-col')?.scrollIntoView({behavior:'smooth',block:'start'}));
+    return true;
+  };
+  const product = catalog.products.find(x => x.id === productId) || catalog.products[0] || defaultProduct;
+  const previewProduct = catalog.products.find(p=>p.id===selectedProductDesign?.product_id) || product;
+  const brand = getStudioBrand(catalog.settings);
+  const christmasThemeEnabled = catalog.settings.christmasThemeEnabled !== false;
+  const selectedBaseKey = productBaseKey(product);
+  const colorVariants = catalog.products.filter(p => productBaseKey(p) === selectedBaseKey);
+  const sizeGuide = String(product?.size_guide || colorVariants.map(p => p?.size_guide).find(value => String(value || '').trim()) || '').trim();
+  const activeViews = viewsForProduct(product, brand.productGroups);
+  const sizes = product?.sizes?.length ? product.sizes : catalog.settings.sizes || [];
+  const isFreeSize = sizes.length === 1 && /free\s*size|one\s*size/i.test(String(sizes[0] || ''));
+  const sizeRequired = !isFreeSize;
+  const chosenPatch = catalog.patches.find(x => x.id === chosen);
+  const patchFitsBase = useCallback((patch, base = product) => {
+    const fits = (value, min, max) => {
+      const lower = Number(min) || 0,
+        upper = Number(max) || 0,
+        dimension = Number(value);
+      if (!Number.isFinite(dimension) || dimension <= 0) return lower <= 0 && upper <= 0;
+      return (lower <= 0 || dimension >= lower) && (upper <= 0 || dimension <= upper);
+    };
+    return Boolean(patch) && fits(patch.width_cm, base?.min_patch_width_cm, base?.max_patch_width_cm) && fits(patch.height_cm, base?.min_patch_height_cm, base?.max_patch_height_cm);
+  }, [product]);
+  const eligiblePatches = useMemo(() => catalog.patches.filter(p => patchFitsBase(p) && patchInStock(p)), [catalog.patches, patchFitsBase]);
+  const hasPatchSizeLimits = [product?.min_patch_width_cm, product?.max_patch_width_cm, product?.min_patch_height_cm, product?.max_patch_height_cm].some(value => Number(value) > 0);
+
   // If an older settings record points to deleted patch IDs, fall back to the
   // first two live patches so the launch offer never silently disappears.
-  const configuredGiftCandidates=configuredGiftPatches.map(id=>catalog.patches.find(p=>p.id===id)).filter(p=>patchFitsBase(p));
-  const releasedPatches=eligiblePatches.filter(p=>!patchIsComingSoon(p));
-  const giftCandidates=(configuredGiftCandidates.filter(p=>!patchIsComingSoon(p)).length>=2?configuredGiftCandidates.filter(p=>!patchIsComingSoon(p)):releasedPatches).slice(0,2);
-  const tarotCards=(activeCampaign?.cards||[]).map(card=>({...card,patch:catalog.patches.find(p=>p.id===card.patchId)})).filter(card=>card.patch&&patchFitsBase(card.patch)&&!patchIsComingSoon(card.patch)).slice(0,3);
-  const giftPlacement=placed.find(x=>x.gift&&x.patchId===giftPatchId);
-  const giftAvailable=p=>Boolean(giftPatchId&&p?.id===giftPatchId&&!giftPlacement);
-  const existingPatchGroups=Array.from(new Set(eligiblePatches.flatMap(patchGroupsOf)));
-  const orderedPatchGroups=normalizePatchGroupOrder(catalog.settings.patchGroupOrder,existingPatchGroups);
-  const patchGroups=[...orderedPatchGroups,'all'];
-  const highlightedPatchGroups=new Set(catalog.settings.patchGroupHighlightEnabled!==false?orderedPatchGroups.slice(0,3):[]);
-  const patchGroupCount=g=>g==='all'?eligiblePatches.length:eligiblePatches.filter(p=>patchGroupsOf(p).includes(g)).length;
-  const patchGroupHasComingSoon=g=>{if(g==='all')return false;const groupPatches=eligiblePatches.filter(p=>patchGroupsOf(p).includes(g));return groupPatches.length>0&&groupPatches.every(p=>patchIsComingSoon(p));};
-  const visiblePatches=useMemo(()=>[...(activePatchGroup==='all'?eligiblePatches:eligiblePatches.filter(p=>patchGroupsOf(p).includes(activePatchGroup)))].sort((a,b)=>{
-    const giftDiff=Number(b.id===giftPatchId)-Number(a.id===giftPatchId);
-    return giftDiff||Number(a.sort_order||100)-Number(b.sort_order||100);
-  }),[eligiblePatches,activePatchGroup,giftPatchId]);
-  const loadedPatchCards=visiblePatches.slice(0,patchCardLimit);
-  const suggestions=useSuggestions({productId,placed});
-  const {productDesigns,loading:designSuggestionsLoading,error:designError}=suggestions;
-  const canRefreshProductDesigns=suggestions.canRefreshDesigns;
-  const refreshProductDesigns=()=>suggestions.refreshDesigns({force:true});
-  const hasMobileSuggestionContext=placed.some(item=>!item.gift);
-  const viewImages=product?.view_images||{};
-  const imageForView=id=>viewImages[id]||viewImages.front||product?.image_url||defaultProduct.image_url;
-  const activeImage=imageForView(activeView);
-  const [displayedImage,setDisplayedImage]=useState(activeImage);
-  const [mockupError,setMockupError]=useState(false),[imageRetry,setImageRetry]=useState(0);
-  const foregroundImage=useRef(Promise.resolve());
-  const queueSeed=useRef(null);
-  if(queueSeed.current?.key!==selectedBaseKey)queueSeed.current={key:selectedBaseKey,product};
-  const queueSeedProduct=queueSeed.current.product;
-  const queueVariants=useMemo(()=>catalog.products.filter(p=>productBaseKey(p)===selectedBaseKey),[catalog.products,selectedBaseKey]);
-  useEffect(()=>{
-    let cancelled=false;setMockupError(false);
-    const task=loadBaseImage(activeImage,'high');
-    foregroundImage.current=task.catch(()=>{});
-    task.then(()=>{if(!cancelled)setDisplayedImage(activeImage);}).catch(()=>{if(!cancelled)setMockupError(true);});
-    return ()=>{cancelled=true;};
-  },[activeImage,imageRetry]);
-  useEffect(()=>{
-    let cancelled=false;
-    const run=async()=>{
+
+  const existingPatchGroups = Array.from(new Set(eligiblePatches.flatMap(patchGroupsOf)));
+  const orderedPatchGroups = normalizePatchGroupOrder(catalog.settings.patchGroupOrder, existingPatchGroups);
+  const patchGroups = [...orderedPatchGroups, 'all'];
+  const highlightedPatchGroups = new Set(catalog.settings.patchGroupHighlightEnabled !== false ? orderedPatchGroups.slice(0, 3) : []);
+  const patchGroupCount = g => g === 'all' ? eligiblePatches.length : eligiblePatches.filter(p => patchGroupsOf(p).includes(g)).length;
+  const patchGroupHasComingSoon = g => {
+    if (g === 'all') return false;
+    const groupPatches = eligiblePatches.filter(p => patchGroupsOf(p).includes(g));
+    return groupPatches.length > 0 && groupPatches.every(p => patchIsComingSoon(p));
+  };
+  const visiblePatches = useMemo(() => [...(activePatchGroup === 'all' ? eligiblePatches : eligiblePatches.filter(p => patchGroupsOf(p).includes(activePatchGroup)))].sort((a, b) => {
+    return Number(a.sort_order || 100) - Number(b.sort_order || 100);
+  }), [eligiblePatches, activePatchGroup]);
+  const loadedPatchCards = visiblePatches.slice(0, patchCardLimit);
+  const suggestions = useSuggestions({
+    productId,
+    placed
+  });
+  const {
+    productDesigns,
+    loading: designSuggestionsLoading,
+    error: designError
+  } = suggestions;
+  const canRefreshProductDesigns = suggestions.canRefreshDesigns;
+  const refreshProductDesigns = () => suggestions.refreshDesigns({
+    force: true
+  });
+  const hasMobileSuggestionContext = (placed.length > 0);
+  const viewImages = product?.view_images || {};
+  const imageForView = id => viewImages[id] || viewImages.front || product?.image_url || defaultProduct.image_url;
+  const activeImage = imageForView(activeView);
+  const [displayedImage, setDisplayedImage] = useState(activeImage);
+  const [mockupError, setMockupError] = useState(false),
+    [imageRetry, setImageRetry] = useState(0);
+  const foregroundImage = useRef(Promise.resolve());
+  const queueSeed = useRef(null);
+  if (queueSeed.current?.key !== selectedBaseKey) queueSeed.current = {
+    key: selectedBaseKey,
+    product
+  };
+  const queueSeedProduct = queueSeed.current.product;
+  const queueVariants = useMemo(() => catalog.products.filter(p => productBaseKey(p) === selectedBaseKey), [catalog.products, selectedBaseKey]);
+  useEffect(() => {
+    let cancelled = false;
+    setMockupError(false);
+    const task = loadBaseImage(activeImage, 'high');
+    foregroundImage.current = task.catch(() => {});
+    task.then(() => {
+      if (!cancelled) setDisplayedImage(activeImage);
+    }).catch(() => {
+      if (!cancelled) setMockupError(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeImage, imageRetry]);
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
       // Wait for any newly selected foreground image before starting each background request.
-      const waitForeground=async()=>{
+      const waitForeground = async () => {
         let current;
-        do{current=foregroundImage.current;await current;}while(!cancelled&&current!==foregroundImage.current);
+        do {
+          current = foregroundImage.current;
+          await current;
+        } while (!cancelled && current !== foregroundImage.current);
       };
-      const sources=[baseFront(queueSeedProduct),baseThumb(queueSeedProduct),queueSeedProduct?.view_images?.back,
-        ...queueVariants.filter(p=>p.id!==queueSeedProduct.id).flatMap(p=>[baseThumb(p),baseFront(p)])];
-      for(const src of [...new Set(sources.filter(Boolean))]){
-        await waitForeground();if(cancelled)return;
-        try{await loadBaseImage(src);}catch{}
-        if(cancelled)return;
+      const sources = [baseFront(queueSeedProduct), baseThumb(queueSeedProduct), queueSeedProduct?.view_images?.back, ...queueVariants.filter(p => p.id !== queueSeedProduct.id).flatMap(p => [baseThumb(p), baseFront(p)])];
+      for (const src of [...new Set(sources.filter(Boolean))]) {
+        await waitForeground();
+        if (cancelled) return;
+        try {
+          await loadBaseImage(src);
+        } catch {}
+        if (cancelled) return;
       }
     };
-    run();return ()=>{cancelled=true;};
-  },[selectedBaseKey,queueVariants,queueSeedProduct]);
-
-  const activePlaced=placed.filter(x=>(x.view||'front')===activeView);
-  const selectedItem=activePlaced.find(x=>x.uid===selectedUid);
-  const selectedPatch=selectedItem&&catalog.patches.find(x=>x.id===selectedItem.patchId);
-  const show=s=>{setToast(s);setTimeout(()=>setToast(''),2600);};
-  const loadMorePatchCardsOnScroll=e=>{const rail=e.currentTarget;if(patchCardLimit<visiblePatches.length&&rail.scrollLeft+rail.clientWidth>=rail.scrollWidth-rail.clientWidth)setPatchCardLimit(current=>Math.min(current+3,visiblePatches.length));};
-  const flashQuote=p=>{if(!p?.quote)return;setQuotePatch(p.id);setTimeout(()=>setQuotePatch(''),1000);};
-  const choosePatch=p=>{if(!patchFitsBase(p)){show('Patch này không đúng kích thước cho sản phẩm base đang chọn nhé.');return;}if(!patchInStock(p)){show('Patch này hiện đã hết hàng nhé.');return;}if(patchIsComingSoon(p)){show('Patch này sắp ra mắt nên chưa thể chọn nhé.');return;}if(placed.length>=12){add(p);return;}setChosen(p.id);flashQuote(p);add(p);trackEvent('Patch Added',{patch_id:String(p.id),group:patchGroup(p)});if(!giftAvailable(p)&&!placed.some(item=>!item.gift)){setMobilePatchMode('suggestions');trackEvent('Design Suggestions Shown',{anchor_patch_id:String(p.id)});}};
-  function claimGift(p){
-    if(!p)return;
-    if(!patchFitsBase(p)){show('Patch này không đúng kích thước cho sản phẩm base đang chọn nhé.');return;}
-    if(patchIsComingSoon(p)){show('Patch này sắp ra mắt nên chưa thể nhận làm quà nhé.');return;}
-    setGiftPatchId(p.id);setGiftPreviewId('');setCampaignCardId('');setChosen(p.id);setActivePatchGroup('all');setGiftPopupOpen(false);flashQuote(p);
-    if(!placed.some(x=>x.gift&&x.patchId===p.id)){
-      trackEvent('Gift Patch Claimed',{patch_id:String(p.id),campaign_type:activeCampaign?.type||'gift'});
-      remember();
-      const uid=crypto.randomUUID();
-      setSelectedUid(uid);
-      setPlaced(a=>[...a,{uid,patchId:p.id,view:'front',x:.54,y:.38,rotation:0,gift:true}]);
-    }
-    show(`${p.name} đã được thêm làm quà tặng ✦`);
-  }
-  const patchSizePercent=(p,view=activeView)=>{
-    const legacy=VIEW_REFERENCE_CM[view]||VIEW_REFERENCE_CM.front;
-    const refW=Number(product?.reference_width_cm)>0?Number(product.reference_width_cm):legacy.width;
-    const refH=Number(product?.reference_height_cm)>0?Number(product.reference_height_cm):legacy.height;
-    const fitW=Number(product?.image_fit_percent)>0?Math.min(100,Number(product.image_fit_percent))/100:1;
-    const rawFitH=Number(product?.image_fit_height_percent);
-    const fitH=rawFitH>0?Math.min(100,rawFitH)/100:fitW;
-    return {width:clampPatchPercent((Number(p?.width_cm||4)/refW)*fitW*100),height:clampPatchPercent((Number(p?.height_cm||4)/refH)*fitH*100)};
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBaseKey, queueVariants, queueSeedProduct]);
+  const activePlaced = placed.filter(x => (x.view || 'front') === activeView);
+  const selectedItem = activePlaced.find(x => x.uid === selectedUid);
+  const selectedPatch = selectedItem && catalog.patches.find(x => x.id === selectedItem.patchId);
+  const show = s => {
+    setToast(s);
+    setTimeout(() => setToast(''), 2600);
   };
-  const patchPreviewStyle=p=>{const s=patchSizePercent(p);return {width:`${s.width}%`,height:`${s.height}%`,maxWidth:'none',maxHeight:'none'};};
-  const patchLabel=p=>`${Number(p?.width_cm||4).toFixed(1).replace('.0','')} × ${Number(p?.height_cm||4).toFixed(1).replace('.0','')} cm`;
-  const viewName=id=>VIEWS.find(v=>v.id===id)?.label||'Mặt trước';
-  const stepIndex=Math.max(0,activeViews.findIndex(v=>v.id===activeView));
-  const isLastStep=stepIndex===activeViews.length-1;
-  const money=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))?`${new Intl.NumberFormat('vi-VN').format(Number(v))}đ`:'Chưa set';
-  const priceOf=x=>Number.isFinite(Number(x?.price))?Number(x.price):0;
-  const placedWithPatch=placed.map(x=>({...x,patch:catalog.patches.find(p=>p.id===x.patchId)}));
-  const placementPrice=x=>x?.gift?0:priceOf(x?.patch);
-  const patchDisplayPrice=p=>patchIsComingSoon(p)?'COMING SOON':giftAvailable(p)?'0đ':money(p?.price);
-  const productPrice=priceOf(product),patchTotal=placedWithPatch.reduce((sum,x)=>sum+placementPrice(x),0),orderTotal=productPrice+patchTotal;
-
-  const signedRotation=value=>{const v=normalizeRotation(value);return v>180?v-360:v;};
-
-  useEffect(()=>{if(catalogSeed)return;fetch('/api/catalog').then(r=>r.json()).then(d=>{const products=Array.isArray(d.products)?d.products:[],patches=Array.isArray(d.patches)?d.patches:[],livePatches=patches.length?patches:STARTER,settings={sizes:['S','M','L','XL'],messengerUrl:'',privacyText:'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',giftOffer:GIFT_DEFAULTS,popupCampaigns:normalizePopupCampaigns(null,GIFT_DEFAULTS),activePopupCampaign:'traditional-gift',defaultPatchGroup:'all',halloweenThemeEnabled:true,halloweenFeatures:DEFAULT_HALLOWEEN_FEATURES,patchSuggestionsEnabled:true,...(d.settings||{})},availableGroups=new Set(livePatches.flatMap(patchGroupsOf)),requestedGroup=String(settings.defaultPatchGroup||'all'),initialGroup=requestedGroup==='all'||availableGroups.has(requestedGroup)?requestedGroup:'all';setCatalog({products,patches:livePatches,settings});setActivePatchGroup(initialGroup);if(products.length){const preferred=products.find(product=>product.id===settings.defaultProductId)||products[0];setProductId(preferred.id);}if(livePatches.length)setChosen((livePatches.find(p=>patchInStock(p)&&!patchIsComingSoon(p))||livePatches.find(p=>patchInStock(p))||livePatches[0]).id);}).catch(()=>{}).finally(()=>setCatalogReady(true));},[]);
-  useEffect(()=>{setCampaignCardId('');setGiftPreviewId('');if(!catalogReady||!activeCampaign?.enabled)return;if(activeCampaign.type==='tarot'?tarotCards.length<3:giftCandidates.length<2)return;setGiftPopupOpen(true);},[catalogReady,activeCampaign?.id,activeCampaign?.enabled,activeCampaign?.type,giftCandidates.length,tarotCards.length]);
-  useEffect(()=>{if(giftPatchId&&!catalog.patches.some(p=>p.id===giftPatchId))setGiftPatchId('');},[catalog.patches,giftPatchId]);
-  useEffect(()=>{if(activePatchGroup!=='all'&&!eligiblePatches.some(p=>patchGroupsOf(p).includes(activePatchGroup)))setActivePatchGroup('all');},[catalog.patches,activePatchGroup,productId]);
-  useEffect(()=>{setPatchCardLimit(9);},[productId,activePatchGroup]);
-  useEffect(()=>{const node=desktopPatchSentinel.current;if(!node||patchCardLimit>=visiblePatches.length||typeof IntersectionObserver==='undefined')return;const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))setPatchCardLimit(current=>Math.min(current+3,visiblePatches.length));},{rootMargin:'250px 0px'});observer.observe(node);return()=>observer.disconnect();},[visiblePatches.length,patchCardLimit]);
-  useEffect(()=>{if(visiblePatches.length&&(!chosenPatch||!patchInStock(chosenPatch)||patchIsComingSoon(chosenPatch)||!visiblePatches.some(p=>p.id===chosen)))setChosen((visiblePatches.find(p=>patchInStock(p)&&!patchIsComingSoon(p))||visiblePatches.find(p=>patchInStock(p))||visiblePatches[0]).id);},[activePatchGroup,catalog.patches,chosen,productId]);
-  useEffect(()=>{if(!activeViews.some(v=>v.id===activeView))setActiveView('front');},[productId,catalog.products]);
-  useEffect(()=>{setProductSheetGroup(product?.product_type||'shirt');},[productId,catalog.products]);
-
-  useEffect(()=>{if(colorVariants.length===1&&colorVariants[0].id!==productId)setProductId(colorVariants[0].id);const availableSizes=product?.sizes?.length?product.sizes:catalog.settings.sizes||[];if(availableSizes.length===1&&size!==availableSizes[0])setSize(availableSizes[0]);},[productId,selectedBaseKey,catalog.products,product?.sizes,catalog.settings.sizes,size]);
-  useEffect(()=>{if(phone.trim().length>=8&&!draftOrderCode)setDraftOrderCode(makeDraftOrderCode());if(phone.trim().length<8&&draftOrderCode&&!order)setDraftOrderCode('');},[phone,draftOrderCode,order]);
-  useEffect(()=>{const button=document.querySelector('.finish-custom');if(!button)return;const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift),hasRequiredSize=!sizeRequired||Boolean(size),ready=placed.length>0&&(!hasGift||hasPaidPatch)&&hasRequiredSize;button.disabled=!ready;button.setAttribute('aria-disabled',String(!ready));button.textContent=ready?'Đã custom xong rồi':!hasRequiredSize?'Hãy chọn size':hasGift?'Thêm ít nhất 1 patch mua':'Bạn hãy chọn ít nhất 1 patch';button.classList.toggle('finish-disabled',!ready);},[placed,size,sizeRequired,catalogReady]);
+  const loadMorePatchCardsOnScroll = e => {
+    const rail = e.currentTarget;
+    if (patchCardLimit < visiblePatches.length && rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - rail.clientWidth) setPatchCardLimit(current => Math.min(current + 3, visiblePatches.length));
+  };
+  const flashQuote = p => {
+    if (!p?.quote) return;
+    setQuotePatch(p.id);
+    setTimeout(() => setQuotePatch(''), 1000);
+  };
+  const choosePatch = p => {
+    if (!patchFitsBase(p)) {
+      show('Patch này không đúng kích thước cho sản phẩm base đang chọn nhé.');
+      return;
+    }
+    if (!patchInStock(p)) {
+      show('Patch này hiện đã hết hàng nhé.');
+      return;
+    }
+    if (patchIsComingSoon(p)) {
+      show('Patch này sắp ra mắt nên chưa thể chọn nhé.');
+      return;
+    }
+    if (placed.length >= 12) {
+      add(p);
+      return;
+    }
+    setChosen(p.id);
+    flashQuote(p);
+    add(p);
+    trackEvent('Patch Added', {
+      patch_id: String(p.id),
+      group: patchGroup(p)
+    });
+    if (!placed.length) {
+      setMobilePatchMode('suggestions');
+      trackEvent('Design Suggestions Shown', {
+        anchor_patch_id: String(p.id)
+      });
+    }
+  };
+  const patchSizePercent = (p, view = activeView, base = product) => {
+    const legacy = VIEW_REFERENCE_CM[view] || VIEW_REFERENCE_CM.front;
+    const refW = Number(base?.reference_width_cm) > 0 ? Number(base.reference_width_cm) : legacy.width;
+    const refH = Number(base?.reference_height_cm) > 0 ? Number(base.reference_height_cm) : legacy.height;
+    const fitW = Number(base?.image_fit_percent) > 0 ? Math.min(100, Number(base.image_fit_percent)) / 100 : 1;
+    const rawFitH = Number(base?.image_fit_height_percent);
+    const fitH = rawFitH > 0 ? Math.min(100, rawFitH) / 100 : fitW;
+    return {
+      width: clampPatchPercent(Number(p?.width_cm || 4) / refW * fitW * 100),
+      height: clampPatchPercent(Number(p?.height_cm || 4) / refH * fitH * 100)
+    };
+  };
+  const patchPreviewStyle = p => {
+    const s = patchSizePercent(p);
+    return {
+      width: `${s.width}%`,
+      height: `${s.height}%`,
+      maxWidth: 'none',
+      maxHeight: 'none'
+    };
+  };
+  const patchLabel = p => `${Number(p?.width_cm || 4).toFixed(1).replace('.0', '')} × ${Number(p?.height_cm || 4).toFixed(1).replace('.0', '')} cm`;
+  const viewName = id => VIEWS.find(v => v.id === id)?.label || 'Mặt trước';
+  const stepIndex = Math.max(0, activeViews.findIndex(v => v.id === activeView));
+  const isLastStep = stepIndex === activeViews.length - 1;
+  const money = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? `${new Intl.NumberFormat('vi-VN').format(Number(v))}đ` : 'Chưa set';
+  const priceOf = x => Number.isFinite(Number(x?.price)) ? Number(x.price) : 0;
+  const placedWithPatch = placed.map(x => ({
+    ...x,
+    patch: catalog.patches.find(p => p.id === x.patchId)
+  }));
+  const placementPrice = x => priceOf(x?.patch);
+  const patchDisplayPrice = p => patchIsComingSoon(p) ? 'COMING SOON' : money(p?.price);
+  const productPrice = priceOf(product),
+    patchTotal = placedWithPatch.reduce((sum, x) => sum + placementPrice(x), 0),
+    orderTotal = productPrice + patchTotal;
+  const signedRotation = value => {
+    const v = normalizeRotation(value);
+    return v > 180 ? v - 360 : v;
+  };
+  useEffect(() => {
+    if (catalogSeed) return;
+    fetch('/api/catalog').then(r => r.json()).then(d => {
+      const products = Array.isArray(d.products) ? d.products : [],
+        patches = Array.isArray(d.patches) ? d.patches : [],
+        livePatches = patches.length ? patches : STARTER,
+        settings = {
+          sizes: ['S', 'M', 'L', 'XL'],
+          messengerUrl: '',
+          privacyText: 'Shop dùng thông tin này để xử lý yêu cầu thiết kế.',
+          defaultPatchGroup: 'all',
+          christmasThemeEnabled: true,
+          patchSuggestionsEnabled: true,
+          ...(d.settings || {})
+        },
+        availableGroups = new Set(livePatches.flatMap(patchGroupsOf)),
+        requestedGroup = String(settings.defaultPatchGroup || 'all'),
+        initialGroup = requestedGroup === 'all' || availableGroups.has(requestedGroup) ? requestedGroup : 'all';
+      setCatalog({
+        products,
+        patches: livePatches,
+        settings
+      });
+      setActivePatchGroup(initialGroup);
+      if (products.length) {
+        const preferred = products.find(product => product.id === settings.defaultProductId) || products[0];
+        setProductId(preferred.id);
+      }
+      if (livePatches.length) setChosen((livePatches.find(p => patchInStock(p) && !patchIsComingSoon(p)) || livePatches.find(p => patchInStock(p)) || livePatches[0]).id);
+    }).catch(() => {}).finally(() => setCatalogReady(true));
+  }, []);
+  useEffect(() => {
+    if (activePatchGroup !== 'all' && !eligiblePatches.some(p => patchGroupsOf(p).includes(activePatchGroup))) setActivePatchGroup('all');
+  }, [catalog.patches, activePatchGroup, productId]);
+  useEffect(() => {
+    setPatchCardLimit(9);
+  }, [productId, activePatchGroup]);
+  useEffect(() => {
+    const node = desktopPatchSentinel.current;
+    if (!node || patchCardLimit >= visiblePatches.length || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) setPatchCardLimit(current => Math.min(current + 3, visiblePatches.length));
+    }, {
+      rootMargin: '250px 0px'
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [visiblePatches.length, patchCardLimit]);
+  useEffect(() => {
+    if (visiblePatches.length && (!chosenPatch || !patchInStock(chosenPatch) || patchIsComingSoon(chosenPatch) || !visiblePatches.some(p => p.id === chosen))) setChosen((visiblePatches.find(p => patchInStock(p) && !patchIsComingSoon(p)) || visiblePatches.find(p => patchInStock(p)) || visiblePatches[0]).id);
+  }, [activePatchGroup, catalog.patches, chosen, productId]);
+  useEffect(() => {
+    if (!activeViews.some(v => v.id === activeView)) setActiveView('front');
+  }, [productId, catalog.products]);
+  useEffect(() => {
+    setProductSheetGroup(product?.product_type || 'shirt');
+  }, [productId, catalog.products]);
+  useEffect(() => {
+    if (colorVariants.length === 1 && colorVariants[0].id !== productId) setProductId(colorVariants[0].id);
+    const availableSizes = product?.sizes?.length ? product.sizes : catalog.settings.sizes || [];
+    if (availableSizes.length === 1 && size !== availableSizes[0]) setSize(availableSizes[0]);
+  }, [productId, selectedBaseKey, catalog.products, product?.sizes, catalog.settings.sizes, size]);
+  useEffect(() => {
+    if (phone.trim().length >= 8 && !draftOrderCode) setDraftOrderCode(makeDraftOrderCode());
+    if (phone.trim().length < 8 && draftOrderCode && !order) setDraftOrderCode('');
+  }, [phone, draftOrderCode, order]);
+  useEffect(() => {
+    const button = document.querySelector('.finish-custom');
+    if (!button) return;
+    const hasRequiredSize = !sizeRequired || Boolean(size),
+      ready = placed.length > 0 && hasRequiredSize;
+    button.disabled = !ready;
+    button.setAttribute('aria-disabled', String(!ready));
+    button.textContent = ready ? 'Đã custom xong rồi' : !hasRequiredSize ? 'Hãy chọn size' : 'Bạn hãy chọn ít nhất 1 patch';
+    button.classList.toggle('finish-disabled', !ready);
+  }, [placed, size, sizeRequired, catalogReady]);
   // Load the selected base product's views; patch thumbnails are requested by visible cards.
   // Full-resolution patch files are fetched only after a patch is placed on the mockup.
 
-  useEffect(()=>{setStageZoom({scale:1,x:0,y:0});setTrashActive(false);setTrashHot(false);pinch.current=null;drag.current=null;pan.current=null;},[activeView,productId]);
-  useEffect(()=>{const preference=window.localStorage.getItem('patchie-smart-position');if(preference!==null)setSmartPositionEnabled(preference==='true');},[]);
-
-  useEffect(()=>{if(!hasMobileSuggestionContext&&mobilePatchMode==='suggestions')setMobilePatchMode('browse');},[hasMobileSuggestionContext,mobilePatchMode]);
-
-  useEffect(()=>{
-    if(!hasMobileSuggestionContext||!window.matchMedia('(max-width: 700px)').matches)return;
-    if(suggestionAutoScrollSuppressed.current)return;
-    const timer=window.setTimeout(()=>{if(suggestionAutoScrollSuppressed.current)return;const dock=document.querySelector('.mobile-patch-dock');if(dock){suggestionAutoScrollUsed.current=true;window.scrollTo({top:Math.max(0,window.scrollY+dock.getBoundingClientRect().top-8),behavior:'smooth'});}},80);
-    return()=>clearTimeout(timer);
-  },[hasMobileSuggestionContext,placed.length]);
-
-  if(!catalogReady)return <StudioContainer embedded={embedded} className={`shell ${halloweenThemeEnabled?'theme-halloween':''}`} style={{'--patchie-font':brand.fontFamily}}>{!embedded&&<StudioHeader brand={brand}/>}<LoadingAnimation/><StudioFooter/></StudioContainer>;
-  if(!catalog.products.length)return <StudioContainer embedded={embedded} className={`shell ${halloweenThemeEnabled?'theme-halloween':''}`} style={{'--patchie-font':brand.fontFamily}}>{!embedded&&<StudioHeader brand={brand}/>}<section className="catalog-loading"><b>Chưa có sản phẩm base</b><p>Vào admin để thêm sản phẩm hoặc màu variation trước nhé.</p></section><StudioFooter/></StudioContainer>;
-
-  function remember(){setHistory(a=>[...a.slice(-19),placed.map(x=>({...x}))]);setOrder(null);}
-  function undo(){setHistory(a=>{const prev=a[a.length-1];if(!prev){show('Chưa có bước để hoàn tác.');return a;}setPlaced(prev.map(x=>({...x})));setOrder(null);return a.slice(0,-1);});}
-  function confirmUndo(){if(!history.length)return show('Chưa có bước để hoàn tác.');if(activeView!=='front'&&!undoAsked){setUndoAsked(true);setUndoAsk(true);return;}undo();}
-  function approveUndo(){setUndoAsk(false);undo();}
-  function add(patchOverride){const patch=patchOverride||chosenPatch;if(!patch)return show('Chọn một patch trước nhé.');if(!patchInStock(patch))return show('Patch này hiện đã hết hàng nhé.');if(patchIsComingSoon(patch))return show('Patch này sắp ra mắt nên chưa thể thêm vào mockup nhé.');if(placed.length>=12)return show('Bố cục tối đa 12 patch.');const isGift=Boolean(giftPatchId===patch.id&&!giftPlacement);remember();const uid=crypto.randomUUID();setSelectedUid(uid);setPlaced(a=>[...a,{uid,patchId:patch.id,view:activeView,x:.5+Math.random()*.08,y:.38+Math.random()*.1,rotation:0,gift:isGift}]);setHeartBurst(value=>value+1);}
-  function isOverTrash(e){if(!trash.current)return false;const r=trash.current.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;}
-  function removeDraggedPatch(uid){setPlaced(a=>a.filter(x=>x.uid!==uid));if(selectedUid===uid)setSelectedUid('');}
-  function move(e){
-    if(!drag.current||!stage.current||pinch.current)return;
-    const r=stage.current.getBoundingClientRect(),scale=stageZoom.scale;
-    let x=(e.clientX-r.left-stageZoom.x)/(r.width*scale),y=(e.clientY-r.top-stageZoom.y)/(r.height*scale);
-    const mobile=window.matchMedia('(max-width: 700px)').matches,tolerance=(mobile?25:15)/(Math.max(1,Math.min(r.width,r.height))*scale);
-    const savedGuides=Array.isArray(product?.snap_guides)&&product.snap_guides.length?product.snap_guides:(Array.isArray(product?.snap_points)?product.snap_points.map(point=>({...point,type:'point'})):[]);
-    let guide=null;
-    if(smartPositionPromptOpen)return;
-    const masterEnabled=smartPositionEnabled!==false;
-    const showGuides=masterEnabled&&product?.snap_guide_enabled!==false;
-    const attractionEnabled=masterEnabled&&product?.snap_attraction_enabled!==false;
-    const baseStrength=Math.max(0,Math.min(100,Number(product?.snap_strength_percent??45)))/100;
-    const zoomFactor=mobile?Math.pow(Math.max(1,scale),-1.25):1;
-    const pull=attractionEnabled?baseStrength*zoomFactor:0;
-    const attract=(from,to)=>from+(to-from)*pull;
-    if(showGuides||pull>0){
-      const guides=savedGuides.filter(item=>item.view===activeView&&item.type!=='line'&&Number.isFinite(Number(item.x))&&Number.isFinite(Number(item.y)));
-      let nearest=null,nearestDistance=Infinity,nearestX=x,nearestY=y;
-      for(const item of guides){const distance=Math.hypot((x-Number(item.x))*r.width*scale,(y-Number(item.y))*r.height*scale);if(distance<nearestDistance){nearest=item;nearestDistance=distance;nearestX=Number(item.x);nearestY=Number(item.y);}}
-      if(nearest&&nearestDistance<=(mobile?36:21)){
-        const candidate={kind:'preset-point',x:nearestX,y:nearestY,line:null};
-        if(smartPositionEnabled===null&&pull>0){setQueuedSnap({uid:drag.current,x:attract(x,nearestX),y:attract(y,nearestY),guide:candidate});setSnapGuide(showGuides?candidate:null);setSmartPositionPromptOpen(true);}
-        else{x=attract(x,nearestX);y=attract(y,nearestY);guide=showGuides?candidate:null;}
-      }else{
-        const others=activePlaced.filter(item=>item.uid!==drag.current);let bestX=null,bestY=null,distX=Infinity,distY=Infinity;
-        for(const item of others){const dx=Math.abs(x-item.x),dy=Math.abs(y-item.y);if(dx<=tolerance&&dx<distX){bestX=item.x;distX=dx;}if(dy<=tolerance&&dy<distY){bestY=item.y;distY=dy;}}
-        const targetX=bestX===null?x:attract(x,bestX),targetY=bestY===null?y:attract(y,bestY);
-        if(bestX!==null||bestY!==null){const candidate={kind:'align',x:bestX,y:bestY,line:null};if(smartPositionEnabled===null&&pull>0){setQueuedSnap({uid:drag.current,x:targetX,y:targetY,guide:candidate});setSnapGuide(showGuides?candidate:null);setSmartPositionPromptOpen(true);}else{ x=targetX;y=targetY;guide=showGuides?candidate:null; }}
+  useEffect(() => {
+    setStageZoom({
+      scale: 1,
+      x: 0,
+      y: 0
+    });
+    setTrashActive(false);
+    setTrashHot(false);
+    pinch.current = null;
+    drag.current = null;
+    pan.current = null;
+  }, [activeView, productId]);
+  useEffect(() => {
+    const preference = window.localStorage.getItem('patchie-smart-position');
+    if (preference !== null) setSmartPositionEnabled(preference === 'true');
+  }, []);
+  useEffect(() => {
+    if (!hasMobileSuggestionContext && mobilePatchMode === 'suggestions') setMobilePatchMode('browse');
+  }, [hasMobileSuggestionContext, mobilePatchMode]);
+  useEffect(() => {
+    if (!hasMobileSuggestionContext || !window.matchMedia('(max-width: 700px)').matches) return;
+    if (suggestionAutoScrollSuppressed.current) return;
+    const timer = window.setTimeout(() => {
+      if (suggestionAutoScrollSuppressed.current) return;
+      const dock = document.querySelector('.mobile-patch-dock');
+      if (dock) {
+        suggestionAutoScrollUsed.current = true;
+        window.scrollTo({
+          top: Math.max(0, window.scrollY + dock.getBoundingClientRect().top - 8),
+          behavior: 'smooth'
+        });
+      }
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [hasMobileSuggestionContext, placed.length]);
+  if (!catalogReady) return <StudioContainer embedded={embedded} className={`shell ${christmasThemeEnabled ? 'theme-christmas' : ''}`} style={{
+    '--patchie-font': brand.fontFamily
+  }}>{!embedded && <StudioHeader brand={brand} />}<LoadingAnimation /><StudioFooter /></StudioContainer>;
+  if (!catalog.products.length) return <StudioContainer embedded={embedded} className={`shell ${christmasThemeEnabled ? 'theme-christmas' : ''}`} style={{
+    '--patchie-font': brand.fontFamily
+  }}>{!embedded && <StudioHeader brand={brand} />}<section className="catalog-loading"><b>Chưa có sản phẩm base</b><p>Vào admin để thêm sản phẩm hoặc màu variation trước nhé.</p></section><StudioFooter /></StudioContainer>;
+  function remember() {
+    setHistory(a => [...a.slice(-19), placed.map(x => ({
+      ...x
+    }))]);
+    setOrder(null);
+  }
+  function undo() {
+    setHistory(a => {
+      const prev = a[a.length - 1];
+      if (!prev) {
+        show('Chưa có bước để hoàn tác.');
+        return a;
+      }
+      setPlaced(prev.map(x => ({
+        ...x
+      })));
+      setOrder(null);
+      return a.slice(0, -1);
+    });
+  }
+  function confirmUndo() {
+    if (!history.length) return show('Chưa có bước để hoàn tác.');
+    if (activeView !== 'front' && !undoAsked) {
+      setUndoAsked(true);
+      setUndoAsk(true);
+      return;
+    }
+    undo();
+  }
+  function approveUndo() {
+    setUndoAsk(false);
+    undo();
+  }
+  function add(patchOverride) {
+    closeWelcome();
+    const patch = patchOverride || chosenPatch;
+    if (!patch) return show('Chọn một patch trước nhé.');
+    if (!patchInStock(patch)) return show('Patch này hiện đã hết hàng nhé.');
+    if (patchIsComingSoon(patch)) return show('Patch này sắp ra mắt nên chưa thể thêm vào mockup nhé.');
+    if (placed.length >= 12) return show('Bố cục tối đa 12 patch.');
+    remember();
+    const uid = crypto.randomUUID();
+    setSelectedUid(uid);
+    setPlaced(a => [...a, {
+      uid,
+      patchId: patch.id,
+      view: activeView,
+      x: .5 + Math.random() * .08,
+      y: .38 + Math.random() * .1,
+      rotation: 0
+    }]);
+  }
+  function isOverTrash(e) {
+    if (!trash.current) return false;
+    const r = trash.current.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  }
+  function removeDraggedPatch(uid) {
+    setPlaced(a => a.filter(x => x.uid !== uid));
+    if (selectedUid === uid) setSelectedUid('');
+  }
+  function move(e) {
+    if (!drag.current || !stage.current || pinch.current) return;
+    const r = stage.current.getBoundingClientRect(),
+      scale = stageZoom.scale;
+    let x = (e.clientX - r.left - stageZoom.x) / (r.width * scale),
+      y = (e.clientY - r.top - stageZoom.y) / (r.height * scale);
+    const mobile = window.matchMedia('(max-width: 700px)').matches,
+      tolerance = (mobile ? 25 : 15) / (Math.max(1, Math.min(r.width, r.height)) * scale);
+    const savedGuides = Array.isArray(product?.snap_guides) && product.snap_guides.length ? product.snap_guides : Array.isArray(product?.snap_points) ? product.snap_points.map(point => ({
+      ...point,
+      type: 'point'
+    })) : [];
+    let guide = null;
+    if (smartPositionPromptOpen) return;
+    const masterEnabled = smartPositionEnabled !== false;
+    const showGuides = masterEnabled && product?.snap_guide_enabled !== false;
+    const attractionEnabled = masterEnabled && product?.snap_attraction_enabled !== false;
+    const baseStrength = Math.max(0, Math.min(100, Number(product?.snap_strength_percent ?? 45))) / 100;
+    const zoomFactor = mobile ? Math.pow(Math.max(1, scale), -1.25) : 1;
+    const pull = attractionEnabled ? baseStrength * zoomFactor : 0;
+    const attract = (from, to) => from + (to - from) * pull;
+    if (showGuides || pull > 0) {
+      const guides = savedGuides.filter(item => item.view === activeView && item.type !== 'line' && Number.isFinite(Number(item.x)) && Number.isFinite(Number(item.y)));
+      let nearest = null,
+        nearestDistance = Infinity,
+        nearestX = x,
+        nearestY = y;
+      for (const item of guides) {
+        const distance = Math.hypot((x - Number(item.x)) * r.width * scale, (y - Number(item.y)) * r.height * scale);
+        if (distance < nearestDistance) {
+          nearest = item;
+          nearestDistance = distance;
+          nearestX = Number(item.x);
+          nearestY = Number(item.y);
+        }
+      }
+      if (nearest && nearestDistance <= (mobile ? 36 : 21)) {
+        const candidate = {
+          kind: 'preset-point',
+          x: nearestX,
+          y: nearestY,
+          line: null
+        };
+        if (smartPositionEnabled === null && pull > 0) {
+          setQueuedSnap({
+            uid: drag.current,
+            x: attract(x, nearestX),
+            y: attract(y, nearestY),
+            guide: candidate
+          });
+          setSnapGuide(showGuides ? candidate : null);
+          setSmartPositionPromptOpen(true);
+        } else {
+          x = attract(x, nearestX);
+          y = attract(y, nearestY);
+          guide = showGuides ? candidate : null;
+        }
+      } else {
+        const others = activePlaced.filter(item => item.uid !== drag.current);
+        let bestX = null,
+          bestY = null,
+          distX = Infinity,
+          distY = Infinity;
+        for (const item of others) {
+          const dx = Math.abs(x - item.x),
+            dy = Math.abs(y - item.y);
+          if (dx <= tolerance && dx < distX) {
+            bestX = item.x;
+            distX = dx;
+          }
+          if (dy <= tolerance && dy < distY) {
+            bestY = item.y;
+            distY = dy;
+          }
+        }
+        const targetX = bestX === null ? x : attract(x, bestX),
+          targetY = bestY === null ? y : attract(y, bestY);
+        if (bestX !== null || bestY !== null) {
+          const candidate = {
+            kind: 'align',
+            x: bestX,
+            y: bestY,
+            line: null
+          };
+          if (smartPositionEnabled === null && pull > 0) {
+            setQueuedSnap({
+              uid: drag.current,
+              x: targetX,
+              y: targetY,
+              guide: candidate
+            });
+            setSnapGuide(showGuides ? candidate : null);
+            setSmartPositionPromptOpen(true);
+          } else {
+            x = targetX;
+            y = targetY;
+            guide = showGuides ? candidate : null;
+          }
+        }
       }
     }
-    setSnapGuide(guide);setTrashHot(isOverTrash(e));setOrder(null);
-    setPlaced(a=>a.map(item=>item.uid===drag.current?{...item,x:Math.max(.02,Math.min(.98,x)),y:Math.max(.02,Math.min(.98,y))}:item));
+    setSnapGuide(guide);
+    setTrashHot(isOverTrash(e));
+    setOrder(null);
+    setPlaced(a => a.map(item => item.uid === drag.current ? {
+      ...item,
+      x: Math.max(.02, Math.min(.98, x)),
+      y: Math.max(.02, Math.min(.98, y))
+    } : item));
   }
-  function chooseSmartPosition(enabled){setSmartPositionEnabled(enabled);window.localStorage.setItem('patchie-smart-position',String(enabled));setSmartPositionPromptOpen(false);if(enabled&&queuedSnap){setPlaced(items=>items.map(item=>item.uid===queuedSnap.uid?{...item,x:queuedSnap.x,y:queuedSnap.y}:item));setSnapGuide(queuedSnap.guide);setTimeout(()=>setSnapGuide(null),1200);}else setSnapGuide(null);setQueuedSnap(null);}
-  function toggleSmartPosition(){chooseSmartPosition(smartPositionEnabled!==true);}
-  function selectPatchMode(nextMode){if(nextMode!==mobilePatchMode)trackEvent('Patch Mode Selected',{mode:nextMode});setMobilePatchMode(nextMode);}
-  function selectFulfilmentMode(nextMode){if(nextMode!==mode)trackEvent('Fulfilment Method Selected',{method:nextMode});setMode(nextMode);}
-  function startDrag(e,uid){e.preventDefault();e.stopPropagation();setSnapGuide(null);setSelectedUid(uid);setTrashActive(true);setTrashHot(isOverTrash(e));remember();pan.current=null;drag.current=uid;e.currentTarget.setPointerCapture(e.pointerId);}
-  function startPan(e){if(stageZoom.scale<=1||e.target.closest?.('.placed-patch'))return;e.preventDefault();setSelectedUid('');drag.current=null;pan.current={x:e.clientX,y:e.clientY,zoom:{...stageZoom}};e.currentTarget.setPointerCapture(e.pointerId);}
-  function movePan(e){if(!pan.current||!stage.current||pinch.current)return;const r=stage.current.getBoundingClientRect(),start=pan.current;setStageZoom(containZoom({...start.zoom,x:start.zoom.x+e.clientX-start.x,y:start.zoom.y+e.clientY-start.y},r));}
-  function moveStage(e){if(drag.current)move(e);else movePan(e);}
-  function endStage(e){const uid=drag.current;if(uid&&e&&isOverTrash(e))removeDraggedPatch(uid);drag.current=null;pan.current=null;setSnapGuide(null);setTrashActive(false);setTrashHot(false);}
-  function clearView(){if(!activePlaced.length)return show('Mặt này chưa có patch.');remember();setPlaced(a=>a.filter(x=>(x.view||'front')!==activeView));setSelectedUid('');}
-  function changeProduct(id,opts={}){
-    const next=catalog.products.find(p=>p.id===id);
-    const keepCustom=opts.keepCustom&&next&&productBaseKey(next)===selectedBaseKey;
-    const keepGift=giftPatchId?placed.filter(x=>x.gift&&x.patchId===giftPatchId&&patchFitsBase(catalog.patches.find(p=>p.id===x.patchId),next)).map(x=>({...x,view:'front'})):[];
-    const compatibleCustom=keepCustom?placed.filter(x=>patchFitsBase(catalog.patches.find(p=>p.id===x.patchId),next)):[];
-    const removedForSize=keepCustom?placed.length-compatibleCustom.length:0;
-    setProductId(id);setActiveView('front');setFlowDone(false);setSelectedUid('');setOrder(null);
-    if(!keepCustom){setPlaced(keepGift);setHistory([]);setSize('');return;}
-    if(removedForSize){setPlaced(compatibleCustom);show(`${removedForSize} patch không phù hợp kích thước với màu base này nên đã được bỏ khỏi mockup.`);}
-    if(size&&next?.sizes?.length&&!next.sizes.includes(size))setSize('');
+  function chooseSmartPosition(enabled) {
+    setSmartPositionEnabled(enabled);
+    window.localStorage.setItem('patchie-smart-position', String(enabled));
+    setSmartPositionPromptOpen(false);
+    if (enabled && queuedSnap) {
+      setPlaced(items => items.map(item => item.uid === queuedSnap.uid ? {
+        ...item,
+        x: queuedSnap.x,
+        y: queuedSnap.y
+      } : item));
+      setSnapGuide(queuedSnap.guide);
+      setTimeout(() => setSnapGuide(null), 1200);
+    } else setSnapGuide(null);
+    setQueuedSnap(null);
   }
-  function changeProductBase(key){
-    const variants=catalog.products.filter(p=>productBaseKey(p)===key);
-    const next=variants.find(p=>p.color===product?.color)||variants[0];
-    if(next&&key!==selectedBaseKey)trackEvent('Base Product Selected',{product_type:next.product_type||'shirt',base_key:String(key)});
-    if(next)changeProduct(next.id);
+  function toggleSmartPosition() {
+    chooseSmartPosition(smartPositionEnabled !== true);
   }
-  function changeProductColor(id){if(id!==productId){const next=catalog.products.find(item=>item.id===id);trackEvent('Base Color Selected',{product_type:next?.product_type||'shirt',color:String(next?.color||'unknown')});changeProduct(id,{keepCustom:true});}}
-  function beginRotate(){if(!selectedItem||rotating.current)return;remember();rotating.current=true;}
-  function endRotate(){rotating.current=false;}
-  function rotateSelected(value){if(!selectedUid)return;const rotation=normalizeRotation(snapRotation(value));setOrder(null);setPlaced(a=>a.map(x=>x.uid===selectedUid?{...x,rotation}:x));}
-  function nudgeRotate(delta){if(!selectedItem)return show('Chọn patch cần xoay trước nhé.');remember();rotateSelected((Number(selectedItem.rotation)||0)+delta);}
-  const touchPoint=(t,r)=>({x:t.clientX-r.left,y:t.clientY-r.top});
-  const touchDistance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-  function containZoom(next,r){
-    if(next.scale<=1)return {scale:1,x:0,y:0};
-    const min=r.width-(r.width*next.scale),minY=r.height-(r.height*next.scale);
-    return {scale:next.scale,x:Math.max(min,Math.min(0,next.x)),y:Math.max(minY,Math.min(0,next.y))};
+  function selectPatchMode(nextMode) {
+    if (nextMode !== mobilePatchMode) trackEvent('Patch Mode Selected', {
+      mode: nextMode
+    });
+    setMobilePatchMode(nextMode);
   }
-  function startPinch(e){
-    if(e.touches.length!==2||!stage.current)return;
-    e.preventDefault();drag.current=null;pan.current=null;
-    const r=stage.current.getBoundingClientRect(),a=touchPoint(e.touches[0],r),b=touchPoint(e.touches[1],r),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
-    pinch.current={dist:touchDistance(a,b),mid,zoom:{...stageZoom}};
+  function selectFulfilmentMode(nextMode) {
+    if (nextMode !== mode) trackEvent('Fulfilment Method Selected', {
+      method: nextMode
+    });
+    setMode(nextMode);
   }
-  function movePinch(e){
-    if(e.touches.length!==2||!pinch.current||!stage.current)return;
+  function startDrag(e, uid) {
     e.preventDefault();
-    const r=stage.current.getBoundingClientRect(),a=touchPoint(e.touches[0],r),b=touchPoint(e.touches[1],r),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2},start=pinch.current;
-    const rawScale=start.zoom.scale*(touchDistance(a,b)/Math.max(1,start.dist));
+    e.stopPropagation();
+    setSnapGuide(null);
+    setSelectedUid(uid);
+    setTrashActive(true);
+    setTrashHot(isOverTrash(e));
+    remember();
+    pan.current = null;
+    drag.current = uid;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function startPan(e) {
+    if (stageZoom.scale <= 1 || e.target.closest?.('.placed-patch')) return;
+    e.preventDefault();
+    setSelectedUid('');
+    drag.current = null;
+    pan.current = {
+      x: e.clientX,
+      y: e.clientY,
+      zoom: {
+        ...stageZoom
+      }
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function movePan(e) {
+    if (!pan.current || !stage.current || pinch.current) return;
+    const r = stage.current.getBoundingClientRect(),
+      start = pan.current;
+    setStageZoom(containZoom({
+      ...start.zoom,
+      x: start.zoom.x + e.clientX - start.x,
+      y: start.zoom.y + e.clientY - start.y
+    }, r));
+  }
+  function moveStage(e) {
+    if (drag.current) move(e);else movePan(e);
+  }
+  function endStage(e) {
+    const uid = drag.current;
+    if (uid && e && isOverTrash(e)) removeDraggedPatch(uid);
+    drag.current = null;
+    pan.current = null;
+    setSnapGuide(null);
+    setTrashActive(false);
+    setTrashHot(false);
+  }
+  function clearView() {
+    if (!activePlaced.length) return show('Mặt này chưa có patch.');
+    remember();
+    setPlaced(a => a.filter(x => (x.view || 'front') !== activeView));
+    setSelectedUid('');
+  }
+  function changeProduct(id, opts = {}) {
+    const next = catalog.products.find(p => p.id === id);
+    const keepCustom = opts.keepCustom && next && productBaseKey(next) === selectedBaseKey;
+    const compatibleCustom = keepCustom ? placed.filter(x => patchFitsBase(catalog.patches.find(p => p.id === x.patchId), next)) : [];
+    const removedForSize = keepCustom ? placed.length - compatibleCustom.length : 0;
+    setProductId(id);
+    setActiveView('front');
+    setFlowDone(false);
+    setSelectedUid('');
+    setOrder(null);
+    if (!keepCustom) {
+      setPlaced([]);
+      setHistory([]);
+      setSize('');
+      return;
+    }
+    if (removedForSize) {
+      setPlaced(compatibleCustom);
+      show(`${removedForSize} patch không phù hợp kích thước với màu base này nên đã được bỏ khỏi mockup.`);
+    }
+    if (size && next?.sizes?.length && !next.sizes.includes(size)) setSize('');
+  }
+  function changeProductBase(key) {
+    const variants = catalog.products.filter(p => productBaseKey(p) === key);
+    const next = variants.find(p => p.color === product?.color) || variants[0];
+    if (next && key !== selectedBaseKey) trackEvent('Base Product Selected', {
+      product_type: next.product_type || 'shirt',
+      base_key: String(key)
+    });
+    if (next) changeProduct(next.id);
+  }
+  function changeProductColor(id) {
+    if (id !== productId) {
+      const next = catalog.products.find(item => item.id === id);
+      trackEvent('Base Color Selected', {
+        product_type: next?.product_type || 'shirt',
+        color: String(next?.color || 'unknown')
+      });
+      changeProduct(id, {
+        keepCustom: true
+      });
+    }
+  }
+  function beginRotate() {
+    if (!selectedItem || rotating.current) return;
+    remember();
+    rotating.current = true;
+  }
+  function endRotate() {
+    rotating.current = false;
+  }
+  function rotateSelected(value) {
+    if (!selectedUid) return;
+    const rotation = normalizeRotation(snapRotation(value));
+    setOrder(null);
+    setPlaced(a => a.map(x => x.uid === selectedUid ? {
+      ...x,
+      rotation
+    } : x));
+  }
+  function nudgeRotate(delta) {
+    if (!selectedItem) return show('Chọn patch cần xoay trước nhé.');
+    remember();
+    rotateSelected((Number(selectedItem.rotation) || 0) + delta);
+  }
+  const touchPoint = (t, r) => ({
+    x: t.clientX - r.left,
+    y: t.clientY - r.top
+  });
+  const touchDistance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function containZoom(next, r) {
+    if (next.scale <= 1) return {
+      scale: 1,
+      x: 0,
+      y: 0
+    };
+    const min = r.width - r.width * next.scale,
+      minY = r.height - r.height * next.scale;
+    return {
+      scale: next.scale,
+      x: Math.max(min, Math.min(0, next.x)),
+      y: Math.max(minY, Math.min(0, next.y))
+    };
+  }
+  function startPinch(e) {
+    if (e.touches.length !== 2 || !stage.current) return;
+    e.preventDefault();
+    drag.current = null;
+    pan.current = null;
+    const r = stage.current.getBoundingClientRect(),
+      a = touchPoint(e.touches[0], r),
+      b = touchPoint(e.touches[1], r),
+      mid = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      };
+    pinch.current = {
+      dist: touchDistance(a, b),
+      mid,
+      zoom: {
+        ...stageZoom
+      }
+    };
+  }
+  function movePinch(e) {
+    if (e.touches.length !== 2 || !pinch.current || !stage.current) return;
+    e.preventDefault();
+    const r = stage.current.getBoundingClientRect(),
+      a = touchPoint(e.touches[0], r),
+      b = touchPoint(e.touches[1], r),
+      mid = {
+        x: (a.x + b.x) / 2,
+        y: (a.y + b.y) / 2
+      },
+      start = pinch.current;
+    const rawScale = start.zoom.scale * (touchDistance(a, b) / Math.max(1, start.dist));
     // On sleeve views, an extra pinch-out past the minimum zoom means
     // “go back to the front” instead of making the user hunt for the button.
-    if((activeView==='left_sleeve'||activeView==='right_sleeve')&&rawScale<.95){
-      pinch.current=null;
+    if ((activeView === 'left_sleeve' || activeView === 'right_sleeve') && rawScale < .95) {
+      pinch.current = null;
       jumpView('front');
       return;
     }
-    const scale=clampZoom(rawScale),contentX=(start.mid.x-start.zoom.x)/start.zoom.scale,contentY=(start.mid.y-start.zoom.y)/start.zoom.scale;
-    setStageZoom(containZoom({scale,x:mid.x-contentX*scale,y:mid.y-contentY*scale},r));
+    const scale = clampZoom(rawScale),
+      contentX = (start.mid.x - start.zoom.x) / start.zoom.scale,
+      contentY = (start.mid.y - start.zoom.y) / start.zoom.scale;
+    setStageZoom(containZoom({
+      scale,
+      x: mid.x - contentX * scale,
+      y: mid.y - contentY * scale
+    }, r));
   }
-  function endPinch(e){if(e.touches.length<2)pinch.current=null;}
-  function advanceStep(skipped=false){
-    if(skipped&&activePlaced.length){remember();setPlaced(a=>a.filter(x=>(x.view||'front')!==activeView));}
+  function endPinch(e) {
+    if (e.touches.length < 2) pinch.current = null;
+  }
+  function advanceStep(skipped = false) {
+    if (skipped && activePlaced.length) {
+      remember();
+      setPlaced(a => a.filter(x => (x.view || 'front') !== activeView));
+    }
     setSelectedUid('');
-    if(!isLastStep){setActiveView(activeViews[stepIndex+1].id);show(skipped?'Đã bỏ qua mặt này.':'Đã lưu bước này.');return;}
+    if (!isLastStep) {
+      setActiveView(activeViews[stepIndex + 1].id);
+      show(skipped ? 'Đã bỏ qua mặt này.' : 'Đã lưu bước này.');
+      return;
+    }
     setFlowDone(true);
     show('Xong các vị trí. Nhập thông tin để đặt đơn nhé.');
-    setTimeout(()=>document.querySelector('.request')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+    setTimeout(() => document.querySelector('.request')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }), 80);
   }
-  function finishCustom(){const hasGift=placed.some(item=>item.gift),hasPaidPatch=placed.some(item=>!item.gift);if(sizeRequired&&!size)return show('Hãy chọn size trước khi hoàn tất custom nhé.');if(!placed.length)return show('Bạn hãy chọn ít nhất 1 patch trước nhé.');if(hasGift&&!hasPaidPatch)return show('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');trackEvent('Customization Completed',{product_type:product?.product_type||'shirt',patch_count:placed.length});setFlowDone(true);setSelectedUid('');setCelebrate(true);show('Xong mockup. Nhập thông tin để đặt đơn nhé.');setTimeout(()=>setCelebrate(false),1100);setTimeout(()=>document.querySelector('.request')?.scrollIntoView({behavior:'smooth',block:'start'}),900);}
-  function jumpView(id){setActiveView(id);setSelectedUid('');}
-  function tapView(e,id){e.preventDefault();e.stopPropagation();jumpView(id);}
-
-  async function makeMockup(){
-    const c=document.createElement('canvas');c.width=800;c.height=800;const ctx=c.getContext('2d');
-    const cache=new Map();
-    const draw=src=>{if(!cache.has(src))cache.set(src,new Promise((res,rej)=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>res(im);im.onerror=rej;im.src=src;}));return cache.get(src);};
-    const cells=[{x:0,y:0},{x:400,y:0},{x:0,y:400},{x:400,y:400}];
-    const prepared=await Promise.all(activeViews.map(async view=>{
-      const shirtSrc=(product?.view_images||{})[view.id]||(product?.view_images||{}).front||product?.image_url||defaultProduct.image_url;
-      const items=placed.filter(x=>(x.view||'front')===view.id);
-      return {view,tee:await draw(shirtSrc),items:await Promise.all(items.map(async item=>{const patch=catalog.patches.find(x=>x.id===item.patchId);return patch?{item,patch,image:await draw(patch.image_url)}:null;}))};
-    }));
-    ctx.fillStyle='#f8f6ef';ctx.fillRect(0,0,800,800);
-    prepared.forEach(({view,tee,items},idx)=>{
-      const cell=cells[idx];ctx.fillStyle='#f1eddf';ctx.fillRect(cell.x,cell.y,400,400);ctx.drawImage(tee,cell.x,cell.y,400,400);
-      ctx.fillStyle='#24212bcc';ctx.font='700 16px Manrope, sans-serif';ctx.fillText(view.label,cell.x+16,cell.y+28);
-      items.filter(Boolean).forEach(({item,patch,image})=>{const size=patchSizePercent(patch,view.id),w=size.width*4,h=size.height*4;ctx.save();ctx.translate(cell.x+item.x*400,cell.y+item.y*400);ctx.rotate((Number(item.rotation)||0)*Math.PI/180);ctx.drawImage(image,-w/2,-h/2,w,h);ctx.restore();});
+  function finishCustom() {
+    
+    if (sizeRequired && !size) return show('Hãy chọn size trước khi hoàn tất custom nhé.');
+    if (!placed.length) return show('Bạn hãy chọn ít nhất 1 patch trước nhé.');
+    trackEvent('Customization Completed', {
+      product_type: product?.product_type || 'shirt',
+      patch_count: placed.length
     });
-    const webp=await new Promise(resolve=>c.toBlob(resolve,'image/webp',.82));
-    if(webp)return {blob:webp,type:'image/webp',filename:'patchie-mockup.webp'};
-    const png=await new Promise(resolve=>c.toBlob(resolve,'image/png'));
-    return {blob:png,type:'image/png',filename:'patchie-mockup.png'};
+    setFlowDone(true);
+    setSelectedUid('');
+    setCelebrate(true);
+    show('Xong mockup. Nhập thông tin để đặt đơn nhé.');
+    setTimeout(() => setCelebrate(false), 1100);
+    setTimeout(() => document.querySelector('.request')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }), 900);
   }
-
-  function validateOrder(){
-    if(!flowDone)throw Error('Hoàn tất các mặt custom trước nhé.');
-    if(!placed.length)throw Error('Thêm ít nhất một patch trước nhé.');
-    if(placed.some(item=>item.gift)&&!placed.some(item=>!item.gift))throw Error('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');
-    if(!name.trim())throw Error('Nhập tên để shop nhận diện yêu cầu.');
-    if(!phone.trim())throw Error('Nhập số điện thoại để shop liên hệ.');
-    if(!address.trim())throw Error('Nhập địa chỉ nhận hàng.');
-    if(!size)throw Error('Chọn size trước nhé.');
-    if(!consent)throw Error('Xác nhận quyền riêng tư để tiếp tục.');
+  function jumpView(id) {
+    setActiveView(id);
+    setSelectedUid('');
   }
-
-  async function startOrder(){
+  function tapView(e, id) {
+    e.preventDefault();
+    e.stopPropagation();
+    jumpView(id);
+  }
+  async function makeMockup() {
+    const c = document.createElement('canvas');
+    c.width = 800;
+    c.height = 800;
+    const ctx = c.getContext('2d');
+    const cache = new Map();
+    const draw = src => {
+      if (!cache.has(src)) cache.set(src, new Promise((res, rej) => {
+        const im = new Image();
+        im.crossOrigin = 'anonymous';
+        im.onload = () => res(im);
+        im.onerror = rej;
+        im.src = src;
+      }));
+      return cache.get(src);
+    };
+    const cells = [{
+      x: 0,
+      y: 0
+    }, {
+      x: 400,
+      y: 0
+    }, {
+      x: 0,
+      y: 400
+    }, {
+      x: 400,
+      y: 400
+    }];
+    const prepared = await Promise.all(activeViews.map(async view => {
+      const shirtSrc = (product?.view_images || {})[view.id] || (product?.view_images || {}).front || product?.image_url || defaultProduct.image_url;
+      const items = placed.filter(x => (x.view || 'front') === view.id);
+      return {
+        view,
+        tee: await draw(shirtSrc),
+        items: await Promise.all(items.map(async item => {
+          const patch = catalog.patches.find(x => x.id === item.patchId);
+          return patch ? {
+            item,
+            patch,
+            image: await draw(patch.image_url)
+          } : null;
+        }))
+      };
+    }));
+    ctx.fillStyle = '#f8f6ef';
+    ctx.fillRect(0, 0, 800, 800);
+    prepared.forEach(({
+      view,
+      tee,
+      items
+    }, idx) => {
+      const cell = cells[idx];
+      ctx.fillStyle = '#f1eddf';
+      ctx.fillRect(cell.x, cell.y, 400, 400);
+      ctx.drawImage(tee, cell.x, cell.y, 400, 400);
+      ctx.fillStyle = '#24212bcc';
+      ctx.font = '700 16px Manrope, sans-serif';
+      ctx.fillText(view.label, cell.x + 16, cell.y + 28);
+      items.filter(Boolean).forEach(({
+        item,
+        patch,
+        image
+      }) => {
+        const size = patchSizePercent(patch, view.id),
+          w = size.width * 4,
+          h = size.height * 4;
+        ctx.save();
+        ctx.translate(cell.x + item.x * 400, cell.y + item.y * 400);
+        ctx.rotate((Number(item.rotation) || 0) * Math.PI / 180);
+        ctx.drawImage(image, -w / 2, -h / 2, w, h);
+        ctx.restore();
+      });
+    });
+    const webp = await new Promise(resolve => c.toBlob(resolve, 'image/webp', .82));
+    if (webp) return {
+      blob: webp,
+      type: 'image/webp',
+      filename: 'patchie-mockup.webp'
+    };
+    const png = await new Promise(resolve => c.toBlob(resolve, 'image/png'));
+    return {
+      blob: png,
+      type: 'image/png',
+      filename: 'patchie-mockup.png'
+    };
+  }
+  function validateOrder() {
+    if (!flowDone) throw Error('Hoàn tất các mặt custom trước nhé.');
+    if (!placed.length) throw Error('Thêm ít nhất một patch trước nhé.');
+    if (!name.trim()) throw Error('Nhập tên để shop nhận diện yêu cầu.');
+    if (!phone.trim()) throw Error('Nhập số điện thoại để shop liên hệ.');
+    if (!address.trim()) throw Error('Nhập địa chỉ nhận hàng.');
+    if (!size) throw Error('Chọn size trước nhé.');
+    if (!consent) throw Error('Xác nhận quyền riêng tư để tiếp tục.');
+  }
+  async function startOrder() {
     validateOrder();
-    const r=await fetch('/api/designs/start',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:name.trim(),phone:phone.trim(),orderId:draftOrderCode,address:address.trim(),size,mode,productId,note,consent:true,patches:placed.map(x=>({patchId:x.patchId,view:x.view||'front',x:x.x,y:x.y,rotation:normalizeRotation(x.rotation),gift:Boolean(x.gift)}))})});
-    const d=await r.json();if(!r.ok)throw Error(d.error||'Chưa tạo được mã đơn.');
+    const r = await fetch('/api/designs/start', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name.trim(),
+        phone: phone.trim(),
+        orderId: draftOrderCode,
+        address: address.trim(),
+        size,
+        mode,
+        productId,
+        note,
+        consent: true,
+        patches: placed.map(x => ({
+          patchId: x.patchId,
+          view: x.view || 'front',
+          x: x.x,
+          y: x.y,
+          rotation: normalizeRotation(x.rotation)
+        }))
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw Error(d.error || 'Chưa tạo được mã đơn.');
     return d;
   }
-
-  async function finishMockup(id){
-    const prepared=await makeMockup(),f=new FormData();f.set('id',id);f.set('phone',phone.trim());f.set('mockup',prepared.blob,prepared.filename);
-    const r=await fetch('/api/designs/complete',{method:'POST',body:f}),d=await r.json();if(!r.ok)throw Error(d.error||'Chưa gửi được mockup.');
+  async function finishMockup(id) {
+    const prepared = await makeMockup(),
+      f = new FormData();
+    f.set('id', id);
+    f.set('phone', phone.trim());
+    f.set('mockup', prepared.blob, prepared.filename);
+    const r = await fetch('/api/designs/complete', {
+        method: 'POST',
+        body: f
+      }),
+      d = await r.json();
+    if (!r.ok) throw Error(d.error || 'Chưa gửi được mockup.');
     return d;
   }
-
-  function orderMessage(id){
-    const lines=placedWithPatch.map(x=>`- ${viewName(x.view)}: ${x.patch?.name||x.patchId} · ${money(placementPrice(x))}${x.gift?' · QUÀ TẶNG':''} · xoay ${normalizeRotation(x.rotation)}° (${Math.round(x.x*100)}%, ${Math.round(x.y*100)}%)`).join('\n');
-    const productType=product?.product_type==='bag'?'túi':'áo';
-    return `Chào Patchie! Mình muốn custom 1 ${productType} với ${placed.length} patch.\nMã đơn: ${id}\nTên: ${name.trim()}\nSĐT: ${phone.trim()}\nĐịa chỉ: ${address.trim()}\nSản phẩm: ${product?.name||'Sản phẩm base'} · ${product?.color||''}\nSize: ${size}\nCách hoàn thiện: ${mode==='shop'?'Shop ủi giúp':'Tự ủi tại nhà'}\nPatch:\n${lines}\nGiá sản phẩm base: ${money(product?.price)}\nTổng tạm tính: ${money(orderTotal)}\nGhi chú: ${note||'Không có'}`;
+  function orderMessage(id) {
+    const lines = placedWithPatch.map(x => `- ${viewName(x.view)}: ${x.patch?.name || x.patchId} · ${money(placementPrice(x))} · xoay ${normalizeRotation(x.rotation)}° (${Math.round(x.x * 100)}%, ${Math.round(x.y * 100)}%)`).join('\n');
+    const productType = product?.product_type === 'bag' ? 'túi' : 'áo';
+    return `Chào Patchie! Mình muốn custom 1 ${productType} với ${placed.length} patch.\nMã đơn: ${id}\nTên: ${name.trim()}\nSĐT: ${phone.trim()}\nĐịa chỉ: ${address.trim()}\nSản phẩm: ${product?.name || 'Sản phẩm base'} · ${product?.color || ''}\nSize: ${size}\nCách hoàn thiện: ${mode === 'shop' ? 'Shop ủi giúp' : 'Tự ủi tại nhà'}\nPatch:\n${lines}\nGiá sản phẩm base: ${money(product?.price)}\nTổng tạm tính: ${money(orderTotal)}\nGhi chú: ${note || 'Không có'}`;
   }
-
-  async function placeOrder(){setBusy(true);setOrderProgress('Đang chốt mã đơn…');try{const {id}=await startOrder();trackEvent('Custom Order Created',{product_type:product?.product_type||'shirt',patch_count:placed.length});setOrder({id,message:orderMessage(id),uploading:true});setCopied(false);setMessengerPrompt(true);show(`Đã tạo mã đơn ${id}.`);setUploadingMockup(true);setOrderProgress('Đang gửi mockup cho shop…');finishMockup(id).then(()=>{setOrder(current=>current?{...current,uploading:false}:current);show('Mockup đã gửi shop.');}).catch(e=>{setOrder(current=>current?{...current,uploading:false,uploadError:true}:current);show(`Mã đơn đã tạo, nhưng mockup chưa gửi xong: ${e.message}`);}).finally(()=>{setBusy(false);setUploadingMockup(false);setOrderProgress('');});}catch(e){show(e.message);setBusy(false);setOrderProgress('');}}
-  async function copyOrderMessage({notify=true}={}){
-    if(!order)return false;
-    try{
+  async function placeOrder() {
+    setBusy(true);
+    setOrderProgress('Đang chốt mã đơn…');
+    try {
+      const {
+        id
+      } = await startOrder();
+      trackEvent('Custom Order Created', {
+        product_type: product?.product_type || 'shirt',
+        patch_count: placed.length
+      });
+      setOrder({
+        id,
+        message: orderMessage(id),
+        uploading: true
+      });
+      setCopied(false);
+      setMessengerPrompt(true);
+      show(`Đã tạo mã đơn ${id}.`);
+      setUploadingMockup(true);
+      setOrderProgress('Đang gửi mockup cho shop…');
+      finishMockup(id).then(() => {
+        setOrder(current => current ? {
+          ...current,
+          uploading: false
+        } : current);
+        show('Mockup đã gửi shop.');
+      }).catch(e => {
+        setOrder(current => current ? {
+          ...current,
+          uploading: false,
+          uploadError: true
+        } : current);
+        show(`Mã đơn đã tạo, nhưng mockup chưa gửi xong: ${e.message}`);
+      }).finally(() => {
+        setBusy(false);
+        setUploadingMockup(false);
+        setOrderProgress('');
+      });
+    } catch (e) {
+      show(e.message);
+      setBusy(false);
+      setOrderProgress('');
+    }
+  }
+  async function copyOrderMessage({
+    notify = true
+  } = {}) {
+    if (!order) return false;
+    try {
       await navigator.clipboard.writeText(order.message);
       setCopied(true);
-      if(notify)show('Đã copy toàn bộ nội dung đơn.');
+      if (notify) show('Đã copy toàn bộ nội dung đơn.');
       return true;
-    }catch{
-      if(notify)show('Không copy được tự động. Bạn chọn và copy nội dung trong khung đơn giúp mình nhé.');
+    } catch {
+      if (notify) show('Không copy được tự động. Bạn chọn và copy nội dung trong khung đơn giúp mình nhé.');
       return false;
     }
   }
-  async function sendOrderToMessenger(){
-    if(!order)return;
-    const messengerUrl=catalog.settings.messengerUrl;
-    if(!messengerUrl){show('Shop chưa cài link Messenger trong admin.');return;}
+  async function sendOrderToMessenger() {
+    if (!order) return;
+    const messengerUrl = catalog.settings.messengerUrl;
+    if (!messengerUrl) {
+      show('Shop chưa cài link Messenger trong admin.');
+      return;
+    }
     // Reserve the new tab during the click event, then copy the message before
     // navigating it. This keeps clipboard permission and popup behaviour reliable
     // on both desktop and mobile browsers.
-    const messengerTab=window.open('about:blank','_blank');
-    try{
-      const copiedMessage=await copyOrderMessage({notify:false});
-      if(messengerTab)messengerTab.location.href=messengerUrl;
-      else window.open(messengerUrl,'_blank','noopener,noreferrer');
-      show(copiedMessage?'Đã copy nguyên tin nhắn đơn hàng. Dán vào Messenger gửi shop nha!':'Messenger đã mở. Bạn copy nội dung đơn trong popup giúp mình nhé.');
-    }catch{
-      if(messengerTab)messengerTab.location.href=messengerUrl;
-      else window.open(messengerUrl,'_blank','noopener,noreferrer');
+    const messengerTab = window.open('about:blank', '_blank');
+    try {
+      const copiedMessage = await copyOrderMessage({
+        notify: false
+      });
+      if (messengerTab) messengerTab.location.href = messengerUrl;else window.open(messengerUrl, '_blank', 'noopener,noreferrer');
+      show(copiedMessage ? 'Đã copy nguyên tin nhắn đơn hàng. Dán vào Messenger gửi shop nha!' : 'Messenger đã mở. Bạn copy nội dung đơn trong popup giúp mình nhé.');
+    } catch {
+      if (messengerTab) messengerTab.location.href = messengerUrl;else window.open(messengerUrl, '_blank', 'noopener,noreferrer');
       show('Messenger đã mở. Bạn copy nguyên nội dung đơn thủ công giúp mình nhé.');
     }
     setMessengerPrompt(false);
   }
+  const productThumb = baseThumb;
+  const productsByGroup = type => catalog.products.filter(p => (p.product_type || 'shirt') === type);
+  const productBasesByGroup = type => Array.from(productsByGroup(type).reduce((map, p) => {
+    const key = productBaseKey(p);
+    map.set(key, [...(map.get(key) || []), p]);
+    return map;
+  }, new Map()).entries()).map(([key, list]) => {
+    const current = list.find(p => p.id === productId) || list[0],
+      prices = list.map(p => Number(p.price)).filter(Number.isFinite);
+    return {
+      value: key,
+      label: current.name,
+      sub: `${list.length} màu`,
+      price: prices.length ? `từ ${money(Math.min(...prices))}` : 'Chưa set',
+      image: productThumb(current)
+    };
+  });
+  const productGroups = brand.productGroups;
+  const productGroupLabel = value => productGroups.find(g => (g.id || g.value) === value)?.label || 'Sản phẩm';
+  const productGroupOptions = productGroups.filter(g => productsByGroup(g.id || g.value).length).map(g => {
+    const value = g.id || g.value,
+      list = productsByGroup(value),
+      first = list[0];
+    return {
+      value,
+      label: g.label,
+      sub: `${productBasesByGroup(value).length} mẫu`,
+      image: brand.productGroupImages?.[value] || g.imageUrl || productThumb(first)
+    };
+  });
+  const patchGroupOptions = patchGroups.map(g => ({
+    value: g,
+    label: g === 'all' ? 'Tất cả' : g,
+    sub: `${patchGroupCount(g)} patch`,
+    comingSoon: patchGroupHasComingSoon(g),
+    highlighted: highlightedPatchGroups.has(g)
+  }));
+  const productOptions = productBasesByGroup(productSheetGroup);
+  const selectData = selectSheet === 'patchGroup' ? {
+    label: 'Nhóm patch',
+    intro: 'Chọn nhóm patch muốn xem.',
+    value: activePatchGroup,
+    options: patchGroupOptions,
+    onChange: setActivePatchGroup
+  } : selectSheet === 'productGroup' ? {
+    label: 'Nhóm sản phẩm',
+    intro: 'Chọn loại base trước, rồi chọn mẫu cụ thể.',
+    value: productSheetGroup,
+    options: productGroupOptions,
+    onChange: setProductSheetGroup,
+    nextSheet: 'product'
+  } : selectSheet === 'product' ? {
+    label: productGroupLabel(productSheetGroup),
+    intro: 'Chọn mẫu base muốn custom. Màu sẽ chọn ở bước kế bên.',
+    value: selectedBaseKey,
+    options: productOptions,
+    onChange: changeProductBase,
+    backSheet: 'productGroup'
+  } : null;
+  return <StudioContainer embedded={embedded} className={`shell ${christmasThemeEnabled ? 'theme-christmas' : ''}`} style={{
+    '--patchie-font': brand.fontFamily,
+    '--step-base-desktop': cssContent(brand.stepBaseDesktop),
+    '--step-base-mobile': cssContent(brand.stepBaseMobile),
+    '--step-patch-desktop': cssContent(brand.stepPatchDesktop),
+    '--step-patch-mobile': cssContent(brand.stepPatchMobile),
+    '--step-preview-desktop': cssContent(brand.stepPreviewDesktop),
+    '--step-preview-mobile': cssContent(brand.stepPreviewMobile),
+    '--step-order-desktop': cssContent(brand.stepOrderDesktop),
+    '--step-order-mobile': cssContent(brand.stepOrderMobile),
+    '--step1-desktop': cssContent(brand.stepBaseDesktop),
+    '--step1-mobile': cssContent(brand.stepBaseMobile),
+    '--step2-desktop': cssContent(brand.stepPatchDesktop),
+    '--step2-mobile': cssContent(brand.stepPatchMobile)
+  }}>{!embedded && <StudioHeader brand={brand} />}
+    {!embedded && <StudioHero brand={brand} />}
 
-  const productThumb=baseThumb;
-  const productsByGroup=type=>catalog.products.filter(p=>(p.product_type||'shirt')===type);
-  const productBasesByGroup=type=>Array.from(productsByGroup(type).reduce((map,p)=>{const key=productBaseKey(p);map.set(key,[...(map.get(key)||[]),p]);return map;},new Map()).entries()).map(([key,list])=>{const current=list.find(p=>p.id===productId)||list[0],prices=list.map(p=>Number(p.price)).filter(Number.isFinite);return {value:key,label:current.name,sub:`${list.length} màu`,price:prices.length?`từ ${money(Math.min(...prices))}`:'Chưa set',image:productThumb(current)};});
-  const productGroups=brand.productGroups;
-  const productGroupLabel=value=>productGroups.find(g=>(g.id||g.value)===value)?.label||'Sản phẩm';
-  const productGroupOptions=productGroups.filter(g=>productsByGroup(g.id||g.value).length).map(g=>{const value=g.id||g.value,list=productsByGroup(value),first=list[0];return {value,label:g.label,sub:`${productBasesByGroup(value).length} mẫu`,image:brand.productGroupImages?.[value]||g.imageUrl||productThumb(first)};});
-  const patchGroupOptions=patchGroups.map(g=>({value:g,label:g==='all'?'Tất cả':g,sub:`${patchGroupCount(g)} patch`,comingSoon:patchGroupHasComingSoon(g),highlighted:highlightedPatchGroups.has(g)}));
-  const productOptions=productBasesByGroup(productSheetGroup);
-  const selectData=selectSheet==='patchGroup'?{label:'Nhóm patch',intro:'Chọn nhóm patch muốn xem.',value:activePatchGroup,options:patchGroupOptions,onChange:setActivePatchGroup}:selectSheet==='productGroup'?{label:'Nhóm sản phẩm',intro:'Chọn loại base trước, rồi chọn mẫu cụ thể.',value:productSheetGroup,options:productGroupOptions,onChange:setProductSheetGroup,nextSheet:'product'}:selectSheet==='product'?{label:productGroupLabel(productSheetGroup),intro:'Chọn mẫu base muốn custom. Màu sẽ chọn ở bước kế bên.',value:selectedBaseKey,options:productOptions,onChange:changeProductBase,backSheet:'productGroup'}:null;
+    {selectedProductDesign && <DialogBoundary kind="design" {...{
+      setSelectedProductDesign,
+      selectedProductDesign,
+      designPreviewLoading,
+      product:previewProduct,
+      designPreviewView,
+      catalog,
+      patchSizePercent:(patch,view)=>patchSizePercent(patch,view,previewProduct),
+      activeViews:viewsForProduct(previewProduct,brand.productGroups),
+      setDesignPreviewView,
+      applyProductDesign
+    }} />}
 
-
-
-
-
-
-
-  const paidPatchCount=placed.filter(item=>!item.gift).length;
-  const effectPatchCount=paidPatchCount;
-  return <StudioContainer embedded={embedded} className={`shell ${halloweenThemeEnabled?'theme-halloween':''} ${halloweenFeatures.cobwebs?'theme-cobwebs':''}`} style={{'--patchie-font':brand.fontFamily,'--step-base-desktop':cssContent(brand.stepBaseDesktop),'--step-base-mobile':cssContent(brand.stepBaseMobile),'--step-patch-desktop':cssContent(brand.stepPatchDesktop),'--step-patch-mobile':cssContent(brand.stepPatchMobile),'--step-preview-desktop':cssContent(brand.stepPreviewDesktop),'--step-preview-mobile':cssContent(brand.stepPreviewMobile),'--step-order-desktop':cssContent(brand.stepOrderDesktop),'--step-order-mobile':cssContent(brand.stepOrderMobile),'--step1-desktop':cssContent(brand.stepBaseDesktop),'--step1-mobile':cssContent(brand.stepBaseMobile),'--step2-desktop':cssContent(brand.stepPatchDesktop),'--step2-mobile':cssContent(brand.stepPatchMobile)}}>{!embedded&&<StudioHeader brand={brand}/>}<PumpkinSpider enabled={halloweenThemeEnabled&&halloweenFeatures.spider} page="studio" reactionKey={`${chosen}-${placed.length}-${activeView}`} patchCount={paidPatchCount}/><BatsBurst enabled={halloweenThemeEnabled&&halloweenFeatures.bats} trigger={batBurst}/><HeartsBurst enabled={halloweenThemeEnabled&&halloweenFeatures.spider} trigger={heartBurst} patchCount={effectPatchCount}/>
-    {!embedded&&<StudioHero brand={brand}/>}
-
-    {selectedProductDesign&&<DialogBoundary kind="design" {...{setSelectedProductDesign,selectedProductDesign,designPreviewLoading,product,designPreviewView,catalog,patchSizePercent,activeViews,setDesignPreviewView,applyProductDesign}}/>}
-
-    <div className="workspace"><aside className="panel picker"><div className="panel-title"><div><small>{brand.step1Label}</small><h2>{brand.step1Title}</h2></div><span className="counter">{placed.length}/12</span></div><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide}/><p className="muted">Kích thước patch hiển thị theo số cm shop nhập trong admin.</p><PatchGroupSelect activePatchGroup={activePatchGroup} patchGroupOptions={patchGroupOptions} setSelectSheet={setSelectSheet}/><div className="patch-grid">{visiblePatches.length===0&&<div className="patch-empty-state"><span aria-hidden="true">✦</span><b>{catalog.patches.length===0?'Tủ patch đang trống':hasPatchSizeLimits?'Chưa có patch phù hợp kích thước':'Chưa có patch khả dụng trong nhóm này'}</b><small>{catalog.patches.length===0?'Shop sẽ cập nhật thêm patch sớm nha.':'Thử chọn nhóm khác hoặc quay lại sau nhé.'}</small></div>}{loadedPatchCards.map(p=>{const comingSoon=patchIsComingSoon(p);return <button key={p.id} className={`patch-card ${chosen===p.id?'picked':''} ${giftAvailable(p)?'gift-patch-option':''} ${comingSoon?'is-coming-soon':''}`} onClick={()=>choosePatch(p)} disabled={comingSoon} aria-disabled={comingSoon}><span className="patch-img"><img src={p.thumbnail_url||p.image_url} alt={p.name} loading="lazy" decoding="async" fetchPriority="low"/>{comingSoon&&<em className="coming-soon-tag">COMING SOON</em>}</span>{quotePatch===p.id&&p.quote&&<span className="patch-bubble">{p.quote}</span>}<b>{p.name}</b> <strong className="price-tag">{patchDisplayPrice(p)}</strong>{giftAvailable(p)&&<em className="gift-price-note">PATCH TẶNG</em>}</button>})}{loadedPatchCards.length<visiblePatches.length&&<div ref={desktopPatchSentinel} className="patch-list-sentinel" aria-hidden="true"/>}</div>{placed.some(item=>!item.gift)&&<div className="desktop-design-suggestions"><DesignSuggestions loading={designSuggestionsLoading} error={designError} designs={productDesigns} onPreview={openProductDesignPreview} onRefresh={refreshProductDesigns} canRefresh={canRefreshProductDesigns}/></div>}<div className="tip"><span>✦</span><p>Chạm vào patch để thêm ngay. Mỗi vị trí sẽ được lưu theo mặt riêng.</p></div></aside>
-      <section className="preview-col"><div className="preview-head"><div><h2>{flowDone?'Xem lại mockup':viewName(activeView)}</h2></div><div className="editor-actions"><button onClick={confirmUndo} disabled={!history.length}>↶ Hoàn tác</button><button onClick={clearView}>Xóa mặt này</button></div></div><div className={`mobile-patch-dock ${mobilePatchMode==='suggestions'?'is-suggestions':''} ${hasMobileSuggestionContext?'has-suggestion-tabs':''}`}><small className="mobile-dock-kicker">{mobilePatchMode==='suggestions'?'DESIGN GỢI Ý':brand.step1Mobile}</small>{hasMobileSuggestionContext&&<div className="mobile-suggestion-tabs"><button type="button" className={mobilePatchMode==='suggestions'?'active':''} onClick={()=>selectPatchMode('suggestions')}>Design Gợi Ý</button><button type="button" className={mobilePatchMode==='browse'?'active':''} onClick={()=>selectPatchMode('browse')}>Tự Phối</button></div>}<div className="mobile-dock-panels">
-        <div className={`mobile-dock-panel mobile-dock-browse ${mobilePatchMode==='browse'?'is-active':''}`} aria-hidden={mobilePatchMode!=='browse'} inert={mobilePatchMode!=='browse'}>
-          <PatchGroupSelect activePatchGroup={activePatchGroup} patchGroupOptions={patchGroupOptions} setSelectSheet={setSelectSheet}/>
-          <div className="mobile-patch-strip" onScroll={loadMorePatchCardsOnScroll}>{visiblePatches.length===0&&<div className="patch-empty-state"><span aria-hidden="true">✦</span><b>{catalog.patches.length===0?'Tủ patch đang trống':hasPatchSizeLimits?'Chưa có patch phù hợp kích thước':'Chưa có patch khả dụng trong nhóm này'}</b><small>{catalog.patches.length===0?'Shop sẽ cập nhật thêm patch sớm nha.':'Thử chọn nhóm khác hoặc quay lại sau nhé.'}</small></div>}{loadedPatchCards.map(p=>{const comingSoon=patchIsComingSoon(p);return <button key={p.id} className={`patch-card ${chosen===p.id?'picked':''} ${giftAvailable(p)?'gift-patch-option':''} ${comingSoon?'is-coming-soon':''}`} onClick={()=>choosePatch(p)} disabled={comingSoon} aria-disabled={comingSoon}><span className="patch-img"><img src={p.thumbnail_url||p.image_url} alt={p.name} loading="lazy" decoding="async" fetchPriority="low"/>{comingSoon&&<em className="coming-soon-tag">COMING SOON</em>}</span>{quotePatch===p.id&&p.quote&&<span className="patch-bubble">{p.quote}</span>}<b>{p.name}</b> <strong className="price-tag">{patchDisplayPrice(p)}</strong>{giftAvailable(p)&&<em className="gift-price-note">PATCH TẶNG</em>}</button>})}</div>
+    <div className="workspace"><aside className="panel picker"><div className="panel-title"><div><small>{brand.step1Label}</small><h2>{brand.step1Title}</h2></div><span className="counter">{placed.length}/12</span></div><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide} /><p className="muted">Kích thước patch hiển thị theo số cm shop nhập trong admin.</p><PatchGroupSelect activePatchGroup={activePatchGroup} patchGroupOptions={patchGroupOptions} setSelectSheet={setSelectSheet} /><div className="patch-grid">{visiblePatches.length === 0 && <div className="patch-empty-state"><span aria-hidden="true">✦</span><b>{catalog.patches.length === 0 ? 'Tủ patch đang trống' : hasPatchSizeLimits ? 'Chưa có patch phù hợp kích thước' : 'Chưa có patch khả dụng trong nhóm này'}</b><small>{catalog.patches.length === 0 ? 'Shop sẽ cập nhật thêm patch sớm nha.' : 'Thử chọn nhóm khác hoặc quay lại sau nhé.'}</small></div>}{loadedPatchCards.map(p => {
+            const comingSoon = patchIsComingSoon(p);
+            return <button key={p.id} className={`patch-card ${chosen === p.id ? 'picked' : ''} ${comingSoon ? 'is-coming-soon' : ''}`} onClick={() => choosePatch(p)} disabled={comingSoon} aria-disabled={comingSoon}><span className="patch-img"><img src={p.thumbnail_url || p.image_url} alt={p.name} loading="lazy" decoding="async" fetchPriority="low" />{comingSoon && <em className="coming-soon-tag">COMING SOON</em>}</span>{quotePatch === p.id && p.quote && <span className="patch-bubble">{p.quote}</span>}<b>{p.name}</b> <strong className="price-tag">{patchDisplayPrice(p)}</strong></button>;
+          })}{loadedPatchCards.length < visiblePatches.length && <div ref={desktopPatchSentinel} className="patch-list-sentinel" aria-hidden="true" />}</div>{(placed.length > 0) && <div className="desktop-design-suggestions"><DesignSuggestions loading={designSuggestionsLoading} error={designError} designs={productDesigns} onPreview={openProductDesignPreview} onRefresh={refreshProductDesigns} canRefresh={canRefreshProductDesigns} /></div>}<div className="tip"><span>✦</span><p>Chạm vào patch để thêm ngay. Mỗi vị trí sẽ được lưu theo mặt riêng.</p></div></aside>
+      <section className="preview-col"><div className="preview-head"><div><h2>{flowDone ? 'Xem lại mockup' : viewName(activeView)}</h2></div><div className="editor-actions"><button onClick={confirmUndo} disabled={!history.length}>↶ Hoàn tác</button><button onClick={clearView}>Xóa mặt này</button></div></div><div className={`mobile-patch-dock ${mobilePatchMode === 'suggestions' ? 'is-suggestions' : ''} ${hasMobileSuggestionContext ? 'has-suggestion-tabs' : ''}`}><small className="mobile-dock-kicker">{mobilePatchMode === 'suggestions' ? 'DESIGN GỢI Ý' : brand.step1Mobile}</small>{hasMobileSuggestionContext && <div className="mobile-suggestion-tabs"><button type="button" className={mobilePatchMode === 'suggestions' ? 'active' : ''} onClick={() => selectPatchMode('suggestions')}>Design Gợi Ý</button><button type="button" className={mobilePatchMode === 'browse' ? 'active' : ''} onClick={() => selectPatchMode('browse')}>Tự Phối</button></div>}<div className="mobile-dock-panels">
+        <div className={`mobile-dock-panel mobile-dock-browse ${mobilePatchMode === 'browse' ? 'is-active' : ''}`} aria-hidden={mobilePatchMode !== 'browse'} inert={mobilePatchMode !== 'browse'}>
+          <PatchGroupSelect activePatchGroup={activePatchGroup} patchGroupOptions={patchGroupOptions} setSelectSheet={setSelectSheet} />
+          <div className="mobile-patch-strip" onScroll={loadMorePatchCardsOnScroll}>{visiblePatches.length === 0 && <div className="patch-empty-state"><span aria-hidden="true">✦</span><b>{catalog.patches.length === 0 ? 'Tủ patch đang trống' : hasPatchSizeLimits ? 'Chưa có patch phù hợp kích thước' : 'Chưa có patch khả dụng trong nhóm này'}</b><small>{catalog.patches.length === 0 ? 'Shop sẽ cập nhật thêm patch sớm nha.' : 'Thử chọn nhóm khác hoặc quay lại sau nhé.'}</small></div>}{loadedPatchCards.map(p => {
+                  const comingSoon = patchIsComingSoon(p);
+                  return <button key={p.id} className={`patch-card ${chosen === p.id ? 'picked' : ''} ${comingSoon ? 'is-coming-soon' : ''}`} onClick={() => choosePatch(p)} disabled={comingSoon} aria-disabled={comingSoon}><span className="patch-img"><img src={p.thumbnail_url || p.image_url} alt={p.name} loading="lazy" decoding="async" fetchPriority="low" />{comingSoon && <em className="coming-soon-tag">COMING SOON</em>}</span>{quotePatch === p.id && p.quote && <span className="patch-bubble">{p.quote}</span>}<b>{p.name}</b> <strong className="price-tag">{patchDisplayPrice(p)}</strong></button>;
+                })}</div>
         </div>
-        <div className={`mobile-dock-panel mobile-dock-design ${mobilePatchMode==='suggestions'?'is-active':''}`} aria-hidden={mobilePatchMode!=='suggestions'} inert={mobilePatchMode!=='suggestions'}>
-          {hasMobileSuggestionContext&&<DesignSuggestions mobile active={mobilePatchMode==='suggestions'} loading={designSuggestionsLoading} error={designError} designs={productDesigns} onPreview={openProductDesignPreview} onRefresh={refreshProductDesigns} canRefresh={canRefreshProductDesigns}/>}
+        <div className={`mobile-dock-panel mobile-dock-design ${mobilePatchMode === 'suggestions' ? 'is-active' : ''}`} aria-hidden={mobilePatchMode !== 'suggestions'} inert={mobilePatchMode !== 'suggestions'}>
+          {hasMobileSuggestionContext && <DesignSuggestions mobile active={mobilePatchMode === 'suggestions'} loading={designSuggestionsLoading} error={designError} designs={productDesigns} onPreview={openProductDesignPreview} onRefresh={refreshProductDesigns} canRefresh={canRefreshProductDesigns} />}
         </div>
-      </div></div><div className="view-tabs guided-tabs">{activeViews.map((v,i)=><button key={v.id} className={`${activeView===v.id?'active':''} ${i<stepIndex||flowDone?'done':''} ${v.id.includes('sleeve')?'sleeve-tab':''}`} onClick={()=>jumpView(v.id)}><span>{i+1}</span>{v.short}<small>{placed.filter(x=>(x.view||'front')===v.id).length}</small></button>)}</div><div className="preview-card"><div className={`stage product-${product?.product_type||"shirt"} ${stageZoom.scale>1?"is-zoomed":""}`} ref={stage} data-product-id={productId} onPointerDown={startPan} onPointerMove={moveStage} onPointerUp={endStage} onPointerLeave={endStage} onTouchStart={startPinch} onTouchMove={movePinch} onTouchEnd={endPinch} onTouchCancel={endPinch}>{(displayedImage!==activeImage||mockupError)&&<div className="mockup-load-status" role="status"><span>{mockupError?'Chưa tải được ảnh màu này':'Đang tải mockup…'}</span>{mockupError&&<button type="button" onClick={()=>setImageRetry(n=>n+1)}>Thử lại</button>}</div>}<div className="stage-zoom-viewport" style={{pointerEvents:displayedImage!==activeImage?'none':undefined}}><div className="stage-zoom-layer" style={{transform:`translate(${stageZoom.x}px,${stageZoom.y}px) scale(${stageZoom.scale})`}}><img className="tee" fetchPriority="high" loading="eager" decoding="async" src={displayedImage} alt={`${product?.name||'Sản phẩm base'} - ${viewName(activeView)}`}/>{snapGuide&&<div className={`snap-guides ${snapGuide.kind==='preset-point'?'is-point':snapGuide.kind==='align'?'is-align':''}`} aria-hidden="true">{snapGuide.x!==null&&snapGuide.x!==undefined&&<i className="snap-guide-vertical" style={{left:`${snapGuide.x*100}%`}}/>}{snapGuide.y!==null&&snapGuide.y!==undefined&&<i className="snap-guide-horizontal" style={{top:`${snapGuide.y*100}%`}}/>}{snapGuide.kind==='preset-point'&&<i className="snap-guide-target" style={{left:`${snapGuide.x*100}%`,top:`${snapGuide.y*100}%`}}>✦</i>}</div>}{activePlaced.map((x,i)=>{const p=catalog.patches.find(y=>y.id===x.patchId);return <button key={x.uid} className={`placed-patch ${selectedUid===x.uid?'selected':''}`} aria-label={`Kéo patch ${p?.name}`} style={{left:`${x.x*100}%`,top:`${x.y*100}%`,zIndex:i+1,transform:`translate(-50%,-50%) rotate(${normalizeRotation(x.rotation)}deg)`,...patchPreviewStyle(p)}} onPointerDown={e=>startDrag(e,x.uid)}><img src={p?.image_url} alt={p?.name}/></button>})}</div></div>{activeView==='front'&&<div className="mobile-sleeve-hotspots">{activeViews.some(v=>v.id==='left_sleeve'||v.id==='right_sleeve')&&<><button type="button" className="sleeve-hotspot sleeve-left" onPointerDown={e=>tapView(e,'right_sleeve')}><b>Phải</b></button><button type="button" className="sleeve-hotspot sleeve-right" onPointerDown={e=>tapView(e,'left_sleeve')}><b>Trái</b></button></>}<button type="button" className="sleeve-hotspot back-hotspot" onPointerDown={e=>tapView(e,'back')}><b>↩ Mặt sau</b></button></div>}{activeView!=='front'&&<div className="mobile-front-hotspot"><button type="button" onPointerDown={e=>tapView(e,'front')}>← Mặt trước</button></div>}<button type="button" className="undo-float" onPointerDown={e=>e.stopPropagation()} onClick={confirmUndo} disabled={!history.length} aria-label="Hoàn tác">↺</button><button type="button" className={`smart-position-toggle ${smartPositionEnabled===true?'is-on':'is-off'}`} onPointerDown={e=>e.stopPropagation()} onClick={toggleSmartPosition} aria-pressed={smartPositionEnabled===true} aria-label={`${smartPositionEnabled===true?'Tắt':'Bật'} căn chỉnh`}><span className="smart-bulb">💡</span><small className="smart-label-desktop">Gợi ý vị trí</small><small className="smart-label-mobile">Căn chỉnh</small></button><div ref={trash} className={`trash-zone ${trashActive||selectedItem?'is-active':''} ${trashHot?'is-hot':''}`} aria-hidden="true"><span>🗑</span><small className="trash-label-desktop">Thả để xoá</small><small className="trash-label-mobile">Xóa</small></div>{!activePlaced.length&&<div className="empty-nudge">Thêm patch hoặc bỏ qua mặt này <span>↗</span></div>}{activePlaced.length>0&&stageZoom.scale===1&&<div className="pinch-nudge">Dùng 2 ngón để zoom, kéo nền để soi áo</div>}</div>{selectedItem&&<div className="rotate-panel rotate-panel-vertical" aria-label="Xoay patch"><input className="vertical-range" type="range" min="-180" max="180" value={-signedRotation(selectedItem.rotation)} onPointerDown={beginRotate} onPointerUp={endRotate} onTouchStart={beginRotate} onTouchEnd={endRotate} onChange={e=>rotateSelected(-Number(e.target.value))}/><b>{signedRotation(selectedItem.rotation)}°</b><small>{selectedPatch?.name}</small></div>}<div className="preview-foot"><span>{product?.name||'Mockup theo mẫu base'}</span><span>{viewName(activeView)}</span></div></div><div className="mobile-config"><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide}/></div><button type="button" className={`button dark finish-custom ${halloweenThemeEnabled&&halloweenFeatures.fireworks?'finish-halloween':''}`} onClick={finishCustom}>Đã custom xong rồi</button><div className="method-row"><button className={mode==='diy'?'method active':'method'} onClick={()=>selectFulfilmentMode('diy')}><span>🏠</span><b>Tự ủi tại nhà</b><small>Nhận patch rời cùng base</small></button><button className={mode==='shop'?'method active':'method'} onClick={()=>selectFulfilmentMode('shop')}><span>🪡</span><b>Shop ủi giúp</b><small>Gửi mã đơn, shop làm theo</small></button></div></section>
-      <aside className={`panel request ${flowDone?'':'request-locked'}`}><div className="panel-title"><div><small>03 / ĐẶT ĐƠN</small><h2>Thông tin nhận hàng</h2></div><span className="spark">✳</span></div>{!flowDone?<div className="locked-note"><b>Hoàn tất mockup trước</b><p>Custom các vùng muốn custom cần dùng, sau đó bấm “Đã custom xong rồi” để nhập thông tin đặt đơn.</p></div>:<><p className="muted">Website không thanh toán. Bấm đặt đơn để lấy mã, sau đó gửi toàn bộ thông tin đơn cho shop qua Messenger.</p><MiniPreview placed={placed} activeViews={activeViews} product={product} catalog={catalog} patchSizePercent={patchSizePercent}/><div className="price-summary"><div><span>Sản phẩm base</span><b>{money(product?.price)}</b></div><div><span>Patch × {placed.length}</span><b>{money(patchTotal)}</b></div><div className="total"><span>Tổng tạm tính</span><b>{money(orderTotal)}</b></div></div><div className="form-field"><label>Tên của bạn</label><input value={name} onChange={e=>setName(e.target.value)} placeholder="Tên người nhận" maxLength={80}/></div><div className="form-field"><label>Số điện thoại</label><input value={phone} onChange={e=>setPhone(e.target.value)} placeholder="SĐT để shop liên hệ" inputMode="tel" maxLength={30}/></div><div className="form-field"><label>Địa chỉ nhận hàng</label><textarea value={address} onChange={e=>setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" rows={3} maxLength={500}/></div><div className="form-field"><label>Ghi chú <span>(không bắt buộc)</span></label><textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Màu base, yêu cầu thêm…" rows={3} maxLength={1200}/></div><label className="consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>{catalog.settings.privacyText}</span></label><button className="button coral full send-button" onClick={placeOrder} disabled={busy}>{busy?'Đang chuẩn bị mã…':'Đặt đơn'}</button>{busy&&<div className="order-progress-card"><span className="order-progress-orbit">✦</span><div><b>{orderProgress||'Đang tạo mã đơn…'}</b><small>Chờ Patchie ráp xong mockup và lưu đơn nha.</small></div><i className="order-progress-dots"><em></em><em></em><em></em></i></div>}{order&&<div className="order-code-card"><span>Mã đơn của bạn</span><div className="order-code-row"><b>{order.id}</b></div><div className="copy-hint"><span>↗</span> Bấm nút bên dưới, Patchie sẽ copy toàn bộ đơn cho bạn</div><button type="button" className="button messenger-order-button" onClick={()=>setMessengerPrompt(true)}>Xem lại nội dung đơn ↗</button></div>}<div className="tiny-note">Shop sẽ xem mockup các mặt trong admin và xác nhận trước khi chốt.</div></>}</aside></div>
+      </div></div><div className="view-tabs guided-tabs">{activeViews.map((v, i) => <button key={v.id} className={`${activeView === v.id ? 'active' : ''} ${i < stepIndex || flowDone ? 'done' : ''} ${v.id.includes('sleeve') ? 'sleeve-tab' : ''}`} onClick={() => jumpView(v.id)}><span>{i + 1}</span>{v.short}<small>{placed.filter(x => (x.view || 'front') === v.id).length}</small></button>)}</div><div className="preview-card"><div className={`stage product-${product?.product_type || "shirt"} ${stageZoom.scale > 1 ? "is-zoomed" : ""}`} ref={stage} data-product-id={productId} onPointerDown={startPan} onPointerMove={moveStage} onPointerUp={endStage} onPointerLeave={endStage} onTouchStart={startPinch} onTouchMove={movePinch} onTouchEnd={endPinch} onTouchCancel={endPinch}>{(displayedImage !== activeImage || mockupError) && <div className="mockup-load-status" role="status"><span>{mockupError ? 'Chưa tải được ảnh màu này' : 'Đang tải mockup…'}</span>{mockupError && <button type="button" onClick={() => setImageRetry(n => n + 1)}>Thử lại</button>}</div>}<div className="stage-zoom-viewport" style={{
+              pointerEvents: displayedImage !== activeImage ? 'none' : undefined
+            }}><div className="stage-zoom-layer" style={{
+                transform: `translate(${stageZoom.x}px,${stageZoom.y}px) scale(${stageZoom.scale})`
+              }}><img className="tee" fetchPriority="high" loading="eager" decoding="async" src={displayedImage} alt={`${product?.name || 'Sản phẩm base'} - ${viewName(activeView)}`} />{snapGuide && <div className={`snap-guides ${snapGuide.kind === 'preset-point' ? 'is-point' : snapGuide.kind === 'align' ? 'is-align' : ''}`} aria-hidden="true">{snapGuide.x !== null && snapGuide.x !== undefined && <i className="snap-guide-vertical" style={{
+                    left: `${snapGuide.x * 100}%`
+                  }} />}{snapGuide.y !== null && snapGuide.y !== undefined && <i className="snap-guide-horizontal" style={{
+                    top: `${snapGuide.y * 100}%`
+                  }} />}{snapGuide.kind === 'preset-point' && <i className="snap-guide-target" style={{
+                    left: `${snapGuide.x * 100}%`,
+                    top: `${snapGuide.y * 100}%`
+                  }}>✦</i>}</div>}{activePlaced.map((x, i) => {
+                  const p = catalog.patches.find(y => y.id === x.patchId);
+                  return <button key={x.uid} className={`placed-patch ${selectedUid === x.uid ? 'selected' : ''}`} aria-label={`Kéo patch ${p?.name}`} style={{
+                    left: `${x.x * 100}%`,
+                    top: `${x.y * 100}%`,
+                    zIndex: i + 1,
+                    transform: `translate(-50%,-50%) rotate(${normalizeRotation(x.rotation)}deg)`,
+                    ...patchPreviewStyle(p)
+                  }} onPointerDown={e => startDrag(e, x.uid)}><img src={p?.image_url} alt={p?.name} /></button>;
+                })}</div></div>{activeView === 'front' && <div className="mobile-sleeve-hotspots">{activeViews.some(v => v.id === 'left_sleeve' || v.id === 'right_sleeve') && <><button type="button" className="sleeve-hotspot sleeve-left" onPointerDown={e => tapView(e, 'right_sleeve')}><b>Phải</b></button><button type="button" className="sleeve-hotspot sleeve-right" onPointerDown={e => tapView(e, 'left_sleeve')}><b>Trái</b></button></>}<button type="button" className="sleeve-hotspot back-hotspot" onPointerDown={e => tapView(e, 'back')}><b>↩ Mặt sau</b></button></div>}{activeView !== 'front' && <div className="mobile-front-hotspot"><button type="button" onPointerDown={e => tapView(e, 'front')}>← Mặt trước</button></div>}<button type="button" className="undo-float" onPointerDown={e => e.stopPropagation()} onClick={confirmUndo} disabled={!history.length} aria-label="Hoàn tác">↺</button><button type="button" className={`smart-position-toggle ${smartPositionEnabled === true ? 'is-on' : 'is-off'}`} onPointerDown={e => e.stopPropagation()} onClick={toggleSmartPosition} aria-pressed={smartPositionEnabled === true} aria-label={`${smartPositionEnabled === true ? 'Tắt' : 'Bật'} căn chỉnh`}><span className="smart-bulb">💡</span><small className="smart-label-desktop">Gợi ý vị trí</small><small className="smart-label-mobile">Căn chỉnh</small></button><div ref={trash} className={`trash-zone ${trashActive || selectedItem ? 'is-active' : ''} ${trashHot ? 'is-hot' : ''}`} aria-hidden="true"><span>🗑</span><small className="trash-label-desktop">Thả để xoá</small><small className="trash-label-mobile">Xóa</small></div>{!activePlaced.length && <div className="empty-nudge">Thêm patch hoặc bỏ qua mặt này <span>↗</span></div>}{activePlaced.length > 0 && stageZoom.scale === 1 && <div className="pinch-nudge">Dùng 2 ngón để zoom, kéo nền để soi áo</div>}</div>{selectedItem && <div className="rotate-panel rotate-panel-vertical" aria-label="Xoay patch"><input className="vertical-range" type="range" min="-180" max="180" value={-signedRotation(selectedItem.rotation)} onPointerDown={beginRotate} onPointerUp={endRotate} onTouchStart={beginRotate} onTouchEnd={endRotate} onChange={e => rotateSelected(-Number(e.target.value))} /><b>{signedRotation(selectedItem.rotation)}°</b><small>{selectedPatch?.name}</small></div>}<div className="preview-foot"><span>{product?.name || 'Mockup theo mẫu base'}</span><span>{viewName(activeView)}</span></div></div><div className="mobile-config"><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide} /></div><button type="button" className={`button dark finish-custom `} onClick={finishCustom}>Đã custom xong rồi</button><div className="method-row"><button className={mode === 'diy' ? 'method active' : 'method'} onClick={() => selectFulfilmentMode('diy')}><span>🏠</span><b>Tự ủi tại nhà</b><small>Nhận patch rời cùng base</small></button><button className={mode === 'shop' ? 'method active' : 'method'} onClick={() => selectFulfilmentMode('shop')}><span>🪡</span><b>Shop ủi giúp</b><small>Gửi mã đơn, shop làm theo</small></button></div></section>
+      <aside className={`panel request ${flowDone ? '' : 'request-locked'}`}><div className="panel-title"><div><small>03 / ĐẶT ĐƠN</small><h2>Thông tin nhận hàng</h2></div><span className="spark">✳</span></div>{!flowDone ? <div className="locked-note"><b>Hoàn tất mockup trước</b><p>Custom các vùng muốn custom cần dùng, sau đó bấm “Đã custom xong rồi” để nhập thông tin đặt đơn.</p></div> : <><p className="muted">Website không thanh toán. Bấm đặt đơn để lấy mã, sau đó gửi toàn bộ thông tin đơn cho shop qua Messenger.</p><MiniPreview placed={placed} activeViews={activeViews} product={product} catalog={catalog} patchSizePercent={patchSizePercent} /><div className="price-summary"><div><span>Sản phẩm base</span><b>{money(product?.price)}</b></div><div><span>Patch × {placed.length}</span><b>{money(patchTotal)}</b></div><div className="total"><span>Tổng tạm tính</span><b>{money(orderTotal)}</b></div></div><div className="form-field"><label>Tên của bạn</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Tên người nhận" maxLength={80} /></div><div className="form-field"><label>Số điện thoại</label><input value={phone} onChange={e => setPhone(e.target.value)} placeholder="SĐT để shop liên hệ" inputMode="tel" maxLength={30} /></div><div className="form-field"><label>Địa chỉ nhận hàng</label><textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" rows={3} maxLength={500} /></div><div className="form-field"><label>Ghi chú <span>(không bắt buộc)</span></label><textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Màu base, yêu cầu thêm…" rows={3} maxLength={1200} /></div><label className="consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>{catalog.settings.privacyText}</span></label><button className="button coral full send-button" onClick={placeOrder} disabled={busy}>{busy ? 'Đang chuẩn bị mã…' : 'Đặt đơn'}</button>{busy && <div className="order-progress-card"><span className="order-progress-orbit">✦</span><div><b>{orderProgress || 'Đang tạo mã đơn…'}</b><small>Chờ Patchie ráp xong mockup và lưu đơn nha.</small></div><i className="order-progress-dots"><em></em><em></em><em></em></i></div>}{order && <div className="order-code-card"><span>Mã đơn của bạn</span><div className="order-code-row"><b>{order.id}</b></div><div className="copy-hint"><span>↗</span> Bấm nút bên dưới, Patchie sẽ copy toàn bộ đơn cho bạn</div><button type="button" className="button messenger-order-button" onClick={() => setMessengerPrompt(true)}>Xem lại nội dung đơn ↗</button></div>}<div className="tiny-note">Shop sẽ xem mockup các mặt trong admin và xác nhận trước khi chốt.</div></>}</aside></div>
 
-    {messengerPrompt&&order&&<DialogBoundary kind="order" {...{setMessengerPrompt,order,copyOrderMessage,sendOrderToMessenger,copied}}/>}
-    {giftPopupOpen&&(activeCampaign?.type==='tarot'?tarotCards.length>=3:giftCandidates.length>=2)&&<DialogBoundary kind="gift" {...{activeCampaign,setGiftPopupOpen,setGiftPreviewId,setCampaignCardId,giftOffer,tarotCards,campaignCardId,claimGift,giftCandidates,giftPreviewId}}/>}<StudioFooter/>{smartPositionPromptOpen&&<DialogBoundary kind="smartPosition" {...{chooseSmartPosition}}/>}{undoAsk&&<DialogBoundary kind="undo" {...{setUndoAsk,approveUndo}}/>}{selectData&&<DialogBoundary kind="select" {...{selectData,setSelectSheet,catalog}}/>}{celebrate&&<><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><PumpkinFireworks enabled={halloweenThemeEnabled&&halloweenFeatures.fireworks} trigger={celebrate}/></>}{toast&&<div className="toast">{toast}</div>}</StudioContainer>;
+    {messengerPrompt && order && <DialogBoundary kind="order" {...{
+      setMessengerPrompt,
+      order,
+      copyOrderMessage,
+      sendOrderToMessenger,
+      copied
+    }} />}
+    {welcomeReady && !placed.length && !selectedProductDesign && !selectSheet && <Suspense fallback={null}><BestsellerPopup onClose={closeWelcome} onPreview={openProductDesignPreview} onCustom={applyProductDesign}/></Suspense>}
+    <StudioFooter />{smartPositionPromptOpen && <DialogBoundary kind="smartPosition" {...{
+      chooseSmartPosition
+    }} />}{undoAsk && <DialogBoundary kind="undo" {...{
+      setUndoAsk,
+      approveUndo
+    }} />}{selectData && <DialogBoundary kind="select" {...{
+      selectData,
+      setSelectSheet,
+      catalog
+    }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }

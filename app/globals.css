@@ -70,3 +70,4 @@ button,input,textarea,select{font:inherit}
 button{color:inherit;cursor:pointer}
 a{color:inherit;text-decoration:none}
 *{-webkit-tap-highlight-color:transparent}
+html{scrollbar-gutter:stable}

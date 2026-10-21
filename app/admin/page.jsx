@@ -1,161 +1,1015 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { normalizePopupCampaigns } from '@/lib/popup-campaigns';
-import { DEFAULT_HALLOWEEN_FEATURES, normalizeHalloweenFeatures } from '@/lib/halloween-theme';
-
-const PRODUCT_VIEWS=[
-  ['front','Mặt trước'],
-  ['left_sleeve','Tay áo trái'],
-  ['right_sleeve','Tay áo phải'],
-  ['back','Lưng áo']
-];
-const PRODUCT_VIEW_SETS={shirt:PRODUCT_VIEWS,bag:[['front','Mặt trước'],['back','Mặt sau']]};
-const PRODUCT_GROUPS=[{id:'shirt',label:'Áo Tee',kind:'shirt'},{id:'bag',label:'Túi Tote',kind:'bag'}];
-const normalizeProductGroups=list=>{
- const incoming=Array.isArray(list)?list:[],defaults=PRODUCT_GROUPS.map(group=>({...group}));
- const merged=defaults.map(group=>{const saved=incoming.find(item=>item?.id===group.id||item?.value===group.id);return saved?{...group,...saved,id:group.id,value:group.id,kind:saved.kind||group.kind}:group;});
- incoming.filter(item=>item&&(item.id||item.value)&&!merged.some(group=>(group.id||group.value)===(item.id||item.value))).forEach(item=>merged.push({...item,id:item.id||item.value,value:item.value||item.id,label:item.label||item.name||item.id,kind:item.kind==='bag'?'bag':'shirt'}));
- return merged;
+const PRODUCT_VIEWS = [['front', 'Mặt trước'], ['left_sleeve', 'Tay áo trái'], ['right_sleeve', 'Tay áo phải'], ['back', 'Lưng áo']];
+const PRODUCT_VIEW_SETS = {
+  shirt: PRODUCT_VIEWS,
+  bag: [['front', 'Mặt trước'], ['back', 'Mặt sau']]
 };
-const productGroupSlug=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-const findProductGroup=(type,groups=PRODUCT_GROUPS)=>{const raw=String(type??'').trim().toLowerCase(),slug=productGroupSlug(type);return groups.find(group=>[group.id,group.value,group.label,group.name].some(value=>{const candidate=String(value??'').trim().toLowerCase();return candidate===raw||(slug&&productGroupSlug(value)===slug);}));};
-const productTypeLabel=(t,groups=PRODUCT_GROUPS)=>findProductGroup(t,groups)?.label||(t==='bag'?'Túi':'Áo');
-const productGroupValue=(t,groups=PRODUCT_GROUPS)=>{const group=findProductGroup(t,groups);return group?(group.id||group.value):t||'shirt';};
-const productGroupKind=(t,groups=PRODUCT_GROUPS)=>findProductGroup(t,groups)?.kind||((t==='bag'||t==='tote')?'bag':'shirt');
-const slugifyGroup=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
-const productBaseKey=p=>p?.base_key||`${p?.product_type||'shirt'}::${String(p?.name||'').trim().toLowerCase()}`;
-const PATCH_GROUPS=['Best Seller','Chữ Cái','Seasonal','Limited','Cute Animal','Floral'];
-const cleanGroups=list=>Array.from(new Set((Array.isArray(list)?list:String(list||'').split(',')).map(x=>String(x).trim()).filter(Boolean)));
-const normalizePatchGroupOrder=(value,available)=>{const requested=Array.isArray(value)?value:String(value||'').split(',');return Array.from(new Set([...requested,...PATCH_GROUPS,...available])).map(x=>String(x).trim()).filter(x=>x&&available.includes(x));};
-const GIFT_DEFAULTS={enabled:true,eyebrow:'QUÀ NHỎ KHAI TRƯƠNG',title:'Nhân dịp khai trương, tụi mình tặng bạn 1 patch làm quen',description:'Bạn thích patch nào thì chọn heee 💖',buttonLabel:'Nhận patch này',patchIds:[]};
-const BRAND_DEFAULTS={brandName:'Patchie',logoUrl:'',slogan:'Customize your everyday',fontFamily:'DM Sans',heroEyebrow:'YOUR BASE, YOUR LITTLE WORLD',heroTitle:'Tự tạo món đồ',heroAccent:'của riêng bạn.',heroDescription:'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',step1Label:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Title:'Sản phẩm base',step2Label:'02 / CHỌN PATCH BẠN THÍCH HA',step3Label:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepBaseDesktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepBaseMobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',stepPatchDesktop:'02 / CHỌN PATCH BẠN THÍCH HA',stepPatchMobile:'02 / CHỌN PATCH BẠN THÍCH HA',stepPreviewDesktop:'03 / CÙNG DESIGN HOI',stepPreviewMobile:'03 / CÙNG DESIGN HOI',stepOrderDesktop:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',stepOrderMobile:'04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',step1Desktop:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step1Mobile:'01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',step2Desktop:'02 / CHỌN PATCH BẠN THÍCH HA',step2Mobile:'02 / CHỌN PATCH BẠN THÍCH HA',addPatchLabel:'＋ Thêm patch lên mặt đang chọn',mobileAddPatchLabel:'＋ Thêm patch vào mặt đang chọn',productGroupImages:{shirt:'',bag:''},productGroups:PRODUCT_GROUPS};
-const AdminBrandMark=({brand=BRAND_DEFAULTS})=>brand.logoUrl?<img className="brand-logo" src={brand.logoUrl} alt={brand.brandName||'Patchie'}/>:<span className="brand-mark">P</span>;
-
-function PopupCampaignSettings({settings,patches,onChange}){
- const campaigns=normalizePopupCampaigns(settings.popupCampaigns,settings.giftOffer);
- const activeId=settings.activePopupCampaign||campaigns.find(campaign=>campaign.enabled)?.id||campaigns[0]?.id||'';
- const updateCampaign=(id,updates)=>onChange({...settings,popupCampaigns:campaigns.map(campaign=>campaign.id===id?{...campaign,...updates}:campaign),activePopupCampaign:activeId});
- const updateCard=(campaignId,cardId,updates)=>onChange({...settings,popupCampaigns:campaigns.map(campaign=>campaign.id===campaignId?{...campaign,cards:(campaign.cards||[]).map(card=>card.id===cardId?{...card,...updates}:card)}:campaign),activePopupCampaign:activeId});
- const patchOptions=patches.map(patch=><option key={patch.id} value={patch.id}>{patch.name}</option>);
- return <div className="popup-campaign-manager wide">
-   <div className="popup-campaign-manager-head"><div><h3>Campaign popup tặng patch</h3><p className="admin-help">Bật/tắt từng campaign, chọn campaign đang chạy và chọn patch quà riêng cho từng event.</p></div><label>Campaign đang chạy<select value={activeId} onChange={e=>onChange({...settings,activePopupCampaign:e.target.value})}>{campaigns.map(campaign=><option key={campaign.id} value={campaign.id} disabled={!campaign.enabled}>{campaign.title||campaign.id}{campaign.enabled?'':' · đang tắt'}</option>)}</select></label></div>
-   <div className="popup-campaign-list">{campaigns.map(campaign=><div className={`popup-campaign-editor ${activeId===campaign.id?'is-active':''}`} key={campaign.id}>
-     <div className="popup-campaign-editor-head"><div><h4>{campaign.type==='tarot'?'✦ Halloween Tarot':'✦ Popup truyền thống'}</h4><small>{campaign.id}</small></div><div className="popup-campaign-editor-actions"><label className="gift-toggle"><input type="checkbox" checked={campaign.enabled!==false} onChange={e=>updateCampaign(campaign.id,{enabled:e.target.checked})}/> Bật campaign</label><button type="button" className="button light" onClick={()=>onChange({...settings,activePopupCampaign:campaign.id})} disabled={!campaign.enabled||activeId===campaign.id}>{activeId===campaign.id?'Đang chạy':'Chọn chạy campaign'}</button></div></div>
-     <div className="popup-campaign-fields"><label>Nhãn nhỏ<input value={campaign.eyebrow||''} onChange={e=>updateCampaign(campaign.id,{eyebrow:e.target.value})}/></label><label>Tiêu đề<input value={campaign.title||''} onChange={e=>updateCampaign(campaign.id,{title:e.target.value})}/></label><label className="wide">Mô tả<textarea rows="2" value={campaign.description||''} onChange={e=>updateCampaign(campaign.id,{description:e.target.value})}/></label><label>Nút nhận quà<input value={campaign.buttonLabel||''} onChange={e=>updateCampaign(campaign.id,{buttonLabel:e.target.value})}/></label></div>
-     {campaign.type==='tarot'?<div className="popup-tarot-cards"><b>Ba lá bài & patch quà</b>{(campaign.cards||[]).map(card=><div className="popup-tarot-card-row" key={card.id}><input value={card.label||''} onChange={e=>updateCard(campaign.id,card.id,{label:e.target.value})} aria-label={`Tên lá bài ${card.id}`}/><select value={card.patchId||''} onChange={e=>updateCard(campaign.id,card.id,{patchId:e.target.value})}><option value="">Chọn patch quà</option>{patchOptions}</select></div>)}</div>:<div className="popup-traditional-patches"><b>Patch được chọn trong popup</b><div className="popup-patch-selects"><select value={campaign.patchIds?.[0]||''} onChange={e=>updateCampaign(campaign.id,{patchIds:[e.target.value,campaign.patchIds?.[1]||'']})}><option value="">Patch số 1</option>{patchOptions}</select><select value={campaign.patchIds?.[1]||''} onChange={e=>updateCampaign(campaign.id,{patchIds:[campaign.patchIds?.[0]||'',e.target.value]})}><option value="">Patch số 2</option>{patchOptions}</select></div></div>}
-   </div>)}</div>
- </div>;
-}
-
-export default function Admin(){
- const [user,setUser]=useState(null),[email,setEmail]=useState(''),[loading,setLoading]=useState(true),[tab,setTab]=useState('requests'),[items,setItems]=useState([]),[patchOrders,setPatchOrders]=useState([]),[orderFilter,setOrderFilter]=useState('all'),[summary,setSummary]=useState({}),[settings,setSettings]=useState({}),[products,setProducts]=useState([]),[patches,setPatches]=useState([]),[editingProduct,setEditingProduct]=useState(null),[editingPatch,setEditingPatch]=useState(null),[productType,setProductType]=useState('shirt'),[selectedPatchIds,setSelectedPatchIds]=useState([]),[bulkOperationSearch,setBulkOperationSearch]=useState(''),[bulkGroupSearch,setBulkGroupSearch]=useState(''),[bulkSourceGroup,setBulkSourceGroup]=useState('all'),[bulkGroup,setBulkGroup]=useState('Best Seller'),[bulkPatchAction,setBulkPatchAction]=useState('out_of_stock'),[productGroupDrafts,setProductGroupDrafts]=useState(PRODUCT_GROUPS),[newProductGroupName,setNewProductGroupName]=useState(''),[newProductGroupKind,setNewProductGroupKind]=useState('shirt'),[snapPoints,setSnapPoints]=useState([]),[snapView,setSnapView]=useState('front'),[msg,setMsg]=useState('');
- const snapCanvasRef=useRef(null),snapPointDrag=useRef(null),[snapEditorGuide,setSnapEditorGuide]=useState(null);
- const supa=()=>createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
- const call=async(path,opts={})=>{const r=await fetch('/api/admin/'+path,opts),d=await r.json();if(!r.ok)throw Error(d.error||'Có lỗi xảy ra');return d;};
- async function refresh(){setLoading(true);try{const {data:{user:u}}=await supa().auth.getUser();setUser(u);if(u){
-   // Keep the main dashboard usable even when an older Supabase project has
-   // not granted access to the optional Patch Market tables yet.
-   const patchOrdersRequest=call('patch-orders').catch(error=>({items:[],error:error.message}));
-   const [s,d,p,a,z,po]=await Promise.all([call('summary'),call('designs'),call('products'),call('patches'),call('settings'),patchOrdersRequest]);
-   setSummary(s);setItems(d.items||[]);setPatchOrders(po.items||[]);setProducts(p.items||[]);setPatches(a.items||[]);
-   setSettings(z.settings||{});
-   if(po.error)setMsg(`Đơn thiết kế đã tải. ${po.error} Hãy chạy file supabase/patch-orders-permissions.sql một lần.`);else setMsg('');
- }}catch(e){setMsg(e.message);}finally{setLoading(false);}}
- useEffect(()=>{refresh();},[]);
- useEffect(()=>{setProductGroupDrafts(normalizeProductGroups(settings.brand?.productGroups));},[settings.brand?.productGroups]);
- useEffect(()=>{const form=document.querySelector('.product-form'),price=form?.querySelector('input[name="price"]');if(!form||!price||form.querySelector('textarea[name="size_guide"]'))return;const label=document.createElement('label');label.className='size-guide-admin-field';const title=document.createElement('span');title.textContent='Hướng dẫn chọn size';const field=document.createElement('textarea');field.name='size_guide';field.rows=2;field.placeholder='Ví dụ: S 45–55kg · M 55–65kg · form oversize';field.value=editingProduct?.size_guide||'';label.append(title,field);price.parentNode?.insertBefore(label,price.nextSibling);return()=>label.remove();},[editingProduct,productType]);
- useEffect(()=>{if(tab!=='requests')return;const card=Array.from(document.querySelectorAll('.admin-card')).find(item=>item.querySelector('h2')?.textContent==='Đơn patch'),rows=card?.querySelectorAll('tbody tr');if(!rows)return;const cleanups=[];Array.from(rows).forEach((row,index)=>{const cell=row.lastElementChild;if(!cell||!patchOrders[index])return;const button=document.createElement('button');button.type='button';button.className='delete-btn';button.textContent='Xóa đơn';const handler=()=>remove('patch-orders',patchOrders[index].id);button.addEventListener('click',handler);cell.appendChild(button);cleanups.push(()=>button.removeEventListener('click',handler));});return()=>cleanups.forEach(cleanup=>cleanup());},[tab,patchOrders]);
- async function login(e){e.preventDefault();setMsg('Đang gửi link đăng nhập…');const {error}=await supa().auth.signInWithOtp({email,options:{emailRedirectTo:`${location.origin}/auth/callback`}});setMsg(error?.message||'Đã gửi link đăng nhập vào email.');}
- async function status(id,status){await call('designs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});await refresh();}
- async function patchStatus(id,status){await call('patch-orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,status})});await refresh();}
- async function remove(section,id){if(!confirm('Xóa mục này?'))return;try{const response=await fetch(`/api/admin/${section}?id=${encodeURIComponent(id)}`,{method:'DELETE'}),result=await response.json();if(!response.ok)throw Error(result.error||'Không xóa được mục này.');if(section==='patches'&&editingPatch?.id===id)setEditingPatch(null);if(section==='products'&&editingProduct?.id===id){setEditingProduct(null);setProductType('shirt');}await refresh();setMsg(result.archived?'Patch đã được ẩn khỏi website vì đang có đơn cũ tham chiếu.':'Đã xóa mục.');}catch(error){setMsg(error.message);}}
- function editProduct(p){setEditingProduct(p);setSnapPoints(Array.isArray(p.snap_guides)&&p.snap_guides.length?p.snap_guides.filter(point=>point.type!=='line'):(Array.isArray(p.snap_points)?p.snap_points.map(point=>({...point,type:'point'})):[]));setSnapView('front');setSnapEditorGuide(null);setProductType(productGroupValue(p.product_type,brand.productGroups));setMsg('Đang sửa sản phẩm base: '+p.name);setTimeout(()=>document.querySelector('.product-edit-card')?.scrollIntoView({behavior:'smooth',block:'start'}),50);}
- async function toggleProductFamily(variants){const nextActive=variants.every(product=>product.active===false);try{await Promise.all(variants.map(product=>call('products',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...product,active:nextActive})})));await refresh();setMsg(nextActive?'Đã bật toàn bộ màu của sản phẩm base.':'Đã ẩn toàn bộ màu của sản phẩm base khỏi website.');}catch(error){setMsg(error.message);}}
- function addVariation(p){setEditingProduct({...p,id:'',sku:'',color:'',active:true,view_images:{},image_url:''});setSnapPoints(Array.isArray(p.snap_guides)&&p.snap_guides.length?p.snap_guides.filter(point=>point.type!=='line'):(Array.isArray(p.snap_points)?p.snap_points.map(point=>({...point,type:'point'})):[]));setSnapView('front');setSnapEditorGuide(null);setProductType(productGroupValue(p.product_type,brand.productGroups));setMsg('Đang thêm màu mới cho: '+p.name);setTimeout(()=>document.querySelector('.product-edit-card')?.scrollIntoView({behavior:'smooth',block:'start'}),50);}
- function editPatch(p){setEditingPatch(p);setMsg('Đang sửa patch: '+p.name);setTimeout(()=>document.querySelector('.patch-edit-card')?.scrollIntoView({behavior:'smooth',block:'start'}),50);}
- const patchGroupsOf=p=>cleanGroups(p?.patch_groups?.length?p.patch_groups:(p?.patch_group||'Best Seller'));
- const patchGroup=p=>patchGroupsOf(p)[0]||'Best Seller';
- const adminGroups=['all',...Array.from(new Set([...PATCH_GROUPS,...patches.flatMap(patchGroupsOf)]))];
- const groupCount=g=>g==='all'?patches.length:patches.filter(p=>patchGroupsOf(p).includes(g)).length;
- const normalizePatchSearch=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('vi').trim();
- const sourceGroupPatches=bulkSourceGroup==='all'?patches:patches.filter(p=>patchGroupsOf(p).includes(bulkSourceGroup));
- const filteredBulkPatches=sourceGroupPatches.filter(p=>normalizePatchSearch(p.name).includes(normalizePatchSearch(bulkOperationSearch)));
- const filteredGroupPatches=sourceGroupPatches.filter(p=>normalizePatchSearch(p.name).includes(normalizePatchSearch(bulkGroupSearch)));
- function togglePatch(id){setSelectedPatchIds(a=>a.includes(id)?a.filter(x=>x!==id):[...a,id]);}
- function selectFilteredPatches(list){setSelectedPatchIds(current=>Array.from(new Set([...current,...list.map(p=>p.id)])));}
- async function bulkPatchGroup(e){e.preventDefault();if(!selectedPatchIds.length)return setMsg('Chọn ít nhất một patch để thêm group.');const count=selectedPatchIds.length;await call('patch-groups',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ids:selectedPatchIds,patch_groups:cleanGroups(bulkGroup)})});setSelectedPatchIds([]);await refresh();setMsg(`Đã thêm group ${bulkGroup} cho ${count} patch.`);}
- async function generateMissingPatchThumbnails(){const missing=patches.filter(p=>!p.thumbnail_url);if(!missing.length)return setMsg('Tất cả patch đã có thumbnail rồi.');if(!confirm(`Tạo thumbnail cho ${missing.length} patch đang có? Ảnh gốc sẽ được giữ nguyên.`))return;let created=0,failed=[];try{for(let i=0;i<missing.length;i+=5){setMsg(`Đang tạo thumbnail… ${Math.min(i+5,missing.length)}/${missing.length}`);const result=await call('patch-thumbnails',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ids:missing.slice(i,i+5).map(p=>p.id)})});created+=result.created||0;failed.push(...(result.failed||[]));}await refresh();setMsg(failed.length?`Đã tạo ${created}/${missing.length} thumbnail. ${failed.length} ảnh chưa xử lý được; thử sửa hoặc upload lại các patch đó.`:`Đã tạo thumbnail cho ${created} patch. Ảnh gốc vẫn được giữ nguyên.`);}catch(error){setMsg(`Đã tạo ${created}/${missing.length} thumbnail trước khi gặp lỗi: ${error.message}`);await refresh();}}
- async function bulkPatchOperation(e){e.preventDefault();if(!selectedPatchIds.length)return setMsg('Chọn ít nhất một patch trước nha.');const labels={out_of_stock:'chuyển các patch đã chọn sang hết hàng',coming_soon:'đặt các patch đã chọn thành Coming soon',limited:'thêm group Limited cho các patch đã chọn',delete:'xóa vĩnh viễn các patch đã chọn'};if(!confirm(`Xác nhận ${labels[bulkPatchAction]}?${bulkPatchAction==='delete'?' Thao tác này không thể hoàn tác. Patch đang được ghi trong đơn hàng cũ sẽ không xóa được.':''}`))return;const count=selectedPatchIds.length;try{const result=await call('patch-bulk',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({ids:selectedPatchIds,action:bulkPatchAction})});setSelectedPatchIds([]);await refresh();setMsg(bulkPatchAction==='delete'?`Đã xóa vĩnh viễn ${result.count} patch.`:bulkPatchAction==='out_of_stock'?`Đã chuyển ${result.count} patch sang hết hàng; các patch này không còn trong mockup.`:bulkPatchAction==='coming_soon'?`Đã đặt ${result.count} patch thành Coming soon.`:`Đã thêm group Limited cho ${result.count} patch.`);}catch(error){setMsg(error.message);}}
- async function saveSettings(e){e.preventDefault();try{const currentGift={...GIFT_DEFAULTS,...(settings.giftOffer||{})},campaigns=normalizePopupCampaigns(settings.popupCampaigns,currentGift).map(campaign=>({...campaign,enabled:campaign.enabled!==false,patchIds:Array.from(new Set((campaign.patchIds||[]).filter(Boolean))).slice(0,3),cards:(campaign.cards||[]).map(card=>({...card,patchId:card.patchId||''}))})),activePopupCampaign=campaigns.find(campaign=>campaign.id===settings.activePopupCampaign&&campaign.enabled)?.id||campaigns.find(campaign=>campaign.enabled)?.id||campaigns[0]?.id||'',traditional=campaigns.find(campaign=>campaign.type==='traditional')||campaigns[0],patchIds=Array.from(new Set((traditional?.patchIds||[]).filter(Boolean))).slice(0,2),availableGroups=new Set(patches.flatMap(patchGroupsOf)),requestedGroup=String(settings.defaultPatchGroup||'all'),defaultPatchGroup=availableGroups.has(requestedGroup)?requestedGroup:'all',patchGroupOrder=normalizePatchGroupOrder(settings.patchGroupOrder,Array.from(availableGroups)),availableProductIds=new Set(products.filter(product=>product.active!==false).map(product=>product.id)),requestedProductId=String(settings.defaultProductId||''),defaultProductId=availableProductIds.has(requestedProductId)?requestedProductId:(products.find(product=>product.active!==false)?.id||'');const b={...settings,defaultProductId,sizes:String(settings.sizes||'S,M,L,XL').split(',').map(x=>x.trim()).filter(Boolean),retentionDays:Number(settings.retentionDays)||30,adminEmails:String(settings.adminEmails||'').split(',').map(x=>x.trim()).filter(Boolean),defaultPatchGroup,patchGroupOrder,patchGroupHighlightEnabled:settings.patchGroupHighlightEnabled!==false,activePopupCampaign,halloweenThemeEnabled:settings.halloweenThemeEnabled!==false,halloweenFeatures:normalizeHalloweenFeatures(settings.halloweenFeatures),popupCampaigns:campaigns,giftOffer:{...currentGift,enabled:traditional?.enabled!==false,patchIds}};await call('settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});setSettings(current=>({...current,...b}));setMsg('Đã lưu cài đặt.');}catch(e){setMsg(e.message);}}
- async function collectProductGroups(form){const images={...(brand.productGroupImages||{})},next=[];for(let index=0;index<productGroupDrafts.length;index+=1){const group=productGroupDrafts[index],id=group.id||group.value,label=String(form.get(`group_label_${index}`)||group.label||id).trim(),kind=String(form.get(`group_kind_${index}`)||group.kind||'shirt')==='bag'?'bag':'shirt';if(!label)throw Error('Tên nhóm sản phẩm không được để trống.');let imageUrl=String(form.get(`group_url_${index}`)||group.imageUrl||images[id]||'').trim();const file=form.get(`group_file_${index}`);if(file?.size)imageUrl=await upload(file);if(imageUrl)images[id]=imageUrl;next.push({id,value:id,label,kind,imageUrl});}return {next,images};}
- async function saveBrand(e){e.preventDefault();try{const f=new FormData(e.currentTarget),text=name=>String(f.get(name)||'').trim(),{next:productGroups,images:productGroupImages}=await collectProductGroups(f),baseDesktop=text('stepBaseDesktop')||text('step1Desktop')||BRAND_DEFAULTS.stepBaseDesktop,baseMobile=text('stepBaseMobile')||text('step1Mobile')||baseDesktop,patchDesktop=text('stepPatchDesktop')||text('step2Desktop')||BRAND_DEFAULTS.stepPatchDesktop,patchMobile=text('stepPatchMobile')||text('step2Mobile')||patchDesktop,previewDesktop=text('stepPreviewDesktop')||BRAND_DEFAULTS.stepPreviewDesktop,previewMobile=text('stepPreviewMobile')||previewDesktop,orderDesktop=text('stepOrderDesktop')||text('step3Label')||BRAND_DEFAULTS.stepOrderDesktop,orderMobile=text('stepOrderMobile')||orderDesktop,next={...brand,brandName:text('brandName')||'Patchie',logoUrl:text('logoUrl'),slogan:text('slogan'),fontFamily:text('fontFamily')||'DM Sans',heroEyebrow:text('heroEyebrow'),heroTitle:text('heroTitle'),heroAccent:text('heroAccent'),heroDescription:text('heroDescription'),stepBaseDesktop:baseDesktop,stepBaseMobile:baseMobile,stepPatchDesktop:patchDesktop,stepPatchMobile:patchMobile,stepPreviewDesktop:previewDesktop,stepPreviewMobile:previewMobile,stepOrderDesktop:orderDesktop,stepOrderMobile:orderMobile,step1Label:baseDesktop,step1Title:text('step1Title')||'Sản phẩm base',step2Label:patchDesktop,step3Label:orderDesktop,step1Desktop:baseDesktop,step1Mobile:baseMobile,step2Desktop:patchDesktop,step2Mobile:patchMobile,addPatchLabel:text('addPatchLabel'),mobileAddPatchLabel:text('mobileAddPatchLabel'),productGroups,productGroupImages};const logoFile=f.get('logoFile'),shirtFile=f.get('shirtGroupFile'),bagFile=f.get('bagGroupFile');if(logoFile?.size)next.logoUrl=await upload(logoFile);if(shirtFile?.size)next.productGroupImages.shirt=await upload(shirtFile);if(bagFile?.size)next.productGroupImages.bag=await upload(bagFile);await call('settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({brand:next})});await refresh();setMsg('Đã lưu thương hiệu, nhóm sản phẩm và nội dung hiển thị.');}catch(e){setMsg(e.message);}}
- function addProductGroupDraft(e){e.preventDefault();const label=newProductGroupName.trim();if(!label)return setMsg('Nhập tên nhóm sản phẩm trước nhé.');let id=slugifyGroup(label)||`group-${Date.now()}`,counter=2;while(productGroupDrafts.some(group=>(group.id||group.value)===id))id=`${slugifyGroup(label)||'group'}-${counter++}`;setProductGroupDrafts(groups=>[...groups,{id,value:id,label,kind:newProductGroupKind}]);setNewProductGroupName('');setNewProductGroupKind('shirt');}
- function updateProductGroupDraft(index,key,value){setProductGroupDrafts(groups=>groups.map((group,i)=>i===index?{...group,[key]:value}:group));}
- function removeProductGroupDraft(index){if(productGroupDrafts.length<=1)return setMsg('Cần giữ lại ít nhất một nhóm sản phẩm.');setProductGroupDrafts(groups=>groups.filter((_,i)=>i!==index));}
- async function saveProductGroups(){try{const form=document.querySelector('.brand-form');if(!form)return;const {next,images}=await collectProductGroups(new FormData(form));await call('settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({brand:{...brand,productGroups:next,productGroupImages:images}})});setProductGroupDrafts(next);await refresh();setMsg('Đã lưu nhóm sản phẩm. Các sản phẩm cũ vẫn được liên kết theo mã nhóm.');}catch(e){setMsg(e.message);}}
- async function upload(file,patchImage=false){const f=new FormData();f.set('file',file);const result=await call(patchImage?'patch-upload':'upload',{method:'POST',body:f});return patchImage?result:result.image_url;}
- function snapCanvasPoint(e){const r=snapCanvasRef.current?.getBoundingClientRect();if(!r)return null;return {view:snapView,x:Number(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)).toFixed(4)),y:Number(Math.max(0,Math.min(1,(e.clientY-r.top)/r.height)).toFixed(4)),type:'point'};}
- function findSnapPointAlignment(raw,excludeIndex=null){
-  if(!raw||!snapCanvasRef.current)return {point:raw,guide:null};
-  const bounds=snapCanvasRef.current.getBoundingClientRect(),tol=window.matchMedia('(max-width:700px)').matches?22:12,w=bounds.width,h=bounds.height,candidates=[];
-  const anchors=snapPoints.map((point,index)=>({point,index})).filter(({point,index})=>point.view===snapView&&point.type!=='line'&&index!==excludeIndex);
-  for(const {point} of anchors){const dx=Math.abs(raw.x-point.x)*w,dy=Math.abs(raw.y-point.y)*h;if(dx<=tol)candidates.push({distance:dx,point:{...raw,x:point.x},guide:{kind:'vertical',x:point.x}});if(dy<=tol)candidates.push({distance:dy,point:{...raw,y:point.y},guide:{kind:'horizontal',y:point.y}});}
-  for(let i=0;i<anchors.length;i+=1)for(let j=i+1;j<anchors.length;j+=1){const a=anchors[i].point,b=anchors[j].point,ax=a.x*w,ay=a.y*h,bx=b.x*w,by=b.y*h,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy;if(len<1)continue;const px=raw.x*w,py=raw.y*h,t=((px-ax)*dx+(py-ay)*dy)/len,qx=ax+t*dx,qy=ay+t*dy,distance=Math.hypot(px-qx,py-qy);if(distance<=tol){const limits=[0,1,t],lo=Math.min(...limits),hi=Math.max(...limits);candidates.push({distance,point:{...raw,x:qx/w,y:qy/h},guide:{kind:'diagonal',line:{x1:(ax+lo*dx)/w,y1:(ay+lo*dy)/h,x2:(ax+hi*dx)/w,y2:(ay+hi*dy)/h}}});}}
-  candidates.sort((a,b)=>a.distance-b.distance);return candidates[0]||{point:raw,guide:null};
- }
- function previewSnapPoint(e){if(snapPointDrag.current!==null){moveSnapPoint(e);return;}const raw=snapCanvasPoint(e);setSnapEditorGuide(findSnapPointAlignment(raw).guide);}
- function addSnapPoint(e){if(!editingProduct?.id)return setMsg('Lưu sản phẩm base trước, sau đó mở Sửa để đặt các điểm gợi ý.');const raw=snapCanvasPoint(e),aligned=findSnapPointAlignment(raw);if(aligned.point)setSnapPoints(points=>[...points,aligned.point]);setSnapEditorGuide(aligned.guide);}
- function startMoveSnapPoint(e,index){e.preventDefault();e.stopPropagation();snapPointDrag.current=index;e.currentTarget.setPointerCapture(e.pointerId);}
- function moveSnapPoint(e){if(snapPointDrag.current===null)return;const index=snapPointDrag.current,raw=snapCanvasPoint(e),aligned=findSnapPointAlignment(raw,index);if(aligned.point)setSnapPoints(points=>points.map((item,i)=>i===index?aligned.point:item));setSnapEditorGuide(aligned.guide);}
- function stopMoveSnapPoint(e){if(snapPointDrag.current===null)return;e?.stopPropagation?.();snapPointDrag.current=null;setTimeout(()=>setSnapEditorGuide(null),450);}
- function removeSnapPoint(index){setSnapPoints(points=>points.filter((_,i)=>i!==index));setSnapEditorGuide(null);}
- async function saveProduct(e){
-  e.preventDefault();
-  const form=e.currentTarget,f=new FormData(form),view_images={};
-  const product_type=String(f.get('product_type')||'shirt'),viewSet=PRODUCT_VIEW_SETS[productGroupKind(product_type,brand.productGroups)]||PRODUCT_VIEW_SETS.shirt;
-  const existing=editingProduct?.id?editingProduct:(editingProduct?.name?editingProduct:null);
-  const reference_width_cm=Number(f.get('reference_width_cm'));
-  const reference_height_cm=Number(f.get('reference_height_cm'));
-  const image_fit_percent=Number(f.get('image_fit_percent'));
-  const image_fit_height_percent=Number(f.get('image_fit_height_percent'));
-  const dimensionLimit=name=>{const value=Number(f.get(name));return Number.isFinite(value)&&value>0?value:null;};
-  const min_patch_width_cm=dimensionLimit('min_patch_width_cm'),max_patch_width_cm=dimensionLimit('max_patch_width_cm'),min_patch_height_cm=dimensionLimit('min_patch_height_cm'),max_patch_height_cm=dimensionLimit('max_patch_height_cm');
-  if((min_patch_width_cm&&max_patch_width_cm&&max_patch_width_cm<min_patch_width_cm)||(min_patch_height_cm&&max_patch_height_cm&&max_patch_height_cm<min_patch_height_cm)){setMsg('Kích thước tối đa phải lớn hơn hoặc bằng kích thước tối thiểu.');return;}
-  if(!existing&&(!(reference_width_cm>0)||!(reference_height_cm>0)||!(image_fit_percent>0&&image_fit_percent<=100)||!(image_fit_height_percent>0&&image_fit_height_percent<=100))){setMsg('Sản phẩm base mới cần nhập đủ kích thước mockup và tỉ lệ ảnh chiếm khung theo cả chiều ngang, chiều dọc (1–100%).');return;}
-  for(const [key] of viewSet){
-    const file=f.get(`${key}_file`),url=String(f.get(`${key}_url`)||'').trim();
-    if(file?.size)view_images[key]=await upload(file);
-    else if(url)view_images[key]=url;
+const PRODUCT_GROUPS = [{
+  id: 'shirt',
+  label: 'Áo Tee',
+  kind: 'shirt'
+}, {
+  id: 'bag',
+  label: 'Túi Tote',
+  kind: 'bag'
+}];
+const normalizeProductGroups = list => {
+  const incoming = Array.isArray(list) ? list : [],
+    defaults = PRODUCT_GROUPS.map(group => ({
+      ...group
+    }));
+  const merged = defaults.map(group => {
+    const saved = incoming.find(item => item?.id === group.id || item?.value === group.id);
+    return saved ? {
+      ...group,
+      ...saved,
+      id: group.id,
+      value: group.id,
+      kind: saved.kind || group.kind
+    } : group;
+  });
+  incoming.filter(item => item && (item.id || item.value) && !merged.some(group => (group.id || group.value) === (item.id || item.value))).forEach(item => merged.push({
+    ...item,
+    id: item.id || item.value,
+    value: item.value || item.id,
+    label: item.label || item.name || item.id,
+    kind: item.kind === 'bag' ? 'bag' : 'shirt'
+  }));
+  return merged;
+};
+const productGroupSlug = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const findProductGroup = (type, groups = PRODUCT_GROUPS) => {
+  const raw = String(type ?? '').trim().toLowerCase(),
+    slug = productGroupSlug(type);
+  return groups.find(group => [group.id, group.value, group.label, group.name].some(value => {
+    const candidate = String(value ?? '').trim().toLowerCase();
+    return candidate === raw || slug && productGroupSlug(value) === slug;
+  }));
+};
+const productTypeLabel = (t, groups = PRODUCT_GROUPS) => findProductGroup(t, groups)?.label || (t === 'bag' ? 'Túi' : 'Áo');
+const productGroupValue = (t, groups = PRODUCT_GROUPS) => {
+  const group = findProductGroup(t, groups);
+  return group ? group.id || group.value : t || 'shirt';
+};
+const productGroupKind = (t, groups = PRODUCT_GROUPS) => findProductGroup(t, groups)?.kind || (t === 'bag' || t === 'tote' ? 'bag' : 'shirt');
+const slugifyGroup = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+const productBaseKey = p => p?.base_key || `${p?.product_type || 'shirt'}::${String(p?.name || '').trim().toLowerCase()}`;
+const PATCH_GROUPS = ['Best Seller', 'Chữ Cái', 'Seasonal', 'Limited', 'Cute Animal', 'Floral'];
+const cleanGroups = list => Array.from(new Set((Array.isArray(list) ? list : String(list || '').split(',')).map(x => String(x).trim()).filter(Boolean)));
+const normalizePatchGroupOrder = (value, available) => {
+  const requested = Array.isArray(value) ? value : String(value || '').split(',');
+  return Array.from(new Set([...requested, ...PATCH_GROUPS, ...available])).map(x => String(x).trim()).filter(x => x && available.includes(x));
+};
+const BRAND_DEFAULTS = {
+  brandName: 'Patchie',
+  logoUrl: '',
+  slogan: 'Customize your everyday',
+  fontFamily: 'DM Sans',
+  heroEyebrow: 'YOUR BASE, YOUR LITTLE WORLD',
+  heroTitle: 'Tự tạo món đồ',
+  heroAccent: 'của riêng bạn.',
+  heroDescription: 'Chọn patch, chạm vào vùng muốn custom, rồi bấm hoàn tất khi đã ưng ý.',
+  step1Label: '01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',
+  step1Title: 'Sản phẩm base',
+  step2Label: '02 / CHỌN PATCH BẠN THÍCH HA',
+  step3Label: '04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',
+  stepBaseDesktop: '01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',
+  stepBaseMobile: '01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',
+  stepPatchDesktop: '02 / CHỌN PATCH BẠN THÍCH HA',
+  stepPatchMobile: '02 / CHỌN PATCH BẠN THÍCH HA',
+  stepPreviewDesktop: '03 / CÙNG DESIGN HOI',
+  stepPreviewMobile: '03 / CÙNG DESIGN HOI',
+  stepOrderDesktop: '04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',
+  stepOrderMobile: '04 / XONG RÙI, ĐẶT ĐƠN THUI NÈ',
+  step1Desktop: '01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',
+  step1Mobile: '01 / CHỌN SẢN PHẨM BẠN MUỐN CUSTOM',
+  step2Desktop: '02 / CHỌN PATCH BẠN THÍCH HA',
+  step2Mobile: '02 / CHỌN PATCH BẠN THÍCH HA',
+  addPatchLabel: '＋ Thêm patch lên mặt đang chọn',
+  mobileAddPatchLabel: '＋ Thêm patch vào mặt đang chọn',
+  productGroupImages: {
+    shirt: '',
+    bag: ''
+  },
+  productGroups: PRODUCT_GROUPS
+};
+const AdminBrandMark = ({
+  brand = BRAND_DEFAULTS
+}) => brand.logoUrl ? <img className="brand-logo" src={brand.logoUrl} alt={brand.brandName || 'Patchie'} /> : <span className="brand-mark">P</span>;
+export default function Admin() {
+  const params = useSearchParams();
+  useEffect(() => {
+    const next = params.get('tab') || 'requests';
+    setTab(['requests', 'products', 'patches', 'brand', 'settings'].includes(next) ? next : 'requests');
+  }, [params]);
+  const [user, setUser] = useState(null),
+    [email, setEmail] = useState(''),
+    [loading, setLoading] = useState(true),
+    [tab, setTab] = useState('requests'),
+    [items, setItems] = useState([]),
+    [patchOrders, setPatchOrders] = useState([]),
+    [orderFilter, setOrderFilter] = useState('all'),
+    [summary, setSummary] = useState({}),
+    [settings, setSettings] = useState({}),
+    [products, setProducts] = useState([]),
+    [patches, setPatches] = useState([]),
+    [editingProduct, setEditingProduct] = useState(null),
+    [editingPatch, setEditingPatch] = useState(null),
+    [productType, setProductType] = useState('shirt'),
+    [selectedPatchIds, setSelectedPatchIds] = useState([]),
+    [librarySearch, setLibrarySearch] = useState(''),
+    [bulkOperationSearch, setBulkOperationSearch] = useState(''),
+    [bulkGroupSearch, setBulkGroupSearch] = useState(''),
+    [bulkSourceGroup, setBulkSourceGroup] = useState('all'),
+    [bulkGroup, setBulkGroup] = useState('Best Seller'),
+    [bulkPatchAction, setBulkPatchAction] = useState('out_of_stock'),
+    [productGroupDrafts, setProductGroupDrafts] = useState(PRODUCT_GROUPS),
+    [newProductGroupName, setNewProductGroupName] = useState(''),
+    [newProductGroupKind, setNewProductGroupKind] = useState('shirt'),
+    [snapPoints, setSnapPoints] = useState([]),
+    [snapView, setSnapView] = useState('front'),
+    [msg, setMsg] = useState('');
+  const snapCanvasRef = useRef(null),
+    snapPointDrag = useRef(null),
+    [snapEditorGuide, setSnapEditorGuide] = useState(null);
+  const supa = () => createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const call = async (path, opts = {}) => {
+    const r = await fetch('/api/admin/' + path, opts),
+      d = await r.json();
+    if (!r.ok) throw Error(d.error || 'Có lỗi xảy ra');
+    return d;
+  };
+  async function refresh() {
+    setLoading(true);
+    try {
+      const {
+        data: {
+          user: u
+        }
+      } = await supa().auth.getUser();
+      setUser(u);
+      if (u) {
+        // Keep the main dashboard usable even when an older Supabase project has
+        // not granted access to the optional Patch Market tables yet.
+        const patchOrdersRequest = call('patch-orders').catch(error => ({
+          items: [],
+          error: error.message
+        }));
+        const [s, d, p, a, z, po] = await Promise.all([call('summary'), call('designs'), call('products'), call('patches'), call('settings'), patchOrdersRequest]);
+        setSummary(s);
+        setItems(d.items || []);
+        setPatchOrders(po.items || []);
+        setProducts(p.items || []);
+        setPatches(a.items || []);
+        setSettings(z.settings || {});
+        if (po.error) setMsg(`Đơn thiết kế đã tải. ${po.error} Hãy chạy file supabase/patch-orders-permissions.sql một lần.`);else setMsg('');
+      }
+    } catch (e) {
+      setMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
   }
-  for(const [key] of viewSet){if(!view_images[key]&&existing?.view_images?.[key])view_images[key]=existing.view_images[key];}
-  let thumbnail_url=String(f.get('thumbnail_url')||'').trim()||null;
-  if(f.get('thumbnail_file')?.size)thumbnail_url=await upload(f.get('thumbnail_file'));
-  const image_url=view_images.front||'/assets/blank-tee.webp';
-  const nameKey=String(f.get('name')||'').trim().toLowerCase(),base_key=String(editingProduct?.product_type&&editingProduct.product_type!==product_type?`${product_type}::${nameKey}`:editingProduct?.base_key||`${product_type}::${nameKey}`);
-  const b={id:f.get('id')||undefined,base_key,sku:String(f.get('sku')||'').trim()||undefined,product_type,name:f.get('name'),color:f.get('color'),hex:f.get('hex'),image_url,thumbnail_url,view_images,sizes:String(f.get('sizes')).split(',').map(x=>x.trim()).filter(Boolean),size_guide:String(f.get('size_guide')||'').trim(),price:f.get('price')?Number(f.get('price')):null,snap_guides:snapPoints.filter(point=>point.type!=='line').map(({view,x,y})=>({view,x,y,type:'point'})),snap_points:snapPoints.filter(point=>point.type!=='line').map(({view,x,y})=>({view,x,y})),snap_guide_enabled:f.has('snap_guide_enabled'),snap_attraction_enabled:f.has('snap_attraction_enabled'),snap_strength_percent:Math.max(0,Math.min(100,Number(f.get('snap_strength_percent')??45))),reference_width_cm:reference_width_cm>0?reference_width_cm:(existing?.reference_width_cm??null),reference_height_cm:reference_height_cm>0?reference_height_cm:(existing?.reference_height_cm??null),image_fit_percent:image_fit_percent>0?image_fit_percent:(existing?.image_fit_percent??null),image_fit_height_percent:image_fit_height_percent>0?image_fit_height_percent:(existing?.image_fit_height_percent??existing?.image_fit_percent??null),min_patch_width_cm,max_patch_width_cm,min_patch_height_cm,max_patch_height_cm,active:f.has('active')};
-  await call('products',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});
-  setEditingProduct(null);setSnapPoints([]);setProductType('shirt');form.reset();await refresh();setMsg(f.get('id')?'Đã cập nhật sản phẩm base / SKU.':'Đã lưu sản phẩm base / SKU.');
- }
- async function savePatch(e){e.preventDefault();const f=new FormData(e.currentTarget);let image_url=String(f.get('image_url')||'').trim(),thumbnail_url=editingPatch?.thumbnail_url||null;if(f.get('file')?.size){const images=await upload(f.get('file'),true);image_url=images.image_url;thumbnail_url=images.thumbnail_url;}else if(image_url!==editingPatch?.image_url){thumbnail_url=null;}const patch_groups=cleanGroups(f.get('patch_groups')||'Best Seller');const b={id:f.get('id')||undefined,name:f.get('name'),image_url,thumbnail_url,width_cm:Number(f.get('width_cm'))||4,height_cm:Number(f.get('height_cm'))||4,patch_group:patch_groups[0]||'Best Seller',patch_groups,price:f.get('price')?Number(f.get('price')):null,release_status:f.get('release_status')==='coming_soon'?'coming_soon':'released',stock_quantity:Math.max(0,Number(f.get('stock_quantity'))||0),quote:String(f.get('quote')||'').trim(),active:true,sort_order:Number(f.get('sort_order'))||100};await call('patches',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)});setEditingPatch(null);e.currentTarget.reset();await refresh();setMsg(f.get('id')?'Đã cập nhật patch.':'Đã lưu patch.');}
- const money=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))?`${new Intl.NumberFormat('vi-VN').format(Number(v))}đ`:'Chưa set';
- const patchText=d=>(d.patches||[]).map(x=>`${x.name}${x.view?` · ${viewLabel(x.view)}`:''} · ${money(x.price)}`).join(', ');
- const viewLabel=id=>PRODUCT_VIEWS.find(([key])=>key===id)?.[1]||'Mặt trước';
- const allOrders=[...items.map(order=>({...order,orderType:'design'})),...patchOrders.map(order=>({...order,orderType:'patch'}))].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
- const visibleOrders=orderFilter==='all'?allOrders:allOrders.filter(order=>order.orderType===orderFilter);
- const productFamilies=Array.from(products.reduce((map,p)=>{const key=productBaseKey(p);map.set(key,[...(map.get(key)||[]),p]);return map;},new Map()).entries()).map(([key,variants])=>({key,primary:variants[0],variants:[...variants].sort((a,b)=>String(a.color||'').localeCompare(String(b.color||''),'vi'))}));
- const savedBrand=settings.brand||{};
- const defaultPatchGroups=['all',...Array.from(new Set(patches.flatMap(patchGroupsOf)))];
- const brand={...BRAND_DEFAULTS,...savedBrand,step1Desktop:savedBrand.step1Desktop||savedBrand.step1Label||BRAND_DEFAULTS.step1Desktop,step1Mobile:savedBrand.step1Mobile||savedBrand.step1Label||BRAND_DEFAULTS.step1Mobile,step2Desktop:savedBrand.step2Desktop||savedBrand.step2Label||BRAND_DEFAULTS.step2Desktop,step2Mobile:savedBrand.step2Mobile||savedBrand.step2Label||BRAND_DEFAULTS.step2Mobile,productGroupImages:{...BRAND_DEFAULTS.productGroupImages,...(savedBrand.productGroupImages||{})},productGroups:normalizeProductGroups(savedBrand.productGroups)};
- const halloweenFeatures=normalizeHalloweenFeatures(settings.halloweenFeatures);
-
- if(loading)return <main className="admin-shell"><div className="admin-loading">Đang tải dashboard…</div></main>;
- if(!user)return <main className="admin-shell"><div className="login-card"><a className="brand" href="/"><AdminBrandMark brand={brand}/> <span>{brand.brandName||'Patchie'}</span></a><div className="eyebrow">KHU VỰC QUẢN TRỊ</div><h1>Đăng nhập shop</h1><p>Đăng nhập bằng email được thêm vào biến <code>ADMIN_EMAILS</code>.</p><form onSubmit={login}><label>Email quản trị<input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="ban@patchie.vn"/></label><button className="button dark full">Gửi link đăng nhập</button></form>{msg&&<p className="admin-msg">{msg}</p>}<a className="back-link" href="/">← Về studio</a></div></main>;
- return <main className="admin-shell"><header className="admin-top"><a className="brand" href="/"><span className="brand-mark">P</span> Patchie <small>ADMIN</small></a><div>{user.email}<button className="admin-logout" onClick={async()=>{await supa().auth.signOut();setUser(null);}}>Đăng xuất</button></div></header><div className="admin-layout"><nav className="admin-nav">{[['requests','Đơn hàng'],['products','Sản phẩm base'],['patches','Thư viện patch'],['settings','Thương hiệu & nội dung']].map(([id,label])=><button key={id} className={tab===id?'sel':''} onClick={()=>setTab(id)}>{label}</button>)}<a className="admin-nav-market" href="/admin/product-designs">Mẫu phối sẵn ↗</a><a className="admin-nav-market" href="/admin/import">Import nhiều patch ↗</a><a className="admin-nav-market" href="/admin/recommendations">Upload quy tắc gợi ý ↗</a><a className="admin-nav-market" href="/admin/market">Quản lý Patch Market ↗</a><a className="admin-nav-market" href="/admin/gallery">Quản lý Lookbook ↗</a></nav><section className="admin-content"><div className="admin-heading"><div><small>PATCHIE STUDIO</small><h1>{({requests:'Đơn hàng',products:'Sản phẩm base',patches:'Thư viện patch',settings:'Thương hiệu & nội dung'})[tab]}</h1></div><div className="admin-heading-links"><a href="/admin/product-designs">Mẫu phối sẵn ↗</a><a href="/admin/import">Import patch ↗</a><a href="/admin/recommendations">Quy tắc gợi ý ↗</a><a href="/admin/market">Patch Market ↗</a><a href="/admin/gallery">Lookbook ↗</a><a href="/">Mở studio ↗</a></div></div>{msg&&<div className="admin-msg">{msg}</div>}
- {tab==='requests'&&<><div className="stats-grid">{[['Đơn thiết kế mới',summary.new||0],['Đang xem',summary.review||0],['Đã xác nhận',summary.confirmed||0],['Đơn patch',patchOrders.length]].map(([l,n])=><div className="stat" key={l}><b>{n}</b><span>{l}</span></div>)}</div><div className="order-filter-row"><label>Lọc loại đơn<select value={orderFilter} onChange={e=>setOrderFilter(e.target.value)}><option value="all">Tất cả đơn hàng ({allOrders.length})</option><option value="design">Đơn thiết kế ({items.length})</option><option value="patch">Đơn patch ({patchOrders.length})</option></select></label></div><div className={`admin-card ${orderFilter==='patch'?'order-hidden':''}`}><h2>Đơn thiết kế</h2><div className="table-scroll"><table><thead><tr><th>Mã / khách</th><th>Liên hệ / nhận hàng</th><th>Base & size</th><th>Patch</th><th>Tổng đơn</th><th>Mockup</th><th>Trạng thái</th><th></th></tr></thead><tbody>{items.map(d=><tr key={d.id}><td><b>{d.id}</b><br/>{d.customer_name}<small>{new Date(d.created_at).toLocaleDateString('vi-VN')}</small></td><td>{d.customer_phone||'Chưa có SĐT'}<small>{d.shipping_address||'Chưa có địa chỉ'}</small></td><td>{d.products?.name||d.product_id}<br/>Size {d.size} · {d.mode==='shop'?'Shop ủi':'Tự ủi'}<small>Base: {money(d.product_price ?? d.products?.price)}</small></td><td>{patchText(d)}</td><td><b>{money(d.total_price)}</b></td><td>{d.imageUrl&&<a href={d.imageUrl} target="_blank">Xem ảnh ↗</a>}</td><td><select value={d.status} onChange={e=>status(d.id,e.target.value)}>{['new','review','confirmed','completed','closed'].map(s=><option key={s}>{s}</option>)}</select></td><td><button className="delete-btn" onClick={()=>remove('designs',d.id)}>Xóa</button></td></tr>)}</tbody></table>{!items.length&&<p>Chưa có đơn thiết kế.</p>}</div></div><div className={`admin-card ${orderFilter==='design'?'order-hidden':''}`}><h2>Đơn patch</h2><p className="admin-help">Đơn khách mua patch riêng từ Patch Market. Cập nhật trạng thái tại đây, không cần vào trang quản lý riêng.</p><div className="table-scroll"><table><thead><tr><th>Mã / thời gian</th><th>Khách nhận hàng</th><th>Patch</th><th>Tổng</th><th>Trạng thái</th></tr></thead><tbody>{patchOrders.map(order=><tr key={order.id}><td><b>{order.id}</b><small>{new Date(order.created_at).toLocaleString('vi-VN')}</small></td><td>{order.customer_name}<small>{order.customer_phone||'Chưa có SĐT'}<br/>{order.shipping_address||'Chưa có địa chỉ'}</small></td><td>{(order.patch_order_items||[]).map(item=><div key={item.id}>{item.patch_name} × {item.quantity}</div>)}</td><td><b>{money(order.total_price)}</b></td><td><select value={order.status} onChange={e=>patchStatus(order.id,e.target.value)}>{['new','confirmed','completed','closed'].map(statusValue=><option key={statusValue} value={statusValue}>{statusValue}</option>)}</select></td></tr>)}</tbody></table>{!patchOrders.length&&<p>Chưa có đơn patch.</p>}</div></div></>}
- {tab==='products'&&<><div className="admin-card product-edit-card"><h2>{editingProduct?.id?'Sửa variation màu':editingProduct?.name?`Thêm màu cho ${editingProduct.name}`:'Thêm sản phẩm base'}</h2><form key={`${editingProduct?.id||editingProduct?.name||'new-product'}-${editingProduct?.color||''}`} className="edit-form product-form" onSubmit={saveProduct}><input type="hidden" name="id" defaultValue={editingProduct?.id||''}/><input name="sku" defaultValue={editingProduct?.sku||''} placeholder="SKU của màu này, ví dụ TEE-OVS-RED"/><select name="product_type" value={productType} onChange={e=>setProductType(e.target.value)}>{brand.productGroups.map(group=><option key={group.id||group.value} value={group.id||group.value}>{group.label}</option>)}</select><input name="name" required defaultValue={editingProduct?.name||''} placeholder="Tên sản phẩm chính, ví dụ RED TEA"/><input name="color" required defaultValue={editingProduct?.color||''} placeholder="Tên màu / variation con"/><input name="hex" defaultValue={editingProduct?.hex||'#f5f1e8'} placeholder="Mã màu #hex để hiện swatch"/><input name="sizes" defaultValue={(editingProduct?.sizes||['S','M','L','XL']).join(', ')} placeholder="Sizes, cách nhau bằng dấu phẩy"/><input name="price" type="number" defaultValue={editingProduct?.price??''} placeholder="Giá màu này"/><fieldset className="product-thumbnail-field"><legend>Ảnh thumbnail sản phẩm</legend><small className="admin-help">Ảnh này dùng ở bước chọn mẫu base. Có thể tải file PNG/JPG/WebP hoặc dán URL; ảnh mockup các mặt vẫn dùng trường riêng bên dưới.</small>{editingProduct?.thumbnail_url&&<img className="product-thumbnail-preview" src={editingProduct.thumbnail_url} alt="Thumbnail hiện tại"/>}<input name="thumbnail_file" type="file" accept="image/png,image/jpeg,image/webp"/><input name="thumbnail_url" defaultValue={editingProduct?.thumbnail_url||''} placeholder="URL thumbnail (tuỳ chọn)"/></fieldset><label className="wide theme-toggle product-active-toggle"><input type="checkbox" name="active" defaultChecked={editingProduct?.active!==false}/> Hiển thị sản phẩm này trên website<small className="admin-help">Tắt để ẩn base/màu này khỏi danh sách khách hàng. Ảnh của sản phẩm đã tắt sẽ không được tải ở front end.</small></label><div className="scale-reference-fields"><b>Hệ quy chiếu scale patch cho sản phẩm này</b><p className="admin-help">Nhập kích thước thực của toàn bộ vùng mockup. Tỉ lệ ảnh giúp quy đổi vùng đó vào khung vuông đang hiển thị; dùng chung cho các màu cùng mẫu.</p><label>Vùng mockup rộng (cm)<input name="reference_width_cm" type="number" min="0.1" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.reference_width_cm??''} placeholder="Ví dụ: ngang thân áo"/></label><label>Vùng mockup cao (cm)<input name="reference_height_cm" type="number" min="0.1" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.reference_height_cm??''} placeholder="Ví dụ: dài thân áo"/></label><label>Ảnh sản phẩm chiếm ngang (%)<input name="image_fit_percent" type="number" min="1" max="100" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.image_fit_percent??''} placeholder="Ví dụ: 30"/></label><label>Ảnh sản phẩm chiếm dọc (%)<input name="image_fit_height_percent" type="number" min="1" max="100" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.image_fit_height_percent??editingProduct?.image_fit_percent??''} placeholder="Ví dụ: 80"/></label><small className="admin-help">Nhập phần sản phẩm nhìn thấy chiếm trong khung ảnh theo từng trục. Ví dụ dây keychain chiếm 30% ngang và 80% dọc. Base cũ chưa có số dọc sẽ tạm dùng giá trị ngang để giữ scale cũ.</small></div><div className="patch-size-limit-fields"><b>Kích thước patch được phép dùng với base này</b><p className="admin-help">Giới hạn theo kích thước thật của patch (cm). Để trống hoặc nhập 0 nếu không giới hạn. Áp dụng cho Tự Phối và Patchie Gợi Ý.</p><label>Rộng tối thiểu (cm)<input name="min_patch_width_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.min_patch_width_cm??""} placeholder="Không giới hạn"/></label><label>Rộng tối đa (cm)<input name="max_patch_width_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.max_patch_width_cm??""} placeholder="Không giới hạn"/></label><label>Cao tối thiểu (cm)<input name="min_patch_height_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.min_patch_height_cm??""} placeholder="Không giới hạn"/></label><label>Cao tối đa (cm)<input name="max_patch_height_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.max_patch_height_cm??""} placeholder="Không giới hạn"/></label></div><div className="snap-behavior-fields"><b>Điều khiển gợi ý vị trí</b><label><input name="snap_guide_enabled" type="checkbox" defaultChecked={editingProduct?.snap_guide_enabled!==false}/> Hiện đường guide khi patch đến gần</label><label><input name="snap_attraction_enabled" type="checkbox" defaultChecked={editingProduct?.snap_attraction_enabled!==false}/> Bật lực hút/căn chỉnh</label><label className="snap-strength-control">Lực hút <input name="snap_strength_percent" type="range" min="0" max="100" step="5" defaultValue={editingProduct?.snap_strength_percent??45} onInput={e=>{e.currentTarget.nextElementSibling.value=`${e.currentTarget.value}%`;}}/><output>{editingProduct?.snap_strength_percent??45}%</output></label><small className="admin-help">Có thể bật guide nhưng tắt lực hút. Trên mobile, lực hút giảm dần khi khách phóng to để đặt patch chính xác hơn.</small></div><div className="snap-points-editor"><div><b>Điểm hút patch & căn hàng</b><p className="admin-help">Chọn mặt rồi chạm ảnh để thêm điểm. Kéo chấm để chỉnh vị trí; bấm dấu × để xóa. Khi các điểm gần thẳng hàng ngang, dọc hoặc chéo, Patchie sẽ hiện guide và tự căn giúp bạn.</p></div><label>Mặt mockup<select value={snapView} onChange={e=>setSnapView(e.target.value)}>{(PRODUCT_VIEW_SETS[productGroupKind(productType,brand.productGroups)]||PRODUCT_VIEW_SETS.shirt).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><div className="snap-points-canvas" ref={snapCanvasRef} onClick={addSnapPoint} onPointerMove={previewSnapPoint}>{(editingProduct?.view_images?.[snapView]||(snapView==='front'?editingProduct?.image_url:''))?<img src={editingProduct?.view_images?.[snapView]||(snapView==='front'?editingProduct?.image_url:'')} alt="Mockup để đặt điểm hút"/>:<div className="snap-canvas-empty">Lưu sản phẩm và ảnh mặt này trước để đặt điểm.</div>}{snapEditorGuide&&<svg className="snap-editor-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{snapEditorGuide.kind==='vertical'?<line x1={snapEditorGuide.x*100} y1="0" x2={snapEditorGuide.x*100} y2="100"/>:snapEditorGuide.kind==='horizontal'?<line x1="0" y1={snapEditorGuide.y*100} x2="100" y2={snapEditorGuide.y*100}/>:snapEditorGuide.line?<line x1={snapEditorGuide.line.x1*100} y1={snapEditorGuide.line.y1*100} x2={snapEditorGuide.line.x2*100} y2={snapEditorGuide.line.y2*100}/>:null}</svg>}{snapPoints.map((point,index)=>point.view===snapView&&point.type!=='line'?<span key={`${point.view}-${index}`} className="snap-point-marker" style={{left:`${point.x*100}%`,top:`${point.y*100}%`}} onPointerDown={e=>startMoveSnapPoint(e,index)} onPointerUp={stopMoveSnapPoint} onPointerCancel={stopMoveSnapPoint} onClick={e=>e.stopPropagation()}><button type="button" aria-label="Xóa điểm hút" onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();removeSnapPoint(index);}}>×</button></span>:null)}</div><small className="admin-help">{snapPoints.filter(point=>point.view===snapView&&point.type!=='line').length} điểm ở mặt này · điểm được dùng chung cho các màu của cùng mẫu.</small></div><div className="view-upload-grid">{(PRODUCT_VIEW_SETS[productGroupKind(productType,brand.productGroups)]||PRODUCT_VIEW_SETS.shirt).map(([key,label])=><fieldset key={key}><legend>{label}</legend><input name={`${key}_file`} type="file" accept="image/png,image/jpeg,image/webp"/><input name={`${key}_url`} defaultValue={editingProduct?.view_images?.[key]||(key==='front'?(editingProduct?.image_url||(!editingProduct?'/assets/blank-tee.webp':'')):'')} placeholder={`URL ảnh ${label.toLowerCase()}`}/></fieldset>)}</div><button className="button dark">{editingProduct?.id?'Lưu thay đổi':'Lưu sản phẩm / màu'}</button>{editingProduct&&<button type="button" className="button ghost" onClick={()=>{setEditingProduct(null);setProductType('shirt');}}>Hủy sửa</button>}</form></div><div className="admin-card"><h2>Sản phẩm chính</h2><p className="admin-help">Mỗi sản phẩm chính gom các màu bên dưới. Bấm “Thêm màu” để tạo variation con.</p>{productFamilies.map(({key,primary,variants})=><div className="product-family" key={key}><div className="product-family-head"><img src={primary.thumbnail_url||primary.view_images?.front||primary.image_url}/><div className="product-family-copy"><b>{primary.name}</b><span>{productTypeLabel(primary.product_type,brand.productGroups)} · {variants.length} màu</span><small>Nhóm sản phẩm chính · khách sẽ chọn mẫu này trước rồi mới chọn màu</small><small>Scale: {primary.reference_width_cm&&primary.reference_height_cm&&primary.image_fit_percent?`${primary.reference_width_cm} × ${primary.reference_height_cm} cm · ảnh ${primary.image_fit_percent}% ngang × ${primary.image_fit_height_percent??primary.image_fit_percent}% dọc`:'đang dùng mặc định cũ'}</small></div><button className="edit-btn" onClick={()=>toggleProductFamily(variants)}>{variants.every(p=>p.active===false)?"Bật mẫu":"Tắt mẫu"}</button><button className="edit-btn" onClick={()=>addVariation(primary)}>＋ Thêm màu</button></div><div className="product-variants">{variants.map(p=><div className="product-variant" key={p.id}><img src={p.thumbnail_url||p.view_images?.front||p.image_url}/><div><b><i className="admin-color-dot" style={{backgroundColor:p.hex||'#f5f1e8'}}></i>{p.color||'Chưa đặt màu'}</b><span>{money(p.price)}{p.sku?` · ${p.sku}`:''} · {(p.sizes||[]).join(', ')}</span><small>{Object.values(p.view_images||{}).filter(Boolean).length}/{(PRODUCT_VIEW_SETS[productGroupKind(p.product_type||'shirt',brand.productGroups)]||PRODUCT_VIEW_SETS.shirt).length} ảnh mockup</small></div><div className="admin-actions"><button className="edit-btn" onClick={()=>editProduct(p)}>Sửa</button><button className="delete-btn" onClick={()=>remove('products',p.id)}>Xóa</button></div></div>)}</div></div>)}</div></>}
- {tab==='patches'&&<><div className="admin-card patch-edit-card"><h2>{editingPatch?'Sửa patch':'Thêm patch'}</h2><form key={editingPatch?.id||'new-patch'} className="edit-form" onSubmit={savePatch}><datalist id="patch-groups">{PATCH_GROUPS.map(g=><option key={g} value={g}/>)}</datalist><input type="hidden" name="id" defaultValue={editingPatch?.id||''}/><input name="name" required defaultValue={editingPatch?.name||''} placeholder="Tên patch"/><input name="width_cm" type="number" step="0.1" defaultValue={editingPatch?.width_cm||4} placeholder="Rộng (cm)"/><input name="height_cm" type="number" step="0.1" defaultValue={editingPatch?.height_cm||4} placeholder="Cao (cm)"/><input name="patch_groups" list="patch-groups" defaultValue={(editingPatch?.patch_groups?.length?editingPatch.patch_groups:[editingPatch?.patch_group||'Best Seller']).join(', ')} placeholder="Groups, ví dụ Best Seller, Cute Animal"/><input name="price" type="number" defaultValue={editingPatch?.price??''} placeholder="Giá (để trống nếu chưa chốt)"/><input name="stock_quantity" type="number" min="0" step="1" defaultValue={editingPatch?.stock_quantity??20} placeholder="Số lượng tồn kho"/><label className="patch-release-field">Trạng thái release<select name="release_status" defaultValue={editingPatch?.release_status||'released'}><option value="released">Đã release — khách được chọn</option><option value="coming_soon">Coming soon — chỉ xem, chưa chọn</option></select><small className="admin-help">Coming soon vẫn hiện ở Studio và trong collection, nhưng khách không thể thêm vào mockup.</small></label><input name="file" type="file" accept="image/png,image/jpeg,image/webp"/><input name="image_url" defaultValue={editingPatch?.image_url||''} placeholder="Hoặc URL ảnh có sẵn"/><input name="quote" defaultValue={editingPatch?.quote||''} placeholder="Quote khi khách chọn patch"/><input name="sort_order" type="number" defaultValue={editingPatch?.sort_order||100} placeholder="Thứ tự trong group"/><button className="button dark">{editingPatch?'Lưu thay đổi':'Thêm patch'}</button>{editingPatch&&<button type="button" className="button ghost" onClick={()=>setEditingPatch(null)}>Hủy sửa</button>}</form></div><div className="admin-card bulk-card"><h2>Thao tác patch hàng loạt</h2><form className="bulk-form" onSubmit={bulkPatchOperation}><label>Thao tác<select value={bulkPatchAction} onChange={e=>setBulkPatchAction(e.target.value)}><option value="out_of_stock">Đánh dấu hết hàng</option><option value="coming_soon">Chuyển sang Coming soon</option><option value="limited">Gắn group Limited</option><option value="delete">Xóa vĩnh viễn</option></select></label><label className="bulk-patch-search"><span aria-hidden="true">⌕</span><input type="search" value={bulkOperationSearch} onChange={e=>setBulkOperationSearch(e.target.value)} placeholder="Tìm patch theo tên…" aria-label="Tìm patch theo tên"/>{bulkOperationSearch&&<button type="button" onClick={()=>setBulkOperationSearch('')} aria-label="Xóa tìm kiếm">×</button>}</label><div className="bulk-actions"><button type="button" onClick={()=>selectFilteredPatches(filteredBulkPatches)}>Chọn tất cả đang lọc</button><button type="button" onClick={()=>setSelectedPatchIds([])}>Bỏ chọn</button><span>{selectedPatchIds.length} patch được chọn</span></div><div className="bulk-patch-list">{filteredBulkPatches.map(p=><label key={p.id} className={selectedPatchIds.includes(p.id)?'selected':''}><input type="checkbox" checked={selectedPatchIds.includes(p.id)} onChange={()=>togglePatch(p.id)}/><img src={p.image_url}/><span><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')} · Tồn: {Number(p.stock_quantity??20)}</small></span></label>)}</div><button className="button dark">Thực hiện thao tác</button></form><h3>Gán group hàng loạt</h3><form className="bulk-form" onSubmit={bulkPatchGroup}><label>Lọc patch đang thuộc group<select value={bulkSourceGroup} onChange={e=>setBulkSourceGroup(e.target.value)}>{adminGroups.map(g=><option key={g} value={g}>{g==='all'?'Tất cả':g} ({groupCount(g)})</option>)}</select></label><label>Thêm vào group<input list="patch-groups" value={bulkGroup} onChange={e=>setBulkGroup(e.target.value)} placeholder="Ví dụ Floral hoặc Best Seller, Floral"/></label><label className="bulk-patch-search"><span aria-hidden="true">⌕</span><input type="search" value={bulkGroupSearch} onChange={e=>setBulkGroupSearch(e.target.value)} placeholder="Tìm patch theo tên…" aria-label="Tìm patch theo tên"/>{bulkGroupSearch&&<button type="button" onClick={()=>setBulkGroupSearch('')} aria-label="Xóa tìm kiếm">×</button>}</label><div className="bulk-actions"><button type="button" onClick={()=>selectFilteredPatches(filteredGroupPatches)}>Chọn tất cả đang lọc</button><button type="button" onClick={()=>setSelectedPatchIds([])}>Bỏ chọn</button><span>{selectedPatchIds.length} patch được chọn</span></div><div className="bulk-patch-list">{filteredGroupPatches.map(p=><label key={p.id} className={selectedPatchIds.includes(p.id)?'selected':''}><input type="checkbox" checked={selectedPatchIds.includes(p.id)} onChange={()=>togglePatch(p.id)}/><img src={p.image_url}/><span><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')}</small></span></label>)}</div><button className="button dark">Thêm group</button></form></div><div className="admin-card"><h2>Thumbnail cho patch</h2><p className="admin-help">Ảnh mới tự có thumbnail khi upload. Dùng nút này một lần để tạo thumbnail cho patch đã có sẵn.</p><button type="button" className="button light" onClick={generateMissingPatchThumbnails} disabled={!patches.some(p=>!p.thumbnail_url)}>Tạo thumbnail còn thiếu ({patches.filter(p=>!p.thumbnail_url).length})</button></div><div className="patch-admin-grid">{patches.map(p=><div className="admin-patch" key={p.id}><img src={p.image_url}/><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')} · {p.width_cm} × {p.height_cm} cm · Tồn {Number(p.stock_quantity??20)} · {p.release_status==='coming_soon'?'COMING SOON':money(p.price)}{p.quote?" · "+p.quote:""}</small><em className={!Number(p.stock_quantity??20)?'release-tag is-out-of-stock':p.release_status==='coming_soon'?'release-tag is-coming-soon':'release-tag'}>{!Number(p.stock_quantity??20)?'HẾT HÀNG':p.release_status==='coming_soon'?'COMING SOON':'ĐÃ RELEASE'}</em><div className="admin-actions"><button className="edit-btn" onClick={()=>editPatch(p)}>Sửa</button><button className="delete-btn" onClick={()=>remove('patches',p.id)}>Xóa</button></div></div>)}</div></>}
- {tab==='settings'&&<PopupCampaignSettings settings={settings} patches={patches} onChange={setSettings}/>} {tab==='settings'&&<><div className="admin-card brand-edit-card"><h2>Thương hiệu & nội dung hiển thị</h2><p className="admin-help">Các trường ở đây chỉ thay đổi phần nhận diện và câu chữ trên giao diện. Chức năng custom không bị thay đổi.</p><form key={`brand-${brand.brandName}-${brand.logoUrl}`} className="settings-form brand-form" onSubmit={saveBrand}><label>Tên Patchie<input name="brandName" defaultValue={brand.brandName} placeholder="Patchie"/></label><label>Slogan<input name="slogan" defaultValue={brand.slogan} placeholder="Customize your everyday"/></label><label>Font chữ<select name="fontFamily" defaultValue={brand.fontFamily}><option>DM Sans</option><option>Manrope</option><option>Arial</option><option>Georgia</option></select></label><label>Logo URL<input name="logoUrl" defaultValue={brand.logoUrl} placeholder="https://.../logo.png"/></label><label className="wide">Hoặc tải logo lên<input name="logoFile" type="file" accept="image/png,image/jpeg,image/webp"/></label><label>Ảnh nhóm Áo Tee URL<input name="shirtGroupUrl" defaultValue={brand.productGroupImages?.shirt||''} placeholder="Ảnh dùng trong drop box Áo Tee"/></label><label>Ảnh nhóm Túi Tote URL<input name="bagGroupUrl" defaultValue={brand.productGroupImages?.bag||''} placeholder="Ảnh dùng trong drop box Túi Tote"/></label><div className="brand-image-grid"><label>Hoặc tải ảnh nhóm Áo Tee<input name="shirtGroupFile" type="file" accept="image/png,image/jpeg,image/webp"/></label><label>Hoặc tải ảnh nhóm Túi Tote<input name="bagGroupFile" type="file" accept="image/png,image/jpeg,image/webp"/></label></div><div className="product-group-editor wide"><div className="product-group-editor-head"><div><h3>Nhóm sản phẩm & ảnh đại diện</h3><p className="admin-help">Đổi tên, thêm nhóm mới và chọn loại layout. Nhóm mới sẽ xuất hiện trong form thêm sản phẩm để bạn gắn sản phẩm vào đúng nhóm.</p></div><button type="button" className="button ghost" onClick={saveProductGroups}>Lưu nhóm sản phẩm</button></div><div className="product-group-editor-list">{productGroupDrafts.map((group,index)=><div className="product-group-editor-row" key={group.id||index}><div className="product-group-editor-fields"><label>Tên nhóm<input name={`group_label_${index}`} value={group.label||''} onChange={e=>updateProductGroupDraft(index,'label',e.target.value)} placeholder="Tên nhóm sản phẩm"/></label><label>Layout<select name={`group_kind_${index}`} value={group.kind||'shirt'} onChange={e=>updateProductGroupDraft(index,'kind',e.target.value)}><option value="shirt">Áo · 4 mặt</option><option value="bag">Túi · mặt trước và mặt sau</option></select></label><label>Ảnh nhóm URL<input name={`group_url_${index}`} defaultValue={group.imageUrl||brand.productGroupImages?.[group.id||group.value]||''} placeholder="URL ảnh đại diện nhóm"/></label><label>Hoặc tải ảnh<input name={`group_file_${index}`} type="file" accept="image/png,image/jpeg,image/webp"/></label></div><button type="button" className="delete-btn" onClick={()=>removeProductGroupDraft(index)}>Xóa nhóm</button></div>)}</div><div className="product-group-add-row"><input value={newProductGroupName} onChange={e=>setNewProductGroupName(e.target.value)} placeholder="Tên nhóm mới, ví dụ Hoodies"/><select value={newProductGroupKind} onChange={e=>setNewProductGroupKind(e.target.value)}><option value="shirt">Áo · 4 mặt</option><option value="bag">Túi · mặt trước và mặt sau</option></select><button type="button" className="button light" onClick={addProductGroupDraft}>＋ Thêm nhóm</button></div></div><label>Eyebrow trang chủ<input name="heroEyebrow" defaultValue={brand.heroEyebrow}/></label><label>Tiêu đề chính<input name="heroTitle" defaultValue={brand.heroTitle}/></label><label>Dòng nhấn tiêu đề<input name="heroAccent" defaultValue={brand.heroAccent}/></label><label className="wide">Mô tả hướng dẫn trên trang chủ<textarea name="heroDescription" rows="3" defaultValue={brand.heroDescription}/></label><label>Nhãn bước 1 desktop<input name="step1Desktop" defaultValue={brand.step1Desktop||brand.step1Label}/></label><label>Nhãn bước 1 mobile<input name="step1Mobile" defaultValue={brand.step1Mobile||brand.step1Label}/></label><label>Tên bước 1<input name="step1Title" defaultValue={brand.step1Title}/></label><label>Nhãn bước 2 desktop<input name="step2Desktop" defaultValue={brand.step2Desktop||brand.step2Label}/></label><label>Nhãn bước 2 mobile<input name="step2Mobile" defaultValue={brand.step2Mobile||brand.step2Label}/></label><label>Nhãn bước 3<input name="step3Label" defaultValue={brand.step3Label}/></label><label>Nút thêm patch desktop<input name="addPatchLabel" defaultValue={brand.addPatchLabel}/></label><label>Nút thêm patch mobile<input name="mobileAddPatchLabel" defaultValue={brand.mobileAddPatchLabel}/></label><button className="button dark">Lưu thương hiệu</button></form></div><div className="admin-card"><h2>Thông tin website</h2><form className="settings-form" onSubmit={saveSettings}><label>Link Messenger<input value={settings.messengerUrl||''} onChange={e=>setSettings({...settings,messengerUrl:e.target.value})} placeholder="https://m.me/ten-shop"/></label><label>Size áo mặc định<input value={Array.isArray(settings.sizes)?settings.sizes.join(', '):settings.sizes||''} onChange={e=>setSettings({...settings,sizes:e.target.value})} placeholder="S, M, L, XL"/></label><label>Thời hạn lưu yêu cầu (ngày)<input type="number" min="1" max="3650" value={settings.retentionDays||30} onChange={e=>setSettings({...settings,retentionDays:e.target.value})}/></label><label>Email admin bổ sung, ngăn cách bằng dấu phẩy<input value={Array.isArray(settings.adminEmails)?settings.adminEmails.join(', '):settings.adminEmails||''} onChange={e=>setSettings({...settings,adminEmails:e.target.value})}/></label><label className="wide">Thông báo quyền riêng tư<textarea rows="4" value={settings.privacyText||''} onChange={e=>setSettings({...settings,privacyText:e.target.value})}/></label><label className="wide">Sản phẩm base mở mặc định khi khách vào web<select value={products.some(product=>product.id===settings.defaultProductId&&product.active!==false)?settings.defaultProductId:(products.find(product=>product.active!==false)?.id||'')} onChange={e=>setSettings({...settings,defaultProductId:e.target.value})}><option value="">Sản phẩm đầu tiên đang bật</option>{products.filter(product=>product.active!==false).map(product=><option key={product.id} value={product.id}>{product.name}{product.color?` · ${product.color}`:''}</option>)}</select><small className="admin-help">Chọn cả màu variation cụ thể. Nếu lựa chọn bị ẩn hoặc xóa sau này, website tự chuyển về sản phẩm đang bật đầu tiên.</small></label><label className="wide">Nhóm patch mở mặc định khi khách custom<select value={settings.defaultPatchGroup||'all'} onChange={e=>setSettings({...settings,defaultPatchGroup:e.target.value})}><option value="all">Tất cả patch</option>{defaultPatchGroups.filter(g=>g!=='all').map(g=><option key={g} value={g}>{g}</option>)}</select><small className="admin-help">Backend có thể chọn Tất cả hoặc một collection đang có patch; khách sẽ mở thẳng vào nhóm này.</small></label><label className="wide">Thứ tự nhóm patch khi khách chọn<input value={Array.isArray(settings.patchGroupOrder)?settings.patchGroupOrder.join(', '):settings.patchGroupOrder||''} onChange={e=>setSettings({...settings,patchGroupOrder:e.target.value})} placeholder="Best Seller, Chữ Cái, Seasonal"/><small className="admin-help">Nhóm đứng trước sẽ xuất hiện trước. Các nhóm mới chưa nhập sẽ tự nối ở cuối.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.patchGroupHighlightEnabled!==false} onChange={e=>setSettings({...settings,patchGroupHighlightEnabled:e.target.checked})}/> Nhấn nhẹ 3 nhóm patch đầu<small className="admin-help">Mỗi nhóm đầu có một accent riêng, thiết kế nhẹ để vẫn giữ chất Patchie.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.patchSuggestionsEnabled!==false} onChange={e=>setSettings({...settings,patchSuggestionsEnabled:e.target.checked})}/> Bật Patchie gợi ý trong giao diện custom<small className="admin-help">Gợi ý hiện sau khi khách thêm patch đầu tiên, và tự ẩn khi bấm “Đã custom xong rồi”.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.halloweenThemeEnabled!==false} onChange={e=>setSettings({...settings,halloweenThemeEnabled:e.target.checked})}/> Bật theme Halloween toàn website<small className="admin-help">Thêm decoration Halloween nhẹ cho Studio, Patch Market và Lookbook.</small></label><div className="wide halloween-feature-toggles"><b>Hiệu ứng Halloween</b><label><input type="checkbox" checked={halloweenFeatures.spider} onChange={e=>setSettings({...settings,halloweenFeatures:{...halloweenFeatures,spider:e.target.checked}})}/> Pumpkin Spider</label><label><input type="checkbox" checked={halloweenFeatures.cobwebs} onChange={e=>setSettings({...settings,halloweenFeatures:{...halloweenFeatures,cobwebs:e.target.checked}})}/> Mạng nhện mờ</label><label><input type="checkbox" checked={halloweenFeatures.bats} onChange={e=>setSettings({...settings,halloweenFeatures:{...halloweenFeatures,bats:e.target.checked}})}/> Đàn dơi khi chọn patch</label><label><input type="checkbox" checked={halloweenFeatures.fireworks} onChange={e=>setSettings({...settings,halloweenFeatures:{...halloweenFeatures,fireworks:e.target.checked}})}/> Bí ngô vỡ & pháo hoa</label></div><button className="button dark">Lưu cài đặt</button></form><p className="admin-help">Email admin chính được quản lý trong biến môi trường ADMIN_EMAILS trên Vercel. Danh sách bổ sung có thể cập nhật tại đây.</p></div></>}
+  useEffect(() => {
+    refresh();
+  }, []);
+  useEffect(() => {
+    setProductGroupDrafts(normalizeProductGroups(settings.brand?.productGroups));
+  }, [settings.brand?.productGroups]);
+  useEffect(() => {
+    const form = document.querySelector('.product-form'),
+      price = form?.querySelector('input[name="price"]');
+    if (!form || !price || form.querySelector('textarea[name="size_guide"]')) return;
+    const label = document.createElement('label');
+    label.className = 'size-guide-admin-field';
+    const title = document.createElement('span');
+    title.textContent = 'Hướng dẫn chọn size';
+    const field = document.createElement('textarea');
+    field.name = 'size_guide';
+    field.rows = 2;
+    field.placeholder = 'Ví dụ: S 45–55kg · M 55–65kg · form oversize';
+    field.value = editingProduct?.size_guide || '';
+    label.append(title, field);
+    price.parentNode?.insertBefore(label, price.nextSibling);
+    return () => label.remove();
+  }, [editingProduct, productType]);
+  useEffect(() => {
+    if (tab !== 'requests') return;
+    const card = Array.from(document.querySelectorAll('.admin-card')).find(item => item.querySelector('h2')?.textContent === 'Đơn patch'),
+      rows = card?.querySelectorAll('tbody tr');
+    if (!rows) return;
+    const cleanups = [];
+    Array.from(rows).forEach((row, index) => {
+      const cell = row.lastElementChild;
+      if (!cell || !patchOrders[index]) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'delete-btn';
+      button.textContent = 'Xóa đơn';
+      const handler = () => remove('patch-orders', patchOrders[index].id);
+      button.addEventListener('click', handler);
+      cell.appendChild(button);
+      cleanups.push(() => button.removeEventListener('click', handler));
+    });
+    return () => cleanups.forEach(cleanup => cleanup());
+  }, [tab, patchOrders]);
+  async function login(e) {
+    e.preventDefault();
+    setMsg('Đang gửi link đăng nhập…');
+    const {
+      error
+    } = await supa().auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${location.origin}/auth/callback`
+      }
+    });
+    setMsg(error?.message || 'Đã gửi link đăng nhập vào email.');
+  }
+  async function status(id, status) {
+    await call('designs', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        id,
+        status
+      })
+    });
+    await refresh();
+  }
+  async function patchStatus(id, status) {
+    await call('patch-orders', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        id,
+        status
+      })
+    });
+    await refresh();
+  }
+  async function remove(section, id) {
+    if (!confirm('Xóa mục này?')) return;
+    try {
+      const response = await fetch(`/api/admin/${section}?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        }),
+        result = await response.json();
+      if (!response.ok) throw Error(result.error || 'Không xóa được mục này.');
+      if (section === 'patches' && editingPatch?.id === id) setEditingPatch(null);
+      if (section === 'products' && editingProduct?.id === id) {
+        setEditingProduct(null);
+        setProductType('shirt');
+      }
+      await refresh();
+      setMsg(result.archived ? 'Patch đã được ẩn khỏi website vì đang có đơn cũ tham chiếu.' : 'Đã xóa mục.');
+    } catch (error) {
+      setMsg(error.message);
+    }
+  }
+  function editProduct(p) {
+    setEditingProduct(p);
+    setSnapPoints(Array.isArray(p.snap_guides) && p.snap_guides.length ? p.snap_guides.filter(point => point.type !== 'line') : Array.isArray(p.snap_points) ? p.snap_points.map(point => ({
+      ...point,
+      type: 'point'
+    })) : []);
+    setSnapView('front');
+    setSnapEditorGuide(null);
+    setProductType(productGroupValue(p.product_type, brand.productGroups));
+    setMsg('Đang sửa sản phẩm base: ' + p.name);
+    setTimeout(() => document.querySelector('.product-edit-card')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }), 50);
+  }
+  async function toggleProductFamily(variants) {
+    const nextActive = variants.every(product => product.active === false);
+    try {
+      await Promise.all(variants.map(product => call('products', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...product,
+          active: nextActive
+        })
+      })));
+      await refresh();
+      setMsg(nextActive ? 'Đã bật toàn bộ màu của sản phẩm base.' : 'Đã ẩn toàn bộ màu của sản phẩm base khỏi website.');
+    } catch (error) {
+      setMsg(error.message);
+    }
+  }
+  function addVariation(p) {
+    setEditingProduct({
+      ...p,
+      id: '',
+      sku: '',
+      color: '',
+      active: true,
+      view_images: {},
+      image_url: ''
+    });
+    setSnapPoints(Array.isArray(p.snap_guides) && p.snap_guides.length ? p.snap_guides.filter(point => point.type !== 'line') : Array.isArray(p.snap_points) ? p.snap_points.map(point => ({
+      ...point,
+      type: 'point'
+    })) : []);
+    setSnapView('front');
+    setSnapEditorGuide(null);
+    setProductType(productGroupValue(p.product_type, brand.productGroups));
+    setMsg('Đang thêm màu mới cho: ' + p.name);
+    setTimeout(() => document.querySelector('.product-edit-card')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }), 50);
+  }
+  function editPatch(p) {
+    setEditingPatch(p);
+    setMsg('Đang sửa patch: ' + p.name);
+    setTimeout(() => document.querySelector('.patch-edit-card')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    }), 50);
+  }
+  const patchGroupsOf = p => cleanGroups(p?.patch_groups?.length ? p.patch_groups : p?.patch_group || 'Best Seller');
+  const patchGroup = p => patchGroupsOf(p)[0] || 'Best Seller';
+  const adminGroups = ['all', ...Array.from(new Set([...PATCH_GROUPS, ...patches.flatMap(patchGroupsOf)]))];
+  const groupCount = g => g === 'all' ? patches.length : patches.filter(p => patchGroupsOf(p).includes(g)).length;
+  const normalizePatchSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi').trim();
+  const sourceGroupPatches = bulkSourceGroup === 'all' ? patches : patches.filter(p => patchGroupsOf(p).includes(bulkSourceGroup));
+  const filteredBulkPatches = sourceGroupPatches.filter(p => normalizePatchSearch(p.name).includes(normalizePatchSearch(bulkOperationSearch)));
+  const filteredGroupPatches = sourceGroupPatches.filter(p => normalizePatchSearch(p.name).includes(normalizePatchSearch(bulkGroupSearch)));
+  function togglePatch(id) {
+    setSelectedPatchIds(a => a.includes(id) ? a.filter(x => x !== id) : [...a, id]);
+  }
+  function selectFilteredPatches(list) {
+    setSelectedPatchIds(current => Array.from(new Set([...current, ...list.map(p => p.id)])));
+  }
+  async function bulkPatchGroup(e) {
+    e.preventDefault();
+    if (!selectedPatchIds.length) return setMsg('Chọn ít nhất một patch để thêm group.');
+    const count = selectedPatchIds.length;
+    await call('patch-groups', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        ids: selectedPatchIds,
+        patch_groups: cleanGroups(bulkGroup)
+      })
+    });
+    setSelectedPatchIds([]);
+    await refresh();
+    setMsg(`Đã thêm group ${bulkGroup} cho ${count} patch.`);
+  }
+  async function generateMissingPatchThumbnails() {
+    const missing = patches.filter(p => !p.thumbnail_url);
+    if (!missing.length) return setMsg('Tất cả patch đã có thumbnail rồi.');
+    if (!confirm(`Tạo thumbnail cho ${missing.length} patch đang có? Ảnh gốc sẽ được giữ nguyên.`)) return;
+    let created = 0,
+      failed = [];
+    try {
+      for (let i = 0; i < missing.length; i += 5) {
+        setMsg(`Đang tạo thumbnail… ${Math.min(i + 5, missing.length)}/${missing.length}`);
+        const result = await call('patch-thumbnails', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            ids: missing.slice(i, i + 5).map(p => p.id)
+          })
+        });
+        created += result.created || 0;
+        failed.push(...(result.failed || []));
+      }
+      await refresh();
+      setMsg(failed.length ? `Đã tạo ${created}/${missing.length} thumbnail. ${failed.length} ảnh chưa xử lý được; thử sửa hoặc upload lại các patch đó.` : `Đã tạo thumbnail cho ${created} patch. Ảnh gốc vẫn được giữ nguyên.`);
+    } catch (error) {
+      setMsg(`Đã tạo ${created}/${missing.length} thumbnail trước khi gặp lỗi: ${error.message}`);
+      await refresh();
+    }
+  }
+  async function bulkPatchOperation(e) {
+    e.preventDefault();
+    if (!selectedPatchIds.length) return setMsg('Chọn ít nhất một patch trước nha.');
+    const labels = {
+      out_of_stock: 'chuyển các patch đã chọn sang hết hàng',
+      coming_soon: 'đặt các patch đã chọn thành Coming soon',
+      limited: 'thêm group Limited cho các patch đã chọn',
+      delete: 'xóa vĩnh viễn các patch đã chọn'
+    };
+    if (!confirm(`Xác nhận ${labels[bulkPatchAction]}?${bulkPatchAction === 'delete' ? ' Thao tác này không thể hoàn tác. Patch đang được ghi trong đơn hàng cũ sẽ không xóa được.' : ''}`)) return;
+    const count = selectedPatchIds.length;
+    try {
+      const result = await call('patch-bulk', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          ids: selectedPatchIds,
+          action: bulkPatchAction
+        })
+      });
+      setSelectedPatchIds([]);
+      await refresh();
+      setMsg(bulkPatchAction === 'delete' ? `Đã xóa vĩnh viễn ${result.count} patch.` : bulkPatchAction === 'out_of_stock' ? `Đã chuyển ${result.count} patch sang hết hàng; các patch này không còn trong mockup.` : bulkPatchAction === 'coming_soon' ? `Đã đặt ${result.count} patch thành Coming soon.` : `Đã thêm group Limited cho ${result.count} patch.`);
+    } catch (error) {
+      setMsg(error.message);
+    }
+  }
+  async function saveSettings(e) {
+    e.preventDefault();
+    try {
+      const availableGroups = new Set(patches.flatMap(patchGroupsOf)),
+        requestedGroup = String(settings.defaultPatchGroup || 'all'),
+        defaultPatchGroup = availableGroups.has(requestedGroup) ? requestedGroup : 'all',
+        patchGroupOrder = normalizePatchGroupOrder(settings.patchGroupOrder, Array.from(availableGroups)),
+        availableProductIds = new Set(products.filter(product => product.active !== false).map(product => product.id)),
+        requestedProductId = String(settings.defaultProductId || ''),
+        defaultProductId = availableProductIds.has(requestedProductId) ? requestedProductId : products.find(product => product.active !== false)?.id || '';
+      const b = {
+        messengerUrl: settings.messengerUrl || '',
+        privacyText: settings.privacyText || '',
+        patchSuggestionsEnabled: settings.patchSuggestionsEnabled !== false,
+        defaultProductId,
+        sizes: String(settings.sizes || 'S,M,L,XL').split(',').map(x => x.trim()).filter(Boolean),
+        retentionDays: Number(settings.retentionDays) || 30,
+        adminEmails: String(settings.adminEmails || '').split(',').map(x => x.trim()).filter(Boolean),
+        defaultPatchGroup,
+        patchGroupOrder,
+        patchGroupHighlightEnabled: settings.patchGroupHighlightEnabled !== false,
+        christmasThemeEnabled: settings.christmasThemeEnabled !== false
+      };
+      await call('settings', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify(b)
+      });
+      setSettings(current => ({
+        ...current,
+        ...b
+      }));
+      setMsg('Đã lưu cài đặt.');
+    } catch (e) {
+      setMsg(e.message);
+    }
+  }
+  async function collectProductGroups(form) {
+    const images = {
+        ...(brand.productGroupImages || {})
+      },
+      next = [];
+    for (let index = 0; index < productGroupDrafts.length; index += 1) {
+      const group = productGroupDrafts[index],
+        id = group.id || group.value,
+        label = String(form.get(`group_label_${index}`) || group.label || id).trim(),
+        kind = String(form.get(`group_kind_${index}`) || group.kind || 'shirt') === 'bag' ? 'bag' : 'shirt';
+      if (!label) throw Error('Tên nhóm sản phẩm không được để trống.');
+      let imageUrl = String(form.get(`group_url_${index}`) || group.imageUrl || images[id] || '').trim();
+      const file = form.get(`group_file_${index}`);
+      if (file?.size) imageUrl = await upload(file);
+      if (imageUrl) images[id] = imageUrl;
+      next.push({
+        id,
+        value: id,
+        label,
+        kind,
+        imageUrl
+      });
+    }
+    return {
+      next,
+      images
+    };
+  }
+  async function saveBrand(e) {
+    e.preventDefault();
+    try {
+      const f = new FormData(e.currentTarget),
+        text = name => String(f.get(name) || '').trim(),
+        {
+          next: productGroups,
+          images: productGroupImages
+        } = await collectProductGroups(f),
+        baseDesktop = text('stepBaseDesktop') || text('step1Desktop') || BRAND_DEFAULTS.stepBaseDesktop,
+        baseMobile = text('stepBaseMobile') || text('step1Mobile') || baseDesktop,
+        patchDesktop = text('stepPatchDesktop') || text('step2Desktop') || BRAND_DEFAULTS.stepPatchDesktop,
+        patchMobile = text('stepPatchMobile') || text('step2Mobile') || patchDesktop,
+        previewDesktop = text('stepPreviewDesktop') || BRAND_DEFAULTS.stepPreviewDesktop,
+        previewMobile = text('stepPreviewMobile') || previewDesktop,
+        orderDesktop = text('stepOrderDesktop') || text('step3Label') || BRAND_DEFAULTS.stepOrderDesktop,
+        orderMobile = text('stepOrderMobile') || orderDesktop,
+        next = {
+          ...brand,
+          brandName: text('brandName') || 'Patchie',
+          logoUrl: text('logoUrl'),
+          slogan: text('slogan'),
+          fontFamily: text('fontFamily') || 'DM Sans',
+          heroEyebrow: text('heroEyebrow'),
+          heroTitle: text('heroTitle'),
+          heroAccent: text('heroAccent'),
+          heroDescription: text('heroDescription'),
+          stepBaseDesktop: baseDesktop,
+          stepBaseMobile: baseMobile,
+          stepPatchDesktop: patchDesktop,
+          stepPatchMobile: patchMobile,
+          stepPreviewDesktop: previewDesktop,
+          stepPreviewMobile: previewMobile,
+          stepOrderDesktop: orderDesktop,
+          stepOrderMobile: orderMobile,
+          step1Label: baseDesktop,
+          step1Title: text('step1Title') || 'Sản phẩm base',
+          step2Label: patchDesktop,
+          step3Label: orderDesktop,
+          step1Desktop: baseDesktop,
+          step1Mobile: baseMobile,
+          step2Desktop: patchDesktop,
+          step2Mobile: patchMobile,
+          addPatchLabel: text('addPatchLabel'),
+          mobileAddPatchLabel: text('mobileAddPatchLabel'),
+          productGroups,
+          productGroupImages
+        };
+      const logoFile = f.get('logoFile'),
+        shirtFile = f.get('shirtGroupFile'),
+        bagFile = f.get('bagGroupFile');
+      if (logoFile?.size) next.logoUrl = await upload(logoFile);
+      if (shirtFile?.size) next.productGroupImages.shirt = await upload(shirtFile);
+      if (bagFile?.size) next.productGroupImages.bag = await upload(bagFile);
+      await call('settings', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          brand: next
+        })
+      });
+      await refresh();
+      setMsg('Đã lưu thương hiệu, nhóm sản phẩm và nội dung hiển thị.');
+    } catch (e) {
+      setMsg(e.message);
+    }
+  }
+  function addProductGroupDraft(e) {
+    e.preventDefault();
+    const label = newProductGroupName.trim();
+    if (!label) return setMsg('Nhập tên nhóm sản phẩm trước nhé.');
+    let id = slugifyGroup(label) || `group-${Date.now()}`,
+      counter = 2;
+    while (productGroupDrafts.some(group => (group.id || group.value) === id)) id = `${slugifyGroup(label) || 'group'}-${counter++}`;
+    setProductGroupDrafts(groups => [...groups, {
+      id,
+      value: id,
+      label,
+      kind: newProductGroupKind
+    }]);
+    setNewProductGroupName('');
+    setNewProductGroupKind('shirt');
+  }
+  function updateProductGroupDraft(index, key, value) {
+    setProductGroupDrafts(groups => groups.map((group, i) => i === index ? {
+      ...group,
+      [key]: value
+    } : group));
+  }
+  function removeProductGroupDraft(index) {
+    if (productGroupDrafts.length <= 1) return setMsg('Cần giữ lại ít nhất một nhóm sản phẩm.');
+    setProductGroupDrafts(groups => groups.filter((_, i) => i !== index));
+  }
+  async function saveProductGroups() {
+    try {
+      const form = document.querySelector('.brand-form');
+      if (!form) return;
+      const {
+        next,
+        images
+      } = await collectProductGroups(new FormData(form));
+      await call('settings', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          brand: {
+            ...brand,
+            productGroups: next,
+            productGroupImages: images
+          }
+        })
+      });
+      setProductGroupDrafts(next);
+      await refresh();
+      setMsg('Đã lưu nhóm sản phẩm. Các sản phẩm cũ vẫn được liên kết theo mã nhóm.');
+    } catch (e) {
+      setMsg(e.message);
+    }
+  }
+  async function upload(file, patchImage = false) {
+    const f = new FormData();
+    f.set('file', file);
+    const result = await call(patchImage ? 'patch-upload' : 'upload', {
+      method: 'POST',
+      body: f
+    });
+    return patchImage ? result : result.image_url;
+  }
+  function snapCanvasPoint(e) {
+    const r = snapCanvasRef.current?.getBoundingClientRect();
+    if (!r) return null;
+    return {
+      view: snapView,
+      x: Number(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)).toFixed(4)),
+      y: Number(Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)).toFixed(4)),
+      type: 'point'
+    };
+  }
+  function findSnapPointAlignment(raw, excludeIndex = null) {
+    if (!raw || !snapCanvasRef.current) return {
+      point: raw,
+      guide: null
+    };
+    const bounds = snapCanvasRef.current.getBoundingClientRect(),
+      tol = window.matchMedia('(max-width:700px)').matches ? 22 : 12,
+      w = bounds.width,
+      h = bounds.height,
+      candidates = [];
+    const anchors = snapPoints.map((point, index) => ({
+      point,
+      index
+    })).filter(({
+      point,
+      index
+    }) => point.view === snapView && point.type !== 'line' && index !== excludeIndex);
+    for (const {
+      point
+    } of anchors) {
+      const dx = Math.abs(raw.x - point.x) * w,
+        dy = Math.abs(raw.y - point.y) * h;
+      if (dx <= tol) candidates.push({
+        distance: dx,
+        point: {
+          ...raw,
+          x: point.x
+        },
+        guide: {
+          kind: 'vertical',
+          x: point.x
+        }
+      });
+      if (dy <= tol) candidates.push({
+        distance: dy,
+        point: {
+          ...raw,
+          y: point.y
+        },
+        guide: {
+          kind: 'horizontal',
+          y: point.y
+        }
+      });
+    }
+    for (let i = 0; i < anchors.length; i += 1) for (let j = i + 1; j < anchors.length; j += 1) {
+      const a = anchors[i].point,
+        b = anchors[j].point,
+        ax = a.x * w,
+        ay = a.y * h,
+        bx = b.x * w,
+        by = b.y * h,
+        dx = bx - ax,
+        dy = by - ay,
+        len = dx * dx + dy * dy;
+      if (len < 1) continue;
+      const px = raw.x * w,
+        py = raw.y * h,
+        t = ((px - ax) * dx + (py - ay) * dy) / len,
+        qx = ax + t * dx,
+        qy = ay + t * dy,
+        distance = Math.hypot(px - qx, py - qy);
+      if (distance <= tol) {
+        const limits = [0, 1, t],
+          lo = Math.min(...limits),
+          hi = Math.max(...limits);
+        candidates.push({
+          distance,
+          point: {
+            ...raw,
+            x: qx / w,
+            y: qy / h
+          },
+          guide: {
+            kind: 'diagonal',
+            line: {
+              x1: (ax + lo * dx) / w,
+              y1: (ay + lo * dy) / h,
+              x2: (ax + hi * dx) / w,
+              y2: (ay + hi * dy) / h
+            }
+          }
+        });
+      }
+    }
+    candidates.sort((a, b) => a.distance - b.distance);
+    return candidates[0] || {
+      point: raw,
+      guide: null
+    };
+  }
+  function previewSnapPoint(e) {
+    if (snapPointDrag.current !== null) {
+      moveSnapPoint(e);
+      return;
+    }
+    const raw = snapCanvasPoint(e);
+    setSnapEditorGuide(findSnapPointAlignment(raw).guide);
+  }
+  function addSnapPoint(e) {
+    if (!editingProduct?.id) return setMsg('Lưu sản phẩm base trước, sau đó mở Sửa để đặt các điểm gợi ý.');
+    const raw = snapCanvasPoint(e),
+      aligned = findSnapPointAlignment(raw);
+    if (aligned.point) setSnapPoints(points => [...points, aligned.point]);
+    setSnapEditorGuide(aligned.guide);
+  }
+  function startMoveSnapPoint(e, index) {
+    e.preventDefault();
+    e.stopPropagation();
+    snapPointDrag.current = index;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+  function moveSnapPoint(e) {
+    if (snapPointDrag.current === null) return;
+    const index = snapPointDrag.current,
+      raw = snapCanvasPoint(e),
+      aligned = findSnapPointAlignment(raw, index);
+    if (aligned.point) setSnapPoints(points => points.map((item, i) => i === index ? aligned.point : item));
+    setSnapEditorGuide(aligned.guide);
+  }
+  function stopMoveSnapPoint(e) {
+    if (snapPointDrag.current === null) return;
+    e?.stopPropagation?.();
+    snapPointDrag.current = null;
+    setTimeout(() => setSnapEditorGuide(null), 450);
+  }
+  function removeSnapPoint(index) {
+    setSnapPoints(points => points.filter((_, i) => i !== index));
+    setSnapEditorGuide(null);
+  }
+  async function saveProduct(e) {
+    e.preventDefault();
+    const form = e.currentTarget,
+      f = new FormData(form),
+      view_images = {};
+    const product_type = String(f.get('product_type') || 'shirt'),
+      viewSet = PRODUCT_VIEW_SETS[productGroupKind(product_type, brand.productGroups)] || PRODUCT_VIEW_SETS.shirt;
+    const existing = editingProduct?.id ? editingProduct : editingProduct?.name ? editingProduct : null;
+    const reference_width_cm = Number(f.get('reference_width_cm'));
+    const reference_height_cm = Number(f.get('reference_height_cm'));
+    const image_fit_percent = Number(f.get('image_fit_percent'));
+    const image_fit_height_percent = Number(f.get('image_fit_height_percent'));
+    const dimensionLimit = name => {
+      const value = Number(f.get(name));
+      return Number.isFinite(value) && value > 0 ? value : null;
+    };
+    const min_patch_width_cm = dimensionLimit('min_patch_width_cm'),
+      max_patch_width_cm = dimensionLimit('max_patch_width_cm'),
+      min_patch_height_cm = dimensionLimit('min_patch_height_cm'),
+      max_patch_height_cm = dimensionLimit('max_patch_height_cm');
+    if (min_patch_width_cm && max_patch_width_cm && max_patch_width_cm < min_patch_width_cm || min_patch_height_cm && max_patch_height_cm && max_patch_height_cm < min_patch_height_cm) {
+      setMsg('Kích thước tối đa phải lớn hơn hoặc bằng kích thước tối thiểu.');
+      return;
+    }
+    if (!existing && (!(reference_width_cm > 0) || !(reference_height_cm > 0) || !(image_fit_percent > 0 && image_fit_percent <= 100) || !(image_fit_height_percent > 0 && image_fit_height_percent <= 100))) {
+      setMsg('Sản phẩm base mới cần nhập đủ kích thước mockup và tỉ lệ ảnh chiếm khung theo cả chiều ngang, chiều dọc (1–100%).');
+      return;
+    }
+    for (const [key] of viewSet) {
+      const file = f.get(`${key}_file`),
+        url = String(f.get(`${key}_url`) || '').trim();
+      if (file?.size) view_images[key] = await upload(file);else if (url) view_images[key] = url;
+    }
+    for (const [key] of viewSet) {
+      if (!view_images[key] && existing?.view_images?.[key]) view_images[key] = existing.view_images[key];
+    }
+    let thumbnail_url = String(f.get('thumbnail_url') || '').trim() || null;
+    if (f.get('thumbnail_file')?.size) thumbnail_url = await upload(f.get('thumbnail_file'));
+    const image_url = view_images.front || '/assets/blank-tee.webp';
+    const nameKey = String(f.get('name') || '').trim().toLowerCase(),
+      base_key = String(editingProduct?.product_type && editingProduct.product_type !== product_type ? `${product_type}::${nameKey}` : editingProduct?.base_key || `${product_type}::${nameKey}`);
+    const b = {
+      id: f.get('id') || undefined,
+      base_key,
+      sku: String(f.get('sku') || '').trim() || undefined,
+      product_type,
+      name: f.get('name'),
+      color: f.get('color'),
+      hex: f.get('hex'),
+      image_url,
+      thumbnail_url,
+      view_images,
+      sizes: String(f.get('sizes')).split(',').map(x => x.trim()).filter(Boolean),
+      size_guide: String(f.get('size_guide') || '').trim(),
+      price: f.get('price') ? Number(f.get('price')) : null,
+      snap_guides: snapPoints.filter(point => point.type !== 'line').map(({
+        view,
+        x,
+        y
+      }) => ({
+        view,
+        x,
+        y,
+        type: 'point'
+      })),
+      snap_points: snapPoints.filter(point => point.type !== 'line').map(({
+        view,
+        x,
+        y
+      }) => ({
+        view,
+        x,
+        y
+      })),
+      snap_guide_enabled: f.has('snap_guide_enabled'),
+      snap_attraction_enabled: f.has('snap_attraction_enabled'),
+      snap_strength_percent: Math.max(0, Math.min(100, Number(f.get('snap_strength_percent') ?? 45))),
+      reference_width_cm: reference_width_cm > 0 ? reference_width_cm : existing?.reference_width_cm ?? null,
+      reference_height_cm: reference_height_cm > 0 ? reference_height_cm : existing?.reference_height_cm ?? null,
+      image_fit_percent: image_fit_percent > 0 ? image_fit_percent : existing?.image_fit_percent ?? null,
+      image_fit_height_percent: image_fit_height_percent > 0 ? image_fit_height_percent : existing?.image_fit_height_percent ?? existing?.image_fit_percent ?? null,
+      min_patch_width_cm,
+      max_patch_width_cm,
+      min_patch_height_cm,
+      max_patch_height_cm,
+      active: f.has('active')
+    };
+    await call('products', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(b)
+    });
+    setEditingProduct(null);
+    setSnapPoints([]);
+    setProductType('shirt');
+    form.reset();
+    await refresh();
+    setMsg(f.get('id') ? 'Đã cập nhật sản phẩm base / SKU.' : 'Đã lưu sản phẩm base / SKU.');
+  }
+  async function savePatch(e) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    let image_url = String(f.get('image_url') || '').trim(),
+      thumbnail_url = editingPatch?.thumbnail_url || null;
+    if (f.get('file')?.size) {
+      const images = await upload(f.get('file'), true);
+      image_url = images.image_url;
+      thumbnail_url = images.thumbnail_url;
+    } else if (image_url !== editingPatch?.image_url) {
+      thumbnail_url = null;
+    }
+    const patch_groups = cleanGroups(f.get('patch_groups') || 'Best Seller');
+    const b = {
+      id: f.get('id') || undefined,
+      name: f.get('name'),
+      image_url,
+      thumbnail_url,
+      width_cm: Number(f.get('width_cm')) || 4,
+      height_cm: Number(f.get('height_cm')) || 4,
+      patch_group: patch_groups[0] || 'Best Seller',
+      patch_groups,
+      price: f.get('price') ? Number(f.get('price')) : null,
+      release_status: f.get('release_status') === 'coming_soon' ? 'coming_soon' : 'released',
+      stock_quantity: Math.max(0, Number(f.get('stock_quantity')) || 0),
+      quote: String(f.get('quote') || '').trim(),
+      active: true,
+      sort_order: Number(f.get('sort_order')) || 100
+    };
+    await call('patches', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify(b)
+    });
+    setEditingPatch(null);
+    e.currentTarget.reset();
+    await refresh();
+    setMsg(f.get('id') ? 'Đã cập nhật patch.' : 'Đã lưu patch.');
+  }
+  const money = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? `${new Intl.NumberFormat('vi-VN').format(Number(v))}đ` : 'Chưa set';
+  const patchText = d => (d.patches || []).map(x => `${x.name}${x.view ? ` · ${viewLabel(x.view)}` : ''} · ${money(x.price)}`).join(', ');
+  const viewLabel = id => PRODUCT_VIEWS.find(([key]) => key === id)?.[1] || 'Mặt trước';
+  const allOrders = [...items.map(order => ({
+    ...order,
+    orderType: 'design'
+  })), ...patchOrders.map(order => ({
+    ...order,
+    orderType: 'patch'
+  }))].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const visibleOrders = orderFilter === 'all' ? allOrders : allOrders.filter(order => order.orderType === orderFilter);
+  const productFamilies = Array.from(products.reduce((map, p) => {
+    const key = productBaseKey(p);
+    map.set(key, [...(map.get(key) || []), p]);
+    return map;
+  }, new Map()).entries()).map(([key, variants]) => ({
+    key,
+    primary: variants[0],
+    variants: [...variants].sort((a, b) => String(a.color || '').localeCompare(String(b.color || ''), 'vi'))
+  }));
+  const savedBrand = settings.brand || {};
+  const defaultPatchGroups = ['all', ...Array.from(new Set(patches.flatMap(patchGroupsOf)))];
+  const brand = {
+    ...BRAND_DEFAULTS,
+    ...savedBrand,
+    step1Desktop: savedBrand.step1Desktop || savedBrand.step1Label || BRAND_DEFAULTS.step1Desktop,
+    step1Mobile: savedBrand.step1Mobile || savedBrand.step1Label || BRAND_DEFAULTS.step1Mobile,
+    step2Desktop: savedBrand.step2Desktop || savedBrand.step2Label || BRAND_DEFAULTS.step2Desktop,
+    step2Mobile: savedBrand.step2Mobile || savedBrand.step2Label || BRAND_DEFAULTS.step2Mobile,
+    productGroupImages: {
+      ...BRAND_DEFAULTS.productGroupImages,
+      ...(savedBrand.productGroupImages || {})
+    },
+    productGroups: normalizeProductGroups(savedBrand.productGroups)
+  };
+  if (loading) return <main className="admin-shell"><div className="admin-loading">Đang tải dashboard…</div></main>;
+  if (!user) return <main className="admin-shell"><div className="login-card"><a className="brand" href="/"><AdminBrandMark brand={brand} /> <span>{brand.brandName || 'Patchie'}</span></a><div className="eyebrow">KHU VỰC QUẢN TRỊ</div><h1>Đăng nhập shop</h1><p>Đăng nhập bằng email được thêm vào biến <code>ADMIN_EMAILS</code>.</p><form onSubmit={login}><label>Email quản trị<input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="ban@patchie.vn" /></label><button className="button dark full">Gửi link đăng nhập</button></form>{msg && <p className="admin-msg">{msg}</p>}<a className="back-link" href="/">← Về studio</a></div></main>;
+  return <main className="admin-shell"><header className="admin-top"><a className="brand" href="/"><span className="brand-mark">P</span> Patchie <small>ADMIN</small></a><div>{user.email}<button className="admin-logout" onClick={async () => {
+          await supa().auth.signOut();
+          setUser(null);
+        }}>Đăng xuất</button></div></header><div className="admin-layout"><section className="admin-content"><div className="admin-heading"><div><small>PATCHIE STUDIO</small><h1>{{
+                requests: 'Đơn hàng',
+                products: 'Sản phẩm base',
+                patches: 'Thư viện patch',
+                brand: 'Thương hiệu & nội dung',
+                settings: 'Website & Christmas'
+              }[tab]}</h1></div></div>{msg && <div className="admin-msg">{msg}</div>}
+ {tab === 'requests' && <><div className="stats-grid">{[['Đơn thiết kế mới', summary.new || 0], ['Đang xem', summary.review || 0], ['Đã xác nhận', summary.confirmed || 0], ['Đơn patch', patchOrders.length]].map(([l, n]) => <div className="stat" key={l}><b>{n}</b><span>{l}</span></div>)}</div><div className="order-filter-row"><label>Lọc loại đơn<select value={orderFilter} onChange={e => setOrderFilter(e.target.value)}><option value="all">Tất cả đơn hàng ({allOrders.length})</option><option value="design">Đơn thiết kế ({items.length})</option><option value="patch">Đơn patch ({patchOrders.length})</option></select></label></div><div className={`admin-card ${orderFilter === 'patch' ? 'order-hidden' : ''}`}><h2>Đơn thiết kế</h2><div className="table-scroll"><table><thead><tr><th>Mã / khách</th><th>Liên hệ / nhận hàng</th><th>Base & size</th><th>Patch</th><th>Tổng đơn</th><th>Mockup</th><th>Trạng thái</th><th></th></tr></thead><tbody>{items.map(d => <tr key={d.id}><td><b>{d.id}</b><br />{d.customer_name}<small>{new Date(d.created_at).toLocaleDateString('vi-VN')}</small></td><td>{d.customer_phone || 'Chưa có SĐT'}<small>{d.shipping_address || 'Chưa có địa chỉ'}</small></td><td>{d.products?.name || d.product_id}<br />Size {d.size} · {d.mode === 'shop' ? 'Shop ủi' : 'Tự ủi'}<small>Base: {money(d.product_price ?? d.products?.price)}</small></td><td>{patchText(d)}</td><td><b>{money(d.total_price)}</b></td><td>{d.imageUrl && <a href={d.imageUrl} target="_blank">Xem ảnh ↗</a>}</td><td><select value={d.status} onChange={e => status(d.id, e.target.value)}>{['new', 'review', 'confirmed', 'completed', 'closed'].map(s => <option key={s}>{s}</option>)}</select></td><td><button className="delete-btn" onClick={() => remove('designs', d.id)}>Xóa</button></td></tr>)}</tbody></table>{!items.length && <p>Chưa có đơn thiết kế.</p>}</div></div><div className={`admin-card ${orderFilter === 'design' ? 'order-hidden' : ''}`}><h2>Đơn patch</h2><p className="admin-help">Đơn khách mua patch riêng từ Patch Market. Cập nhật trạng thái tại đây, không cần vào trang quản lý riêng.</p><div className="table-scroll"><table><thead><tr><th>Mã / thời gian</th><th>Khách nhận hàng</th><th>Patch</th><th>Tổng</th><th>Trạng thái</th></tr></thead><tbody>{patchOrders.map(order => <tr key={order.id}><td><b>{order.id}</b><small>{new Date(order.created_at).toLocaleString('vi-VN')}</small></td><td>{order.customer_name}<small>{order.customer_phone || 'Chưa có SĐT'}<br />{order.shipping_address || 'Chưa có địa chỉ'}</small></td><td>{(order.patch_order_items || []).map(item => <div key={item.id}>{item.patch_name} × {item.quantity}</div>)}</td><td><b>{money(order.total_price)}</b></td><td><select value={order.status} onChange={e => patchStatus(order.id, e.target.value)}>{['new', 'confirmed', 'completed', 'closed'].map(statusValue => <option key={statusValue} value={statusValue}>{statusValue}</option>)}</select></td></tr>)}</tbody></table>{!patchOrders.length && <p>Chưa có đơn patch.</p>}</div></div></>}
+ {tab === 'products' && <><div className="admin-card product-edit-card"><h2>{editingProduct?.id ? 'Sửa variation màu' : editingProduct?.name ? `Thêm màu cho ${editingProduct.name}` : 'Thêm sản phẩm base'}</h2><form key={`${editingProduct?.id || editingProduct?.name || 'new-product'}-${editingProduct?.color || ''}`} className="edit-form product-form" onSubmit={saveProduct}><input type="hidden" name="id" defaultValue={editingProduct?.id || ''} /><input name="sku" defaultValue={editingProduct?.sku || ''} placeholder="SKU của màu này, ví dụ TEE-OVS-RED" /><select name="product_type" value={productType} onChange={e => setProductType(e.target.value)}>{brand.productGroups.map(group => <option key={group.id || group.value} value={group.id || group.value}>{group.label}</option>)}</select><input name="name" required defaultValue={editingProduct?.name || ''} placeholder="Tên sản phẩm chính, ví dụ RED TEA" /><input name="color" required defaultValue={editingProduct?.color || ''} placeholder="Tên màu / variation con" /><input name="hex" defaultValue={editingProduct?.hex || '#f5f1e8'} placeholder="Mã màu #hex để hiện swatch" /><input name="sizes" defaultValue={(editingProduct?.sizes || ['S', 'M', 'L', 'XL']).join(', ')} placeholder="Sizes, cách nhau bằng dấu phẩy" /><input name="price" type="number" defaultValue={editingProduct?.price ?? ''} placeholder="Giá màu này" /><fieldset className="product-thumbnail-field"><legend>Ảnh thumbnail sản phẩm</legend><small className="admin-help">Ảnh này dùng ở bước chọn mẫu base. Có thể tải file PNG/JPG/WebP hoặc dán URL; ảnh mockup các mặt vẫn dùng trường riêng bên dưới.</small>{editingProduct?.thumbnail_url && <img className="product-thumbnail-preview" src={editingProduct.thumbnail_url} alt="Thumbnail hiện tại" />}<input name="thumbnail_file" type="file" accept="image/png,image/jpeg,image/webp" /><input name="thumbnail_url" defaultValue={editingProduct?.thumbnail_url || ''} placeholder="URL thumbnail (tuỳ chọn)" /></fieldset><label className="wide theme-toggle product-active-toggle"><input type="checkbox" name="active" defaultChecked={editingProduct?.active !== false} /> Hiển thị sản phẩm này trên website<small className="admin-help">Tắt để ẩn base/màu này khỏi danh sách khách hàng. Ảnh của sản phẩm đã tắt sẽ không được tải ở front end.</small></label><div className="scale-reference-fields"><b>Hệ quy chiếu scale patch cho sản phẩm này</b><p className="admin-help">Nhập kích thước thực của toàn bộ vùng mockup. Tỉ lệ ảnh giúp quy đổi vùng đó vào khung vuông đang hiển thị; dùng chung cho các màu cùng mẫu.</p><label>Vùng mockup rộng (cm)<input name="reference_width_cm" type="number" min="0.1" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.reference_width_cm ?? ''} placeholder="Ví dụ: ngang thân áo" /></label><label>Vùng mockup cao (cm)<input name="reference_height_cm" type="number" min="0.1" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.reference_height_cm ?? ''} placeholder="Ví dụ: dài thân áo" /></label><label>Ảnh sản phẩm chiếm ngang (%)<input name="image_fit_percent" type="number" min="1" max="100" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.image_fit_percent ?? ''} placeholder="Ví dụ: 30" /></label><label>Ảnh sản phẩm chiếm dọc (%)<input name="image_fit_height_percent" type="number" min="1" max="100" step="0.1" required={!editingProduct?.id} defaultValue={editingProduct?.image_fit_height_percent ?? editingProduct?.image_fit_percent ?? ''} placeholder="Ví dụ: 80" /></label><small className="admin-help">Nhập phần sản phẩm nhìn thấy chiếm trong khung ảnh theo từng trục. Ví dụ dây keychain chiếm 30% ngang và 80% dọc. Base cũ chưa có số dọc sẽ tạm dùng giá trị ngang để giữ scale cũ.</small></div><div className="patch-size-limit-fields"><b>Kích thước patch được phép dùng với base này</b><p className="admin-help">Giới hạn theo kích thước thật của patch (cm). Để trống hoặc nhập 0 nếu không giới hạn. Áp dụng cho Tự Phối và Patchie Gợi Ý.</p><label>Rộng tối thiểu (cm)<input name="min_patch_width_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.min_patch_width_cm ?? ""} placeholder="Không giới hạn" /></label><label>Rộng tối đa (cm)<input name="max_patch_width_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.max_patch_width_cm ?? ""} placeholder="Không giới hạn" /></label><label>Cao tối thiểu (cm)<input name="min_patch_height_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.min_patch_height_cm ?? ""} placeholder="Không giới hạn" /></label><label>Cao tối đa (cm)<input name="max_patch_height_cm" type="number" min="0" step="0.1" defaultValue={editingProduct?.max_patch_height_cm ?? ""} placeholder="Không giới hạn" /></label></div><div className="snap-behavior-fields"><b>Điều khiển gợi ý vị trí</b><label><input name="snap_guide_enabled" type="checkbox" defaultChecked={editingProduct?.snap_guide_enabled !== false} /> Hiện đường guide khi patch đến gần</label><label><input name="snap_attraction_enabled" type="checkbox" defaultChecked={editingProduct?.snap_attraction_enabled !== false} /> Bật lực hút/căn chỉnh</label><label className="snap-strength-control">Lực hút <input name="snap_strength_percent" type="range" min="0" max="100" step="5" defaultValue={editingProduct?.snap_strength_percent ?? 45} onInput={e => {
+                    e.currentTarget.nextElementSibling.value = `${e.currentTarget.value}%`;
+                  }} /><output>{editingProduct?.snap_strength_percent ?? 45}%</output></label><small className="admin-help">Có thể bật guide nhưng tắt lực hút. Trên mobile, lực hút giảm dần khi khách phóng to để đặt patch chính xác hơn.</small></div><div className="snap-points-editor"><div><b>Điểm hút patch & căn hàng</b><p className="admin-help">Chọn mặt rồi chạm ảnh để thêm điểm. Kéo chấm để chỉnh vị trí; bấm dấu × để xóa. Khi các điểm gần thẳng hàng ngang, dọc hoặc chéo, Patchie sẽ hiện guide và tự căn giúp bạn.</p></div><label>Mặt mockup<select value={snapView} onChange={e => setSnapView(e.target.value)}>{(PRODUCT_VIEW_SETS[productGroupKind(productType, brand.productGroups)] || PRODUCT_VIEW_SETS.shirt).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><div className="snap-points-canvas" ref={snapCanvasRef} onClick={addSnapPoint} onPointerMove={previewSnapPoint}>{editingProduct?.view_images?.[snapView] || (snapView === 'front' ? editingProduct?.image_url : '') ? <img src={editingProduct?.view_images?.[snapView] || (snapView === 'front' ? editingProduct?.image_url : '')} alt="Mockup để đặt điểm hút" /> : <div className="snap-canvas-empty">Lưu sản phẩm và ảnh mặt này trước để đặt điểm.</div>}{snapEditorGuide && <svg className="snap-editor-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{snapEditorGuide.kind === 'vertical' ? <line x1={snapEditorGuide.x * 100} y1="0" x2={snapEditorGuide.x * 100} y2="100" /> : snapEditorGuide.kind === 'horizontal' ? <line x1="0" y1={snapEditorGuide.y * 100} x2="100" y2={snapEditorGuide.y * 100} /> : snapEditorGuide.line ? <line x1={snapEditorGuide.line.x1 * 100} y1={snapEditorGuide.line.y1 * 100} x2={snapEditorGuide.line.x2 * 100} y2={snapEditorGuide.line.y2 * 100} /> : null}</svg>}{snapPoints.map((point, index) => point.view === snapView && point.type !== 'line' ? <span key={`${point.view}-${index}`} className="snap-point-marker" style={{
+                    left: `${point.x * 100}%`,
+                    top: `${point.y * 100}%`
+                  }} onPointerDown={e => startMoveSnapPoint(e, index)} onPointerUp={stopMoveSnapPoint} onPointerCancel={stopMoveSnapPoint} onClick={e => e.stopPropagation()}><button type="button" aria-label="Xóa điểm hút" onPointerDown={e => e.stopPropagation()} onClick={e => {
+                      e.stopPropagation();
+                      removeSnapPoint(index);
+                    }}>×</button></span> : null)}</div><small className="admin-help">{snapPoints.filter(point => point.view === snapView && point.type !== 'line').length} điểm ở mặt này · điểm được dùng chung cho các màu của cùng mẫu.</small></div><div className="view-upload-grid">{(PRODUCT_VIEW_SETS[productGroupKind(productType, brand.productGroups)] || PRODUCT_VIEW_SETS.shirt).map(([key, label]) => <fieldset key={key}><legend>{label}</legend><input name={`${key}_file`} type="file" accept="image/png,image/jpeg,image/webp" /><input name={`${key}_url`} defaultValue={editingProduct?.view_images?.[key] || (key === 'front' ? editingProduct?.image_url || (!editingProduct ? '/assets/blank-tee.webp' : '') : '')} placeholder={`URL ảnh ${label.toLowerCase()}`} /></fieldset>)}</div><button className="button dark">{editingProduct?.id ? 'Lưu thay đổi' : 'Lưu sản phẩm / màu'}</button>{editingProduct && <button type="button" className="button ghost" onClick={() => {
+                setEditingProduct(null);
+                setProductType('shirt');
+              }}>Hủy sửa</button>}</form></div><div className="admin-card"><h2>Sản phẩm chính</h2><p className="admin-help">Mỗi sản phẩm chính gom các màu bên dưới. Bấm “Thêm màu” để tạo variation con.</p>{productFamilies.map(({
+              key,
+              primary,
+              variants
+            }) => <div className="product-family" key={key}><div className="product-family-head"><img src={primary.thumbnail_url || primary.view_images?.front || primary.image_url} /><div className="product-family-copy"><b>{primary.name}</b><span>{productTypeLabel(primary.product_type, brand.productGroups)} · {variants.length} màu</span><small>Nhóm sản phẩm chính · khách sẽ chọn mẫu này trước rồi mới chọn màu</small><small>Scale: {primary.reference_width_cm && primary.reference_height_cm && primary.image_fit_percent ? `${primary.reference_width_cm} × ${primary.reference_height_cm} cm · ảnh ${primary.image_fit_percent}% ngang × ${primary.image_fit_height_percent ?? primary.image_fit_percent}% dọc` : 'đang dùng mặc định cũ'}</small></div><button className="edit-btn" onClick={() => toggleProductFamily(variants)}>{variants.every(p => p.active === false) ? "Bật mẫu" : "Tắt mẫu"}</button><button className="edit-btn" onClick={() => addVariation(primary)}>＋ Thêm màu</button></div><div className="product-variants">{variants.map(p => <div className="product-variant" key={p.id}><img src={p.thumbnail_url || p.view_images?.front || p.image_url} /><div><b><i className="admin-color-dot" style={{
+                        backgroundColor: p.hex || '#f5f1e8'
+                      }}></i>{p.color || 'Chưa đặt màu'}</b><span>{money(p.price)}{p.sku ? ` · ${p.sku}` : ''} · {(p.sizes || []).join(', ')}</span><small>{Object.values(p.view_images || {}).filter(Boolean).length}/{(PRODUCT_VIEW_SETS[productGroupKind(p.product_type || 'shirt', brand.productGroups)] || PRODUCT_VIEW_SETS.shirt).length} ảnh mockup</small></div><div className="admin-actions"><button className="edit-btn" onClick={() => editProduct(p)}>Sửa</button><button className="delete-btn" onClick={() => remove('products', p.id)}>Xóa</button></div></div>)}</div></div>)}</div></>}
+ {tab === 'patches' && <><div className="admin-card patch-edit-card"><h2>{editingPatch ? 'Sửa patch' : 'Thêm patch'}</h2><form key={editingPatch?.id || 'new-patch'} className="edit-form" onSubmit={savePatch}><datalist id="patch-groups">{PATCH_GROUPS.map(g => <option key={g} value={g} />)}</datalist><input type="hidden" name="id" defaultValue={editingPatch?.id || ''} /><input name="name" required defaultValue={editingPatch?.name || ''} placeholder="Tên patch" /><input name="width_cm" type="number" step="0.1" defaultValue={editingPatch?.width_cm || 4} placeholder="Rộng (cm)" /><input name="height_cm" type="number" step="0.1" defaultValue={editingPatch?.height_cm || 4} placeholder="Cao (cm)" /><input name="patch_groups" list="patch-groups" defaultValue={(editingPatch?.patch_groups?.length ? editingPatch.patch_groups : [editingPatch?.patch_group || 'Best Seller']).join(', ')} placeholder="Groups, ví dụ Best Seller, Cute Animal" /><input name="price" type="number" defaultValue={editingPatch?.price ?? ''} placeholder="Giá (để trống nếu chưa chốt)" /><input name="stock_quantity" type="number" min="0" step="1" defaultValue={editingPatch?.stock_quantity ?? 20} placeholder="Số lượng tồn kho" /><label className="patch-release-field">Trạng thái release<select name="release_status" defaultValue={editingPatch?.release_status || 'released'}><option value="released">Đã release — khách được chọn</option><option value="coming_soon">Coming soon — chỉ xem, chưa chọn</option></select><small className="admin-help">Coming soon vẫn hiện ở Studio và trong collection, nhưng khách không thể thêm vào mockup.</small></label><input name="file" type="file" accept="image/png,image/jpeg,image/webp" /><input name="image_url" defaultValue={editingPatch?.image_url || ''} placeholder="Hoặc URL ảnh có sẵn" /><input name="quote" defaultValue={editingPatch?.quote || ''} placeholder="Quote khi khách chọn patch" /><input name="sort_order" type="number" defaultValue={editingPatch?.sort_order || 100} placeholder="Thứ tự trong group" /><button className="button dark">{editingPatch ? 'Lưu thay đổi' : 'Thêm patch'}</button>{editingPatch && <button type="button" className="button ghost" onClick={() => setEditingPatch(null)}>Hủy sửa</button>}</form></div><div className="admin-card bulk-card"><h2>Thao tác patch hàng loạt</h2><form className="bulk-form" onSubmit={bulkPatchOperation}><label>Thao tác<select value={bulkPatchAction} onChange={e => setBulkPatchAction(e.target.value)}><option value="out_of_stock">Đánh dấu hết hàng</option><option value="coming_soon">Chuyển sang Coming soon</option><option value="limited">Gắn group Limited</option><option value="delete">Xóa vĩnh viễn</option></select></label><label className="bulk-patch-search"><span aria-hidden="true">⌕</span><input type="search" value={bulkOperationSearch} onChange={e => setBulkOperationSearch(e.target.value)} placeholder="Tìm patch theo tên…" aria-label="Tìm patch theo tên" />{bulkOperationSearch && <button type="button" onClick={() => setBulkOperationSearch('')} aria-label="Xóa tìm kiếm">×</button>}</label><div className="bulk-actions"><button type="button" onClick={() => selectFilteredPatches(filteredBulkPatches)}>Chọn tất cả đang lọc</button><button type="button" onClick={() => setSelectedPatchIds([])}>Bỏ chọn</button><span>{selectedPatchIds.length} patch được chọn</span></div><div className="bulk-patch-list">{filteredBulkPatches.map(p => <label key={p.id} className={selectedPatchIds.includes(p.id) ? 'selected' : ''}><input type="checkbox" checked={selectedPatchIds.includes(p.id)} onChange={() => togglePatch(p.id)} /><img src={p.thumbnail_url || p.image_url} alt={p.name} loading="lazy" decoding="async" /><span><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')} · Tồn: {Number(p.stock_quantity ?? 20)}</small></span></label>)}</div><button className="button dark">Thực hiện thao tác</button></form><h3>Gán group hàng loạt</h3><form className="bulk-form" onSubmit={bulkPatchGroup}><label>Lọc patch đang thuộc group<select value={bulkSourceGroup} onChange={e => setBulkSourceGroup(e.target.value)}>{adminGroups.map(g => <option key={g} value={g}>{g === 'all' ? 'Tất cả' : g} ({groupCount(g)})</option>)}</select></label><label>Thêm vào group<input list="patch-groups" value={bulkGroup} onChange={e => setBulkGroup(e.target.value)} placeholder="Ví dụ Floral hoặc Best Seller, Floral" /></label><label className="bulk-patch-search"><span aria-hidden="true">⌕</span><input type="search" value={bulkGroupSearch} onChange={e => setBulkGroupSearch(e.target.value)} placeholder="Tìm patch theo tên…" aria-label="Tìm patch theo tên" />{bulkGroupSearch && <button type="button" onClick={() => setBulkGroupSearch('')} aria-label="Xóa tìm kiếm">×</button>}</label><div className="bulk-actions"><button type="button" onClick={() => selectFilteredPatches(filteredGroupPatches)}>Chọn tất cả đang lọc</button><button type="button" onClick={() => setSelectedPatchIds([])}>Bỏ chọn</button><span>{selectedPatchIds.length} patch được chọn</span></div><div className="bulk-patch-list">{filteredGroupPatches.map(p => <label key={p.id} className={selectedPatchIds.includes(p.id) ? 'selected' : ''}><input type="checkbox" checked={selectedPatchIds.includes(p.id)} onChange={() => togglePatch(p.id)} /><img src={p.thumbnail_url || p.image_url} alt={p.name} loading="lazy" decoding="async" /><span><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')}</small></span></label>)}</div><button className="button dark">Thêm group</button></form></div><div className="admin-card"><h2>Thumbnail cho patch</h2><p className="admin-help">Ảnh mới tự có thumbnail khi upload. Dùng nút này một lần để tạo thumbnail cho patch đã có sẵn.</p><button type="button" className="button light" onClick={generateMissingPatchThumbnails} disabled={!patches.some(p => !p.thumbnail_url)}>Tạo thumbnail còn thiếu ({patches.filter(p => !p.thumbnail_url).length})</button></div><label className="admin-search-field">Tìm trong thư viện patch<input type="search" value={librarySearch} onChange={e=>setLibrarySearch(e.target.value)} placeholder="Nhập tên patch…"/></label><div className="patch-admin-grid">{patches.filter(p=>normalizePatchSearch(p.name).includes(normalizePatchSearch(librarySearch))).map(p => <div className="admin-patch" key={p.id}><img src={p.thumbnail_url || p.image_url} alt={p.name} loading="lazy" decoding="async" /><b>{p.name}</b><small>{patchGroupsOf(p).join(', ')} · {p.width_cm} × {p.height_cm} cm · Tồn {Number(p.stock_quantity ?? 20)} · {p.release_status === 'coming_soon' ? 'COMING SOON' : money(p.price)}{p.quote ? " · " + p.quote : ""}</small><em className={!Number(p.stock_quantity ?? 20) ? 'release-tag is-out-of-stock' : p.release_status === 'coming_soon' ? 'release-tag is-coming-soon' : 'release-tag'}>{!Number(p.stock_quantity ?? 20) ? 'HẾT HÀNG' : p.release_status === 'coming_soon' ? 'COMING SOON' : 'ĐÃ RELEASE'}</em><div className="admin-actions"><button className="edit-btn" onClick={() => editPatch(p)}>Sửa</button><button className="delete-btn" onClick={() => remove('patches', p.id)}>Xóa</button></div></div>)}</div></>}
+ {tab === 'settings'} {tab === 'brand' && <div className="admin-card brand-edit-card"><h2>Thương hiệu & nội dung hiển thị</h2><p className="admin-help">Các trường ở đây chỉ thay đổi phần nhận diện và câu chữ trên giao diện. Chức năng custom không bị thay đổi.</p><form key={`brand-${brand.brandName}-${brand.logoUrl}`} className="settings-form brand-form" onSubmit={saveBrand}><label>Tên Patchie<input name="brandName" defaultValue={brand.brandName} placeholder="Patchie" /></label><label>Slogan<input name="slogan" defaultValue={brand.slogan} placeholder="Customize your everyday" /></label><label>Font chữ<select name="fontFamily" defaultValue={brand.fontFamily}><option>DM Sans</option><option>Manrope</option><option>Arial</option><option>Georgia</option></select></label><label>Logo URL<input name="logoUrl" defaultValue={brand.logoUrl} placeholder="https://.../logo.png" /></label><label className="wide">Hoặc tải logo lên<input name="logoFile" type="file" accept="image/png,image/jpeg,image/webp" /></label><label>Ảnh nhóm Áo Tee URL<input name="shirtGroupUrl" defaultValue={brand.productGroupImages?.shirt || ''} placeholder="Ảnh dùng trong drop box Áo Tee" /></label><label>Ảnh nhóm Túi Tote URL<input name="bagGroupUrl" defaultValue={brand.productGroupImages?.bag || ''} placeholder="Ảnh dùng trong drop box Túi Tote" /></label><div className="brand-image-grid"><label>Hoặc tải ảnh nhóm Áo Tee<input name="shirtGroupFile" type="file" accept="image/png,image/jpeg,image/webp" /></label><label>Hoặc tải ảnh nhóm Túi Tote<input name="bagGroupFile" type="file" accept="image/png,image/jpeg,image/webp" /></label></div><div className="product-group-editor wide"><div className="product-group-editor-head"><div><h3>Nhóm sản phẩm & ảnh đại diện</h3><p className="admin-help">Đổi tên, thêm nhóm mới và chọn loại layout. Nhóm mới sẽ xuất hiện trong form thêm sản phẩm để bạn gắn sản phẩm vào đúng nhóm.</p></div><button type="button" className="button ghost" onClick={saveProductGroups}>Lưu nhóm sản phẩm</button></div><div className="product-group-editor-list">{productGroupDrafts.map((group, index) => <div className="product-group-editor-row" key={group.id || index}><div className="product-group-editor-fields"><label>Tên nhóm<input name={`group_label_${index}`} value={group.label || ''} onChange={e => updateProductGroupDraft(index, 'label', e.target.value)} placeholder="Tên nhóm sản phẩm" /></label><label>Layout<select name={`group_kind_${index}`} value={group.kind || 'shirt'} onChange={e => updateProductGroupDraft(index, 'kind', e.target.value)}><option value="shirt">Áo · 4 mặt</option><option value="bag">Túi · mặt trước và mặt sau</option></select></label><label>Ảnh nhóm URL<input name={`group_url_${index}`} defaultValue={group.imageUrl || brand.productGroupImages?.[group.id || group.value] || ''} placeholder="URL ảnh đại diện nhóm" /></label><label>Hoặc tải ảnh<input name={`group_file_${index}`} type="file" accept="image/png,image/jpeg,image/webp" /></label></div><button type="button" className="delete-btn" onClick={() => removeProductGroupDraft(index)}>Xóa nhóm</button></div>)}</div><div className="product-group-add-row"><input value={newProductGroupName} onChange={e => setNewProductGroupName(e.target.value)} placeholder="Tên nhóm mới, ví dụ Hoodies" /><select value={newProductGroupKind} onChange={e => setNewProductGroupKind(e.target.value)}><option value="shirt">Áo · 4 mặt</option><option value="bag">Túi · mặt trước và mặt sau</option></select><button type="button" className="button light" onClick={addProductGroupDraft}>＋ Thêm nhóm</button></div></div><label>Eyebrow trang chủ<input name="heroEyebrow" defaultValue={brand.heroEyebrow} /></label><label>Tiêu đề chính<input name="heroTitle" defaultValue={brand.heroTitle} /></label><label>Dòng nhấn tiêu đề<input name="heroAccent" defaultValue={brand.heroAccent} /></label><label className="wide">Mô tả hướng dẫn trên trang chủ<textarea name="heroDescription" rows="3" defaultValue={brand.heroDescription} /></label><label>Nhãn bước 1 desktop<input name="step1Desktop" defaultValue={brand.step1Desktop || brand.step1Label} /></label><label>Nhãn bước 1 mobile<input name="step1Mobile" defaultValue={brand.step1Mobile || brand.step1Label} /></label><label>Tên bước 1<input name="step1Title" defaultValue={brand.step1Title} /></label><label>Nhãn bước 2 desktop<input name="step2Desktop" defaultValue={brand.step2Desktop || brand.step2Label} /></label><label>Nhãn bước 2 mobile<input name="step2Mobile" defaultValue={brand.step2Mobile || brand.step2Label} /></label><label>Nhãn bước 3<input name="step3Label" defaultValue={brand.step3Label} /></label><label>Nút thêm patch desktop<input name="addPatchLabel" defaultValue={brand.addPatchLabel} /></label><label>Nút thêm patch mobile<input name="mobileAddPatchLabel" defaultValue={brand.mobileAddPatchLabel} /></label><button className="button dark">Lưu thương hiệu</button></form></div>}{tab === 'settings' && <div className="admin-card"><h2>Thông tin website</h2><form className="settings-form" onSubmit={saveSettings}><label>Link Messenger<input value={settings.messengerUrl || ''} onChange={e => setSettings({
+                ...settings,
+                messengerUrl: e.target.value
+              })} placeholder="https://m.me/ten-shop" /></label><label>Size áo mặc định<input value={Array.isArray(settings.sizes) ? settings.sizes.join(', ') : settings.sizes || ''} onChange={e => setSettings({
+                ...settings,
+                sizes: e.target.value
+              })} placeholder="S, M, L, XL" /></label><label>Thời hạn lưu yêu cầu (ngày)<input type="number" min="1" max="3650" value={settings.retentionDays || 30} onChange={e => setSettings({
+                ...settings,
+                retentionDays: e.target.value
+              })} /></label><label>Email admin bổ sung, ngăn cách bằng dấu phẩy<input value={Array.isArray(settings.adminEmails) ? settings.adminEmails.join(', ') : settings.adminEmails || ''} onChange={e => setSettings({
+                ...settings,
+                adminEmails: e.target.value
+              })} /></label><label className="wide">Thông báo quyền riêng tư<textarea rows="4" value={settings.privacyText || ''} onChange={e => setSettings({
+                ...settings,
+                privacyText: e.target.value
+              })} /></label><label className="wide">Sản phẩm base mở mặc định khi khách vào web<select value={products.some(product => product.id === settings.defaultProductId && product.active !== false) ? settings.defaultProductId : products.find(product => product.active !== false)?.id || ''} onChange={e => setSettings({
+                ...settings,
+                defaultProductId: e.target.value
+              })}><option value="">Sản phẩm đầu tiên đang bật</option>{products.filter(product => product.active !== false).map(product => <option key={product.id} value={product.id}>{product.name}{product.color ? ` · ${product.color}` : ''}</option>)}</select><small className="admin-help">Chọn cả màu variation cụ thể. Nếu lựa chọn bị ẩn hoặc xóa sau này, website tự chuyển về sản phẩm đang bật đầu tiên.</small></label><label className="wide">Nhóm patch mở mặc định khi khách custom<select value={settings.defaultPatchGroup || 'all'} onChange={e => setSettings({
+                ...settings,
+                defaultPatchGroup: e.target.value
+              })}><option value="all">Tất cả patch</option>{defaultPatchGroups.filter(g => g !== 'all').map(g => <option key={g} value={g}>{g}</option>)}</select><small className="admin-help">Backend có thể chọn Tất cả hoặc một collection đang có patch; khách sẽ mở thẳng vào nhóm này.</small></label><label className="wide">Thứ tự nhóm patch khi khách chọn<input value={Array.isArray(settings.patchGroupOrder) ? settings.patchGroupOrder.join(', ') : settings.patchGroupOrder || ''} onChange={e => setSettings({
+                ...settings,
+                patchGroupOrder: e.target.value
+              })} placeholder="Best Seller, Chữ Cái, Seasonal" /><small className="admin-help">Nhóm đứng trước sẽ xuất hiện trước. Các nhóm mới chưa nhập sẽ tự nối ở cuối.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.patchGroupHighlightEnabled !== false} onChange={e => setSettings({
+                ...settings,
+                patchGroupHighlightEnabled: e.target.checked
+              })} /> Nhấn nhẹ 3 nhóm patch đầu<small className="admin-help">Mỗi nhóm đầu có một accent riêng, thiết kế nhẹ để vẫn giữ chất Patchie.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.patchSuggestionsEnabled !== false} onChange={e => setSettings({
+                ...settings,
+                patchSuggestionsEnabled: e.target.checked
+              })} /> Bật Patchie gợi ý trong giao diện custom<small className="admin-help">Gợi ý hiện sau khi khách thêm patch đầu tiên, và tự ẩn khi bấm “Đã custom xong rồi”.</small></label><label className="wide theme-toggle"><input type="checkbox" checked={settings.christmasThemeEnabled !== false} onChange={e => setSettings({
+                ...settings,
+                christmasThemeEnabled: e.target.checked
+              })} /> Bật theme Christmas toàn website<small className="admin-help">Trang trí Giáng sinh nhẹ bằng CSS cho Studio, Patch Market và Lookbook.</small></label><button className="button dark">Lưu cài đặt</button></form><p className="admin-help">Email admin chính được quản lý trong biến môi trường ADMIN_EMAILS trên Vercel. Danh sách bổ sung có thể cập nhật tại đây.</p></div>}
  </section></div></main>;
 }

@@ -11,21 +11,18 @@ export async function POST(request){
   if(!name||!phone||!address||!size||!productId||!patches.length||patches.length>12||body?.consent!==true)return jsonError('Nhập tên, SĐT, địa chỉ, chọn size và patch, rồi xác nhận quyền riêng tư.');
   try{
     const db=serviceDb(),patchIds=[...new Set(patches.map(x=>String(x?.patchId||'')).filter(Boolean))].slice(0,12);
-    const [{data:product},{data:validPatches},{data:retention},{data:giftSetting},{data:brandSetting}]=await Promise.all([
+    const [{data:product},{data:validPatches},{data:retention},{data:brandSetting}]=await Promise.all([
       db.from('products').select('id,sizes,price,product_type,min_patch_width_cm,max_patch_width_cm,min_patch_height_cm,max_patch_height_cm').eq('id',productId).eq('active',true).maybeSingle(),
       db.from('patches').select('id,name,price,width_cm,height_cm').in('id',patchIds).eq('active',true),
       db.from('settings').select('value').eq('key','retentionDays').maybeSingle(),
-      db.from('settings').select('value').eq('key','giftOffer').maybeSingle(),
       db.from('settings').select('value').eq('key','brand').maybeSingle()
     ]);
     if(!product||!(product.sizes||[]).includes(size))return jsonError('Sản phẩm base hoặc size vừa thay đổi. Tải lại trang nhé.');
     if(!validPatches||validPatches.length!==patchIds.length)return jsonError('Một patch không còn khả dụng. Tải lại trang nhé.');
     if(validPatches.some(p=>!patchFitsProduct(p,product)))return jsonError('Có patch không đúng kích thước cho sản phẩm base này. Quay lại và chọn patch khác.');
     const allowedViews=productViews(product.product_type||'shirt',brandSetting?.value||{});
-    const giftOffer=giftSetting?.value||{},giftEnabled=giftOffer.enabled!==false,giftIds=Array.isArray(giftOffer.patchIds)?giftOffer.patchIds.filter(Boolean):[];
-    let giftUsed=false;
-    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360,isGift=Boolean(x.gift===true&&giftEnabled&&giftIds.includes(p.id)&&!giftUsed);if(isGift)giftUsed=true;return {id:p.id,name:p.name,price:isGift?0:Number(p.price)||0,gift:isGift,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
-    if(mapped.some(item=>item.gift)&&!mapped.some(item=>!item.gift))return jsonError('Bạn đã nhận patch quà rồi, hãy thêm ít nhất 1 patch mua nhé.');
+    // Prices always come from the database; legacy client gift flags are ignored.
+    const mapped=patches.map(x=>{const p=validPatches.find(y=>y.id===x.patchId),view=allowedViews.includes(x.view)?x.view:'front',rotation=((Math.round(Number(x.rotation)||0)%360)+360)%360;return {id:p.id,name:p.name,price:Number(p.price)||0,view,rotation,x:Math.max(0,Math.min(1,Number(x.x)||0)),y:Math.max(0,Math.min(1,Number(x.y)||0))};});
     const productPrice=Number(product.price)||0,totalPrice=productPrice+mapped.reduce((sum,x)=>sum+x.price,0),expires=new Date(Date.now()+Number(retention?.value||30)*86400000).toISOString();
     const preferred=/^PCH-[0-9A-F]{12}$/.test(requestedId)?requestedId:'';
     if(preferred){
