@@ -16,7 +16,7 @@ export default function BestsellerPopup({onCustom,onClose}) {
     if (!data || !dialog.current) return;
     const previous=document.activeElement;
     dialog.current.showModal();
-    try {sessionStorage.setItem('patchie-bestsellers-'+new Date().toISOString().slice(0,7),'seen');}catch{}
+    try {localStorage.setItem('patchie-bestsellers-'+new Date().toISOString().slice(0,7),'seen');}catch{}
     const scroll=document.documentElement.style.overflow;
     document.documentElement.style.overflow='hidden';
     return ()=>{document.documentElement.style.overflow=scroll;previous?.focus?.({preventScroll:true});};

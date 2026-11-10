@@ -351,16 +351,21 @@ export default function Home({
   const welcomeDismissed=useRef(false);
   useEffect(()=>{
     if(!catalogReady || new URLSearchParams(window.location.search).has('from') || catalog.settings.bestsellers?.enabled !== true) return;
-    let idle,timer;
-    const prepare=()=>{timer=setTimeout(()=>{
-      const start=()=>{
-        try {if(sessionStorage.getItem('patchie-bestsellers-'+new Date().toISOString().slice(0,7)))return;}catch{}
-        if(!welcomeDismissed.current)setWelcomeReady(true);
-      };
-      if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:3000});else start();
-    },0);};
-    if(document.readyState==='complete')prepare();else window.addEventListener('load',prepare,{once:true});
-    return ()=>{clearTimeout(timer);if(idle)window.cancelIdleCallback(idle);window.removeEventListener('load',prepare);};
+    const monthKey='patchie-bestsellers-'+new Date().toISOString().slice(0,7);
+    try {if(localStorage.getItem(monthKey))return;}catch{}
+    let timer, idle, cancelled=false;
+    const interactionEvents=['pointerdown','keydown','touchstart','wheel'];
+    const start=()=>{
+      if(cancelled)return;
+      try {if(localStorage.getItem(monthKey))return;}catch{}
+      if(welcomeDismissed.current)return;
+      setWelcomeReady(true);
+    };
+    const onInteract=()=>{if(timer)clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);start();};
+    const schedule=()=>{timer=setTimeout(()=>{if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:2000});else start();},6000);};
+    interactionEvents.forEach(event=>window.addEventListener(event,onInteract,{once:true,passive:true}));
+    if(document.readyState==='complete')schedule();else window.addEventListener('load',schedule,{once:true});
+    return ()=>{cancelled=true;clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);window.removeEventListener('load',schedule);interactionEvents.forEach(event=>window.removeEventListener(event,onInteract));};
   },[catalogReady,catalog.settings.bestsellers?.enabled]);
   const closeWelcome=()=>{welcomeDismissed.current=true;setWelcomeReady(false);};
   const stage = useRef(null),
