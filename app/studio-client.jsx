@@ -345,13 +345,10 @@ export default function Home({
   const welcomeDismissed=useRef(false);
   useEffect(()=>{
     if(!catalogReady || new URLSearchParams(window.location.search).has('from') || catalog.settings.bestsellers?.enabled !== true) return;
-    const monthKey='patchie-bestsellers-'+new Date().toISOString().slice(0,7);
-    try {if(localStorage.getItem(monthKey))return;}catch{}
     let timer, idle, cancelled=false;
     const interactionEvents=['pointerdown','keydown','touchstart','wheel'];
     const start=()=>{
       if(cancelled)return;
-      try {if(localStorage.getItem(monthKey))return;}catch{}
       if(welcomeDismissed.current)return;
       setWelcomeReady(true);
     };
@@ -1560,4 +1557,3 @@ export default function Home({
       catalog
     }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }
-
