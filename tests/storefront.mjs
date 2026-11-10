@@ -30,3 +30,14 @@ assert.ok(paths.includes('<path'));assert.ok(!paths.includes('<text'));
 assert.equal(await outlinedText('Bộ sưu tập'.normalize('NFD'),{x:0,y:50,size:30,fill:'#000'}),await outlinedText('Bộ sưu tập',{x:0,y:50,size:30,fill:'#000'}));
 await assert.rejects(()=>outlinedText('🧸',{x:0,y:50,size:30,fill:'#000'}),/chưa hỗ trợ/);
 console.log('Bundled Vietnamese glyphs, Unicode normalization and font-free SVG passed.');
+const {trimLookMargins,createLookCover,renderLookDesign}=await import('../lib/storefront-look-cover.js');
+const fixture=await sharp({create:{width:600,height:600,channels:3,background:'#fff'}}).composite([{input:Buffer.from('<svg width="600" height="600"><rect x="230" y="120" width="140" height="380" fill="#234567"/><rect x="245" y="150" width="110" height="150" fill="white"/><path d="M295 30 L305 30 L305 120 L295 120Z" fill="#999"/></svg>')}]).png().toBuffer();
+const trimmed=await sharp(await trimLookMargins(fixture)).metadata();assert.ok(trimmed.width<220);assert.ok(trimmed.height>=470);
+const white=await sharp({create:{width:40,height:40,channels:3,background:'#fff'}}).png().toBuffer();assert.ok((await trimLookMargins(white)).length>0);
+for(const tone of ['peach','mint','lavender']){const cover=await createLookCover(fixture,{tone,template:'minimal'});assert.equal((await sharp(cover).metadata()).width,1200);}
+console.log('Look cover margin trimming retains hook and white interior; three palettes render.');
+const mockRenderDb={from:table=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{image_url:'base',reference_width_cm:10,reference_height_cm:10}})}),in:async()=>({data:[{id:'p',image_url:'patch',width_cm:2,height_cm:2}]})})})};
+const colorPatch=await sharp({create:{width:20,height:20,channels:4,background:'#d02060'}}).png().toBuffer();
+const rendered=await renderLookDesign({product_id:'base',placements:[{patch_id:'p',view:'front',x:.5,y:.5,rotation:15},{patch_id:'p',view:'front',x:.99,y:.99,rotation:45}]},mockRenderDb,async url=>url==='base'?white:colorPatch);
+const center=await sharp(rendered).extract({left:700,top:700,width:1,height:1}).removeAlpha().raw().toBuffer();assert.equal(center[0],208);assert.equal(center[1],32);assert.equal((await sharp(rendered).metadata()).width,1400);
+console.log('Original-asset look rendering and rotated edge clipping passed.');
