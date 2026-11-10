@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import SiteHeader from '../site-header';
+import SiteFooter from '../site-footer';
 import {buyLabel} from '@/lib/storefront';
 import {trackEvent} from '@/lib/analytics';
 import ShopeeLink from './shopee-link';
@@ -33,5 +34,5 @@ export default function Catalog({kind,initial,initialGroup,brand,initialError}){
  {detailError&&<p role="alert">{detailError}</p>}</div></div>
  <div className="sf-detail-actions"><ShopeeLink className="sf-buy" url={item.shopee_url} id={item.id} kind={item.kind} location="storefront_detail">{buyLabel(item)}</ShopeeLink>{(item.kind==='collection'||detail.design)&&<button className="sf-custom" onClick={custom}>{item.kind==='collection'?'Thử phối bộ này':'Custom từ mẫu này'} →</button>}</div>
  {(detail.related||detail.relatedLooks.length>0)&&<section className="sf-related"><h3>{detail.related?'Bộ patch liên quan':'Phối xinh cùng bộ này'}</h3><div>{[...(detail.related?[detail.related]:[]),...detail.relatedLooks].map(x=><button key={x.id} onClick={()=>{setSelected(x.id);dialog.current?.scrollTo(0,0);}}><LoadingImage src={x.thumbnail_url} alt="" width="120" height="120" loading="lazy"/><span>{x.name}</span></button>)}</div></section>}</>}</dialog>}
- <footer className="sf-footer">Phối chút riêng, mang theo mình. <Link href="/">Về Custom Workshop →</Link></footer></main>;
+ <SiteFooter active={kind==='collection'?'/patches':'/looks'}/></main>;
 }

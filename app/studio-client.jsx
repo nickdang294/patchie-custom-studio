@@ -1,6 +1,7 @@
 'use client';
 
 import { BRAND_DEFAULTS, PRODUCT_GROUPS, normalizeProductGroups, getStudioBrand } from '@/lib/studio-brand';
+import SiteFooter from './components/site-footer';
 import { StudioHeader, StudioHero, LoadingAnimation, StudioContainer } from './components/studio-chrome';
 import DialogBoundary from './components/dialog-boundary';
 import { useEffect, useRef, useState, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -187,7 +188,7 @@ const defaultProduct = {
   price: null
 };
 const cssContent = value => JSON.stringify(String(value || ''));
-const StudioFooter = () => <footer className="studio-footer"><div><span>Patchie · Customize your everyday</span><span>Chọn patch · Tạo mã đơn · Gửi shop</span></div><a className="admin-footer-link" href="/admin">Quản trị ↗</a></footer>;
+const StudioFooter = SiteFooter;
 const CuteSelect = ({
   label,
   value,
