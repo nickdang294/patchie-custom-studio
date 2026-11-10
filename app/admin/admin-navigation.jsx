@@ -4,7 +4,7 @@ import {usePathname,useSearchParams} from 'next/navigation';
 const groups=[
  ['BÁN HÀNG',[['Đơn hàng','/admin?tab=requests']]],
  ['SẢN PHẨM',[['Sản phẩm base','/admin?tab=products'],['Thư viện patch','/admin?tab=patches'],['Import patch','/admin/import'],['Mẫu phối sẵn','/admin/product-designs']]],
- ['CỬA HÀNG',[['Best-seller tháng này','/admin/bestsellers'],['Patch Market','/admin/market'],['Lookbook','/admin/gallery']]],
+ ['CỬA HÀNG',[['Best-seller tháng này','/admin/bestsellers'],['Bộ sưu tập patch','/admin/market'],['Góc phối xinh','/admin/gallery'],['Nhóm nội dung','/admin/content-groups']]],
  ['THIẾT LẬP',[['Thương hiệu & nội dung','/admin?tab=brand'],['Chia sẻ link','/admin/social-sharing'],['Website & Christmas','/admin?tab=settings'],['Quy tắc gợi ý','/admin/recommendations']]]
 ];
 export default function AdminNavigation(){

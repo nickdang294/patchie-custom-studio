@@ -1,4 +1,5 @@
  'use client';
+import ShopeeLink from './storefront/shopee-link';
 import {useEffect,useRef,useState} from 'react';
 import './bestseller-popup.css';
 const shopeeUrl = value => {try { const url=new URL(value); return url.protocol==='https:' && /(^|\.)(shopee\.vn|shopee\.com|shp\.ee)$/.test(url.hostname) ? url.href : ''; } catch {return '';} };
@@ -28,7 +29,7 @@ export default function BestsellerPopup({onCustom,onClose}) {
       <div className="bestseller-grid">{data.items.map(design=><article className="bestseller-card" key={design.id}>
         <div className="bestseller-image"><img src={design.thumbnail_url} width="420" height="420" alt={design.name} decoding="async" fetchPriority="low"/></div>
         <h3>{design.name}</h3><button type="button" className="bestseller-custom" onClick={()=>{if(onCustom(design)===false)setError('Mẫu vừa thay đổi. Bạn tải lại trang để cập nhật nha.');}}>✦ Custom mẫu này</button>
-        {shopeeUrl(design.shopee_url)?<a className="bestseller-shop" href={shopeeUrl(design.shopee_url)} target="_blank" rel="noopener noreferrer">Mua ngay trên Shopee ↗</a>:<span className="bestseller-shop is-unavailable">Shopee sắp có nha</span>}
+        <ShopeeLink className="bestseller-shop" url={design.shopee_url} id={design.id} location="bestsellers">Mua ngay trên Shopee</ShopeeLink>
       </article>)}</div>
       {error&&<p role="status">{error}</p>}<button type="button" className="bestseller-skip" onClick={onClose}>Tự phối theo gu của tui →</button>
     </div>

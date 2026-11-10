@@ -15,6 +15,7 @@ function snapRotation(value) {
 }
 import { useStageZoom } from '@/lib/hooks/use-stage-zoom';
 import DesignSuggestions from './components/design-suggestions';
+const WorkshopIncoming = lazy(()=>import('./components/storefront/workshop-incoming'));
 const normalizeRotation = value => (Math.round(Number(value) || 0) % 360 + 360) % 360;
 const STARTER = [{
   id: 'patch-pink',
@@ -334,9 +335,21 @@ export default function Home({
     [designPreviewLoading, setDesignPreviewLoading] = useState(false),
     [designPreviewView, setDesignPreviewView] = useState('front');
   const [welcomeReady,setWelcomeReady]=useState(false);
+  const [draftReady,setDraftReady]=useState(false);
+  const [hasIncoming,setHasIncoming]=useState(false);
+  useEffect(()=>{
+    if(!catalogReady)return;
+    try {setHasIncoming(Boolean(sessionStorage.getItem('patchie-workshop-incoming')));const d=JSON.parse(sessionStorage.getItem('patchie-workshop-draft')||'null');
+      if(d && Date.now()-d.time<86400000 && catalog.products.some(p=>p.id===d.productId)){
+        setProductId(d.productId);setSize(d.size||'');setActiveView(d.activeView||'front');
+        setPlaced((d.placed||[]).filter(x=>catalog.patches.some(p=>p.id===x.patchId)).slice(0,12));
+      }
+    }catch{}setDraftReady(true);
+  },[catalogReady]);
+  useEffect(()=>{if(!draftReady)return;const save=()=>{try{sessionStorage.setItem('patchie-workshop-draft',JSON.stringify({productId,size,activeView,placed,time:Date.now()}));}catch{}};save();window.addEventListener('pagehide',save);return()=>window.removeEventListener('pagehide',save);},[draftReady,productId,size,activeView,placed]);
   const welcomeDismissed=useRef(false);
   useEffect(()=>{
-    if(!catalogReady || catalog.settings.bestsellers?.enabled !== true) return;
+    if(!catalogReady || new URLSearchParams(window.location.search).has('from') || catalog.settings.bestsellers?.enabled !== true) return;
     let idle,timer;
     const prepare=()=>{timer=setTimeout(()=>{
       const start=()=>{
@@ -420,6 +433,7 @@ export default function Home({
   };
   const applyProductDesign = design => {
     if (!design) return;
+    if(placed.length && !window.confirm('Thay thiết kế đang làm bằng mẫu này?'))return false;
     const target = catalog.products.find(p=>p.id===design.product_id);
     if(!target || !design.placements.every(item=>{const patch=catalog.patches.find(p=>p.id===item.patch_id);return patch && patchInStock(patch) && !patchIsComingSoon(patch) && patchFitsBase(patch,target);})) {show('Mẫu vừa thay đổi, bạn tải lại trang nhé.');return false;}
     if(target.id!==productId){setProductId(target.id);setSize(target.sizes?.length===1?target.sizes[0]:'');setHistory([]);}else remember();
@@ -1495,6 +1509,7 @@ export default function Home({
   }}>{!embedded && <StudioHeader brand={brand} />}
     {!embedded && <StudioHero brand={brand} />}
 
+    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={applyProductDesign} onClose={closeWelcome} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
     {selectedProductDesign && <DialogBoundary kind="design" {...{
       setSelectedProductDesign,
       selectedProductDesign,

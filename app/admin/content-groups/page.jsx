@@ -1,0 +1,10 @@
+'use client';
+import {useEffect,useState} from 'react';
+import '../../components/storefront/admin.css';
+const empty={name:'',sort_order:0,active:true};
+export default function Groups(){const [items,setItems]=useState([]),[form,setForm]=useState(empty),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[ready,setReady]=useState(false);
+ async function load(){const r=await fetch('/api/admin/storefront?action=groups'),d=await r.json();if(!r.ok)throw new Error(d.error);setItems(d.items);setReady(true);}
+ useEffect(()=>{load().catch(e=>setMessage(e.message));},[]);
+ async function save(e){e.preventDefault();setBusy(true);try{const r=await fetch('/api/admin/storefront',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...form,action:'group'})}),d=await r.json();if(!r.ok)throw new Error(d.error);setForm(empty);await load();setMessage('Đã lưu nhóm. Ẩn nhóm sẽ ẩn nút lọc, nội dung vẫn có trong Tất cả.');}catch(e){setMessage(e.message);}finally{setBusy(false);}}
+ return <main className="admin-shell sa"><h1>Nhóm nội dung</h1><p>Dùng chung cho Bộ sưu tập patch và Góc phối xinh. Chỉ nhóm có nội dung đã đăng mới hiện ngoài website.</p>{message&&<p role="status">{message} {!ready&&<a href="/admin">Đăng nhập admin</a>}</p>}<form className="admin-card sa-form" onSubmit={save}><fieldset disabled={busy||!ready}><label>Tên nhóm<input required maxLength={60} value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Thứ tự<input type="number" value={form.sort_order} onChange={e=>setForm({...form,sort_order:Number(e.target.value)})}/></label><label className="sa-check"><input type="checkbox" checked={form.active} onChange={e=>setForm({...form,active:e.target.checked})}/> Hiện nhóm</label><button className="button dark">{busy?'Đang lưu…':'Lưu nhóm'}</button><button type="button" onClick={()=>setForm(empty)}>Tạo nhóm mới</button></fieldset></form><div className="sa-group-list">{items.map(g=><button key={g.id} onClick={()=>setForm(g)}>{g.name} · {g.active?'Hiện':'Ẩn'} · Thứ tự {g.sort_order}</button>)}</div></main>;
+}

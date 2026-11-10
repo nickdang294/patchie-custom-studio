@@ -1,4 +1,5 @@
 'use client';
+import ShopeeLink from './storefront/shopee-link';
 
 import './studio-dialogs.css';
 const validShopeeUrl = value => {
@@ -36,8 +37,7 @@ const design = ({
       })}
         <nav className="design-preview-views" aria-label="Chọn mặt sản phẩm">{activeViews.filter(v => v.id === 'front' || v.id === 'back' || selectedProductDesign.placements.some(item => item.view === v.id)).map(v => <button key={v.id} type="button" className={designPreviewView === v.id ? 'is-active' : ''} aria-pressed={designPreviewView === v.id} onClick={() => setDesignPreviewView(v.id)}>{v.id === 'front' ? 'Trước' : v.id === 'back' ? 'Sau' : v.short}</button>)}</nav>
       </div>}
-      <footer className="design-preview-actions"><button type="button" className="design-preview-custom" disabled={designPreviewLoading} onClick={() => applyProductDesign(selectedProductDesign)}><span aria-hidden="true">✦</span> Custom mẫu này</button>{validShopeeUrl(selectedProductDesign.shopee_url) ? <a className="design-preview-shopee" href={validShopeeUrl(selectedProductDesign.shopee_url)} target="_blank" rel="noreferrer"><span aria-hidden="true">♡</span> Mua liền trên Shopee của Patchie <span aria-hidden="true">↗</span></a> : <button type="button" className="design-preview-shopee is-unavailable" disabled title="Thêm link Shopee cho sản phẩm này trong Admin → Mẫu phối sẵn"><span aria-hidden="true">♡</span> Mua liền trên Shopee của Patchie</button>}</footer>
-      {!validShopeeUrl(selectedProductDesign.shopee_url) && <p className="design-preview-hint">Shop chưa cài link Shopee cho mẫu phối này.</p>}
+      <footer className="design-preview-actions"><button type="button" className="design-preview-custom" disabled={designPreviewLoading} onClick={() => applyProductDesign(selectedProductDesign)}><span aria-hidden="true">✦</span> Custom mẫu này</button><ShopeeLink className="design-preview-shopee" url={selectedProductDesign.shopee_url} id={selectedProductDesign.id} location="design-preview">♡ Mua mẫu này trên Shopee</ShopeeLink></footer>
     </section></div>;
 const order = ({
   setMessengerPrompt,

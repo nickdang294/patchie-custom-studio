@@ -6,8 +6,8 @@ export const StudioHeader=({brand})=><header className="topbar">
   <a className="brand" href="/"><BrandIdentity brand={brand}/></a>
   <nav className="studio-nav patchie-site-nav" aria-label="Điều hướng chính">
     <a className="studio-nav-active is-current" href="/" aria-current="page">Custom Workshop</a>
-    <a href="/patches">Patch Market</a>
-    <a href="/looks">Lookbook</a>
+    <a href="/patches">Bộ sưu tập patch</a>
+    <a href="/looks">Góc phối xinh</a>
   </nav>
 </header>;
 
