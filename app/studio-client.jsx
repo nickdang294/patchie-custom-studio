@@ -171,7 +171,6 @@ const VIEW_REFERENCE_CM = {
 };
 const clampPatchPercent = value => Math.max(.1, Math.min(100, value));
 const clampZoom = value => Math.max(1, Math.min(3.2, value));
-const makeDraftOrderCode = () => `PCH-${Array.from(crypto.getRandomValues(new Uint8Array(6))).map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
 const defaultProduct = {
   id: 'base-offwhite',
   sku: 'BASE-OFFWHITE',
@@ -1303,7 +1302,6 @@ export default function Home({
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        orderId: draftOrderCode,
         size,
         mode,
         productId,
@@ -1562,3 +1560,4 @@ export default function Home({
       catalog
     }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }
+
