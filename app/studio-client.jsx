@@ -1,6 +1,7 @@
 'use client';
 
 import { BRAND_DEFAULTS, PRODUCT_GROUPS, normalizeProductGroups, getStudioBrand } from '@/lib/studio-brand';
+import SiteFooter from './components/site-footer';
 import { StudioHeader, StudioHero, LoadingAnimation, StudioContainer } from './components/studio-chrome';
 import DialogBoundary from './components/dialog-boundary';
 import { useEffect, useRef, useState, useMemo, useCallback, lazy, Suspense } from 'react';
@@ -15,6 +16,7 @@ function snapRotation(value) {
 }
 import { useStageZoom } from '@/lib/hooks/use-stage-zoom';
 import DesignSuggestions from './components/design-suggestions';
+const WorkshopIncoming = lazy(()=>import('./components/storefront/workshop-incoming'));
 const normalizeRotation = value => (Math.round(Number(value) || 0) % 360 + 360) % 360;
 const STARTER = [{
   id: 'patch-pink',
@@ -186,7 +188,7 @@ const defaultProduct = {
   price: null
 };
 const cssContent = value => JSON.stringify(String(value || ''));
-const StudioFooter = () => <footer className="studio-footer"><div><span>Patchie · Customize your everyday</span><span>Chọn patch · Tạo mã đơn · Gửi shop</span></div><a className="admin-footer-link" href="/admin">Quản trị ↗</a></footer>;
+const StudioFooter = SiteFooter;
 const CuteSelect = ({
   label,
   value,
@@ -334,19 +336,36 @@ export default function Home({
     [designPreviewLoading, setDesignPreviewLoading] = useState(false),
     [designPreviewView, setDesignPreviewView] = useState('front');
   const [welcomeReady,setWelcomeReady]=useState(false);
+  const [draftReady,setDraftReady]=useState(false);
+  const [hasIncoming,setHasIncoming]=useState(false);
+  useEffect(()=>{
+    if(!catalogReady)return;
+    try {setHasIncoming(Boolean(sessionStorage.getItem('patchie-workshop-incoming')));const d=JSON.parse(sessionStorage.getItem('patchie-workshop-draft')||'null');
+      if(d && Date.now()-d.time<86400000 && catalog.products.some(p=>p.id===d.productId)){
+        setProductId(d.productId);setSize(d.size||'');setActiveView(d.activeView||'front');
+        setPlaced((d.placed||[]).filter(x=>catalog.patches.some(p=>p.id===x.patchId)).slice(0,12));
+      }
+    }catch{}setDraftReady(true);
+  },[catalogReady]);
+  useEffect(()=>{if(!draftReady)return;const save=()=>{try{sessionStorage.setItem('patchie-workshop-draft',JSON.stringify({productId,size,activeView,placed,time:Date.now()}));}catch{}};save();window.addEventListener('pagehide',save);return()=>window.removeEventListener('pagehide',save);},[draftReady,productId,size,activeView,placed]);
   const welcomeDismissed=useRef(false);
   useEffect(()=>{
-    if(!catalogReady || catalog.settings.bestsellers?.enabled !== true) return;
-    let idle,timer;
-    const prepare=()=>{timer=setTimeout(()=>{
-      const start=()=>{
-        try {if(sessionStorage.getItem('patchie-bestsellers-'+new Date().toISOString().slice(0,7)))return;}catch{}
-        if(!welcomeDismissed.current)setWelcomeReady(true);
-      };
-      if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:3000});else start();
-    },0);};
-    if(document.readyState==='complete')prepare();else window.addEventListener('load',prepare,{once:true});
-    return ()=>{clearTimeout(timer);if(idle)window.cancelIdleCallback(idle);window.removeEventListener('load',prepare);};
+    if(!catalogReady || new URLSearchParams(window.location.search).has('from') || catalog.settings.bestsellers?.enabled !== true) return;
+    const monthKey='patchie-bestsellers-'+new Date().toISOString().slice(0,7);
+    try {if(localStorage.getItem(monthKey))return;}catch{}
+    let timer, idle, cancelled=false;
+    const interactionEvents=['pointerdown','keydown','touchstart','wheel'];
+    const start=()=>{
+      if(cancelled)return;
+      try {if(localStorage.getItem(monthKey))return;}catch{}
+      if(welcomeDismissed.current)return;
+      setWelcomeReady(true);
+    };
+    const onInteract=()=>{if(timer)clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);timer=setTimeout(()=>{if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:1800});else start();},900);};
+    const schedule=()=>{timer=setTimeout(()=>{if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:2000});else start();},6000);};
+    interactionEvents.forEach(event=>window.addEventListener(event,onInteract,{once:true,passive:true}));
+    if(document.readyState==='complete')schedule();else window.addEventListener('load',schedule,{once:true});
+    return ()=>{cancelled=true;clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);window.removeEventListener('load',schedule);interactionEvents.forEach(event=>window.removeEventListener(event,onInteract));};
   },[catalogReady,catalog.settings.bestsellers?.enabled]);
   const closeWelcome=()=>{welcomeDismissed.current=true;setWelcomeReady(false);};
   const stage = useRef(null),
@@ -420,6 +439,7 @@ export default function Home({
   };
   const applyProductDesign = design => {
     if (!design) return;
+    if(placed.length && !window.confirm('Thay thiết kế đang làm bằng mẫu này?'))return false;
     const target = catalog.products.find(p=>p.id===design.product_id);
     if(!target || !design.placements.every(item=>{const patch=catalog.patches.find(p=>p.id===item.patch_id);return patch && patchInStock(patch) && !patchIsComingSoon(patch) && patchFitsBase(patch,target);})) {show('Mẫu vừa thay đổi, bạn tải lại trang nhé.');return false;}
     if(target.id!==productId){setProductId(target.id);setSize(target.sizes?.length===1?target.sizes[0]:'');setHistory([]);}else remember();
@@ -736,7 +756,7 @@ export default function Home({
     if (!hasMobileSuggestionContext && mobilePatchMode === 'suggestions') setMobilePatchMode('browse');
   }, [hasMobileSuggestionContext, mobilePatchMode]);
   useEffect(() => {
-    if (!hasMobileSuggestionContext || !window.matchMedia('(max-width: 700px)').matches) return;
+    if (!draftReady || hasIncoming || !hasMobileSuggestionContext || !window.matchMedia('(max-width: 700px)').matches) return;
     if (suggestionAutoScrollSuppressed.current) return;
     const timer = window.setTimeout(() => {
       if (suggestionAutoScrollSuppressed.current) return;
@@ -744,13 +764,13 @@ export default function Home({
       if (dock) {
         suggestionAutoScrollUsed.current = true;
         window.scrollTo({
-          top: Math.max(0, window.scrollY + dock.getBoundingClientRect().top - 8),
+          top: Math.max(0, window.scrollY + dock.getBoundingClientRect().top - (document.querySelector('.patchie-header')?.getBoundingClientRect().height || 0) - 16),
           behavior: 'smooth'
         });
       }
     }, 80);
     return () => clearTimeout(timer);
-  }, [hasMobileSuggestionContext, placed.length]);
+  }, [draftReady, hasIncoming, hasMobileSuggestionContext, placed.length]);
   if (!catalogReady) return <StudioContainer embedded={embedded} className={`shell ${christmasThemeEnabled ? 'theme-christmas' : ''}`} style={{
     '--patchie-font': brand.fontFamily
   }}>{!embedded && <StudioHeader brand={brand} />}<LoadingAnimation /><StudioFooter /></StudioContainer>;
@@ -1495,6 +1515,7 @@ export default function Home({
   }}>{!embedded && <StudioHeader brand={brand} />}
     {!embedded && <StudioHero brand={brand} />}
 
+    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={applyProductDesign} onClose={()=>{suggestionAutoScrollSuppressed.current=true;setHasIncoming(false);closeWelcome();}} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
     {selectedProductDesign && <DialogBoundary kind="design" {...{
       setSelectedProductDesign,
       selectedProductDesign,
@@ -1565,3 +1586,4 @@ export default function Home({
       catalog
     }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }
+

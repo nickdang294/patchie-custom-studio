@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import {validateEntry,packCollection,shopeeUrl,buyLabel} from '../lib/storefront.js';
+import {createStorefrontImages,safeImageBytes} from '../lib/storefront-images.js';
+import sharp from 'sharp';
+const entry={kind:'collection',name:'Bộ patch K-pop',description:'',group_ids:[],patch_items:[{patch_id:'a',quantity:2}],shopee_url:'https://shopee.vn/product/1/2',sale_type:'patch_set',template:'stitched',tone:'lavender',image_mode:'auto'};
+assert.equal(validateEntry(entry).active,false);
+assert.throws(()=>validateEntry({...entry,patch_items:[{patch_id:'a',quantity:0}]}));
+assert.throws(()=>validateEntry({...entry,group_ids:'bad'}));
+assert.throws(()=>validateEntry({...entry,shopee_url:'https://shopee.vn.evil.test/a'}));
+assert.equal(shopeeUrl('javascript:alert(1)'),'');
+assert.equal(shopeeUrl('https://user:pass@shopee.vn/a'),'');
+assert.equal(buyLabel({kind:'look',sale_type:'base'}),'Mua phôi trên Shopee');
+const patches=[{id:'a',width_cm:4,height_cm:4},{id:'big',width_cm:50,height_cm:50}];
+const packed=packCollection([{patch_id:'a',quantity:8},{patch_id:'big',quantity:1}],patches,{reference_width_cm:10,reference_height_cm:10});
+assert.equal(packed.placements.length+packed.remaining.length,9);assert.ok(packed.remaining.includes('big'));
+assert.ok(packed.placements.every(p=>p.x>=.32&&p.x<=.68&&p.y>=.32&&p.y<=.68));
+process.env.NEXT_PUBLIC_SUPABASE_URL='https://project.supabase.co';
+await assert.rejects(()=>safeImageBytes('http://127.0.0.1/private'));
+const db={from:()=>({select:()=>({in:async()=>({data:[{id:'a',image_url:'/assets/patch-pink-cap.webp'}]})})})};
+for(const template of ['stitched','sticker','minimal']){
+ const image=await createStorefrontImages({...entry,template},db);
+ const meta=await sharp(image.large).metadata();assert.equal(meta.width,1200);assert.equal(meta.height,1200);
+ assert.ok(image.thumbnail.length<=51200);console.log(template,'thumbnail',image.thumbnail.length,'bytes');
+}
+console.log('Storefront validation, packing, image bounds and SSRF checks passed.');
+const {outlinedText}=await import('../lib/storefront-text.js');
+const vietnamese='BỘ SƯU TẬP PATCH · Góc phối xinh · Một số mẫu đại diện · Ắ Ằ Ẳ Ẵ Ặ Ấ Ầ Ẩ Ẫ Ậ Ế Ề Ể Ễ Ệ Ố Ồ Ổ Ỗ Ộ Ớ Ờ Ở Ỡ Ợ Ứ Ừ Ử Ữ Ự Ý Ỳ Ỷ Ỹ Ỵ Đ';
+const paths=await outlinedText(vietnamese,{x:10,y:60,size:30,fill:'#57406d'});
+assert.ok(paths.includes('<path'));assert.ok(!paths.includes('<text'));
+assert.equal(await outlinedText('Bộ sưu tập'.normalize('NFD'),{x:0,y:50,size:30,fill:'#000'}),await outlinedText('Bộ sưu tập',{x:0,y:50,size:30,fill:'#000'}));
+await assert.rejects(()=>outlinedText('🧸',{x:0,y:50,size:30,fill:'#000'}),/chưa hỗ trợ/);
+console.log('Bundled Vietnamese glyphs, Unicode normalization and font-free SVG passed.');
+const {trimLookMargins,createLookCover,renderLookDesign}=await import('../lib/storefront-look-cover.js');
+const fixture=await sharp({create:{width:600,height:600,channels:3,background:'#fff'}}).composite([{input:Buffer.from('<svg width="600" height="600"><rect x="230" y="120" width="140" height="380" fill="#234567"/><rect x="245" y="150" width="110" height="150" fill="white"/><path d="M295 30 L305 30 L305 120 L295 120Z" fill="#999"/></svg>')}]).png().toBuffer();
+const trimmed=await sharp(await trimLookMargins(fixture)).metadata();assert.ok(trimmed.width<220);assert.ok(trimmed.height>=470);
+const white=await sharp({create:{width:40,height:40,channels:3,background:'#fff'}}).png().toBuffer();assert.ok((await trimLookMargins(white)).length>0);
+for(const tone of ['peach','mint','lavender']){const cover=await createLookCover(fixture,{tone,template:'minimal'});assert.equal((await sharp(cover).metadata()).width,1200);}
+console.log('Look cover margin trimming retains hook and white interior; three palettes render.');
+const mockRenderDb={from:table=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:{image_url:'base',reference_width_cm:10,reference_height_cm:10}})}),in:async()=>({data:[{id:'p',image_url:'patch',width_cm:2,height_cm:2}]})})})};
+const colorPatch=await sharp({create:{width:20,height:20,channels:4,background:'#d02060'}}).png().toBuffer();
+const rendered=await renderLookDesign({product_id:'base',placements:[{patch_id:'p',view:'front',x:.5,y:.5,rotation:15},{patch_id:'p',view:'front',x:.99,y:.99,rotation:45}]},mockRenderDb,async url=>url==='base'?white:colorPatch);
+const center=await sharp(rendered).extract({left:700,top:700,width:1,height:1}).removeAlpha().raw().toBuffer();assert.equal(center[0],208);assert.equal(center[1],32);assert.equal((await sharp(rendered).metadata()).width,1400);
+console.log('Original-asset look rendering and rotated edge clipping passed.');
