@@ -361,7 +361,7 @@ export default function Home({
       if(welcomeDismissed.current)return;
       setWelcomeReady(true);
     };
-    const onInteract=()=>{if(timer)clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);start();};
+    const onInteract=()=>{if(timer)clearTimeout(timer);if(idle&&window.cancelIdleCallback)window.cancelIdleCallback(idle);timer=setTimeout(()=>{if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:1800});else start();},900);};
     const schedule=()=>{timer=setTimeout(()=>{if(window.requestIdleCallback)idle=window.requestIdleCallback(start,{timeout:2000});else start();},6000);};
     interactionEvents.forEach(event=>window.addEventListener(event,onInteract,{once:true,passive:true}));
     if(document.readyState==='complete')schedule();else window.addEventListener('load',schedule,{once:true});
@@ -1586,3 +1586,4 @@ export default function Home({
       catalog
     }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }
+
