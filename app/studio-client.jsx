@@ -758,7 +758,7 @@ export default function Home({
       if (dock) {
         suggestionAutoScrollUsed.current = true;
         window.scrollTo({
-          top: Math.max(0, window.scrollY + dock.getBoundingClientRect().top - 8),
+          top: Math.max(0, window.scrollY + dock.getBoundingClientRect().top - (document.querySelector('.patchie-header')?.getBoundingClientRect().height || 0) - 16),
           behavior: 'smooth'
         });
       }
