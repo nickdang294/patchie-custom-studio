@@ -750,7 +750,7 @@ export default function Home({
     if (!hasMobileSuggestionContext && mobilePatchMode === 'suggestions') setMobilePatchMode('browse');
   }, [hasMobileSuggestionContext, mobilePatchMode]);
   useEffect(() => {
-    if (!hasMobileSuggestionContext || !window.matchMedia('(max-width: 700px)').matches) return;
+    if (!draftReady || hasIncoming || !hasMobileSuggestionContext || !window.matchMedia('(max-width: 700px)').matches) return;
     if (suggestionAutoScrollSuppressed.current) return;
     const timer = window.setTimeout(() => {
       if (suggestionAutoScrollSuppressed.current) return;
@@ -764,7 +764,7 @@ export default function Home({
       }
     }, 80);
     return () => clearTimeout(timer);
-  }, [hasMobileSuggestionContext, placed.length]);
+  }, [draftReady, hasIncoming, hasMobileSuggestionContext, placed.length]);
   if (!catalogReady) return <StudioContainer embedded={embedded} className={`shell ${christmasThemeEnabled ? 'theme-christmas' : ''}`} style={{
     '--patchie-font': brand.fontFamily
   }}>{!embedded && <StudioHeader brand={brand} />}<LoadingAnimation /><StudioFooter /></StudioContainer>;
@@ -1509,7 +1509,7 @@ export default function Home({
   }}>{!embedded && <StudioHeader brand={brand} />}
     {!embedded && <StudioHero brand={brand} />}
 
-    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={applyProductDesign} onClose={closeWelcome} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
+    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={applyProductDesign} onClose={()=>{suggestionAutoScrollSuppressed.current=true;setHasIncoming(false);closeWelcome();}} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
     {selectedProductDesign && <DialogBoundary kind="design" {...{
       setSelectedProductDesign,
       selectedProductDesign,
