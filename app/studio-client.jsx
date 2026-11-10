@@ -307,12 +307,7 @@ export default function Home({
     [productId, setProductId] = useState(initialProduct.id),
     [productSheetGroup, setProductSheetGroup] = useState(initialProduct.product_type),
     [size, setSize] = useState(''),
-    [name, setName] = useState(''),
-    [phone, setPhone] = useState(''),
-    [draftOrderCode, setDraftOrderCode] = useState(''),
-    [address, setAddress] = useState(''),
     [note, setNote] = useState(''),
-    [consent, setConsent] = useState(false),
     [busy, setBusy] = useState(false),
     [uploadingMockup, setUploadingMockup] = useState(false),
     [orderProgress, setOrderProgress] = useState(''),
@@ -719,10 +714,6 @@ export default function Home({
     const availableSizes = product?.sizes?.length ? product.sizes : catalog.settings.sizes || [];
     if (availableSizes.length === 1 && size !== availableSizes[0]) setSize(availableSizes[0]);
   }, [productId, selectedBaseKey, catalog.products, product?.sizes, catalog.settings.sizes, size]);
-  useEffect(() => {
-    if (phone.trim().length >= 8 && !draftOrderCode) setDraftOrderCode(makeDraftOrderCode());
-    if (phone.trim().length < 8 && draftOrderCode && !order) setDraftOrderCode('');
-  }, [phone, draftOrderCode, order]);
   useEffect(() => {
     const button = document.querySelector('.finish-custom');
     if (!button) return;
@@ -1302,11 +1293,7 @@ export default function Home({
   function validateOrder() {
     if (!flowDone) throw Error('Hoàn tất các mặt custom trước nhé.');
     if (!placed.length) throw Error('Thêm ít nhất một patch trước nhé.');
-    if (!name.trim()) throw Error('Nhập tên để shop nhận diện yêu cầu.');
-    if (!phone.trim()) throw Error('Nhập số điện thoại để shop liên hệ.');
-    if (!address.trim()) throw Error('Nhập địa chỉ nhận hàng.');
     if (!size) throw Error('Chọn size trước nhé.');
-    if (!consent) throw Error('Xác nhận quyền riêng tư để tiếp tục.');
   }
   async function startOrder() {
     validateOrder();
@@ -1316,22 +1303,12 @@ export default function Home({
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        name: name.trim(),
-        phone: phone.trim(),
         orderId: draftOrderCode,
-        address: address.trim(),
         size,
         mode,
         productId,
         note,
-        consent: true,
-        patches: placed.map(x => ({
-          patchId: x.patchId,
-          view: x.view || 'front',
-          x: x.x,
-          y: x.y,
-          rotation: normalizeRotation(x.rotation)
-        }))
+        patches: placed.map(x => ({patchId:x.patchId,view:x.view||'front',x:x.x,y:x.y,rotation:normalizeRotation(x.rotation)}))
       })
     });
     const d = await r.json();
@@ -1342,7 +1319,6 @@ export default function Home({
     const prepared = await makeMockup(),
       f = new FormData();
     f.set('id', id);
-    f.set('phone', phone.trim());
     f.set('mockup', prepared.blob, prepared.filename);
     const r = await fetch('/api/designs/complete', {
         method: 'POST',
@@ -1355,7 +1331,7 @@ export default function Home({
   function orderMessage(id) {
     const lines = placedWithPatch.map(x => `- ${viewName(x.view)}: ${x.patch?.name || x.patchId} · ${money(placementPrice(x))} · xoay ${normalizeRotation(x.rotation)}° (${Math.round(x.x * 100)}%, ${Math.round(x.y * 100)}%)`).join('\n');
     const productType = product?.product_type === 'bag' ? 'túi' : 'áo';
-    return `Chào Patchie! Mình muốn custom 1 ${productType} với ${placed.length} patch.\nMã đơn: ${id}\nTên: ${name.trim()}\nSĐT: ${phone.trim()}\nĐịa chỉ: ${address.trim()}\nSản phẩm: ${product?.name || 'Sản phẩm base'} · ${product?.color || ''}\nSize: ${size}\nCách hoàn thiện: ${mode === 'shop' ? 'Shop ủi giúp' : 'Tự ủi tại nhà'}\nPatch:\n${lines}\nGiá sản phẩm base: ${money(product?.price)}\nTổng tạm tính: ${money(orderTotal)}\nGhi chú: ${note || 'Không có'}`;
+    return `Chào Patchie! Mình muốn custom 1 ${productType} với ${placed.length} patch.\nMã thiết kế: ${id}\nSản phẩm: ${product?.name || 'Sản phẩm base'} · ${product?.color || ''}\nSize: ${size}\nCách hoàn thiện: ${mode === 'shop' ? 'Shop ủi giúp' : 'Tự ủi tại nhà'}\nPatch:\n${lines}\nGiá sản phẩm base: ${money(product?.price)}\nTổng tạm tính: ${money(orderTotal)}\nGhi chú: ${note || 'Không có'}`;
   }
   async function placeOrder() {
     setBusy(true);
@@ -1565,7 +1541,7 @@ export default function Home({
                     ...patchPreviewStyle(p)
                   }} onPointerDown={e => startDrag(e, x.uid)}><img src={p?.image_url} alt={p?.name} /></button>;
                 })}</div></div>{activeView === 'front' && <div className="mobile-sleeve-hotspots">{activeViews.some(v => v.id === 'left_sleeve' || v.id === 'right_sleeve') && <><button type="button" className="sleeve-hotspot sleeve-left" onPointerDown={e => tapView(e, 'right_sleeve')}><b>Phải</b></button><button type="button" className="sleeve-hotspot sleeve-right" onPointerDown={e => tapView(e, 'left_sleeve')}><b>Trái</b></button></>}<button type="button" className="sleeve-hotspot back-hotspot" onPointerDown={e => tapView(e, 'back')}><b>↩ Mặt sau</b></button></div>}{activeView !== 'front' && <div className="mobile-front-hotspot"><button type="button" onPointerDown={e => tapView(e, 'front')}>← Mặt trước</button></div>}<button type="button" className="undo-float" onPointerDown={e => e.stopPropagation()} onClick={confirmUndo} disabled={!history.length} aria-label="Hoàn tác">↺</button><button type="button" className={`smart-position-toggle ${smartPositionEnabled === true ? 'is-on' : 'is-off'}`} onPointerDown={e => e.stopPropagation()} onClick={toggleSmartPosition} aria-pressed={smartPositionEnabled === true} aria-label={`${smartPositionEnabled === true ? 'Tắt' : 'Bật'} căn chỉnh`}><span className="smart-bulb">💡</span><small className="smart-label-desktop">Gợi ý vị trí</small><small className="smart-label-mobile">Căn chỉnh</small></button><div ref={trash} className={`trash-zone ${trashActive || selectedItem ? 'is-active' : ''} ${trashHot ? 'is-hot' : ''}`} aria-hidden="true"><span>🗑</span><small className="trash-label-desktop">Thả để xoá</small><small className="trash-label-mobile">Xóa</small></div>{!activePlaced.length && <div className="empty-nudge">Thêm patch hoặc bỏ qua mặt này <span>↗</span></div>}{activePlaced.length > 0 && stageZoom.scale === 1 && <div className="pinch-nudge">Dùng 2 ngón để zoom, kéo nền để soi áo</div>}</div>{selectedItem && <div className="rotate-panel rotate-panel-vertical" aria-label="Xoay patch"><input className="vertical-range" type="range" min="-180" max="180" value={-signedRotation(selectedItem.rotation)} onPointerDown={beginRotate} onPointerUp={endRotate} onTouchStart={beginRotate} onTouchEnd={endRotate} onChange={e => rotateSelected(-Number(e.target.value))} /><b>{signedRotation(selectedItem.rotation)}°</b><small>{selectedPatch?.name}</small></div>}<div className="preview-foot"><span>{product?.name || 'Mockup theo mẫu base'}</span><span>{viewName(activeView)}</span></div></div><div className="mobile-config"><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide} /></div><button type="button" className={`button dark finish-custom `} onClick={finishCustom}>Đã custom xong rồi</button><div className="method-row"><button className={mode === 'diy' ? 'method active' : 'method'} onClick={() => selectFulfilmentMode('diy')}><span>🏠</span><b>Tự ủi tại nhà</b><small>Nhận patch rời cùng base</small></button><button className={mode === 'shop' ? 'method active' : 'method'} onClick={() => selectFulfilmentMode('shop')}><span>🪡</span><b>Shop ủi giúp</b><small>Gửi mã đơn, shop làm theo</small></button></div></section>
-      <aside className={`panel request ${flowDone ? '' : 'request-locked'}`}><div className="panel-title"><div><small>03 / ĐẶT ĐƠN</small><h2>Thông tin nhận hàng</h2></div><span className="spark">✳</span></div>{!flowDone ? <div className="locked-note"><b>Hoàn tất mockup trước</b><p>Custom các vùng muốn custom cần dùng, sau đó bấm “Đã custom xong rồi” để nhập thông tin đặt đơn.</p></div> : <><p className="muted">Website không thanh toán. Bấm đặt đơn để lấy mã, sau đó gửi toàn bộ thông tin đơn cho shop qua Messenger.</p><MiniPreview placed={placed} activeViews={activeViews} product={product} catalog={catalog} patchSizePercent={patchSizePercent} /><div className="price-summary"><div><span>Sản phẩm base</span><b>{money(product?.price)}</b></div><div><span>Patch × {placed.length}</span><b>{money(patchTotal)}</b></div><div className="total"><span>Tổng tạm tính</span><b>{money(orderTotal)}</b></div></div><div className="form-field"><label>Tên của bạn</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Tên người nhận" maxLength={80} /></div><div className="form-field"><label>Số điện thoại</label><input value={phone} onChange={e => setPhone(e.target.value)} placeholder="SĐT để shop liên hệ" inputMode="tel" maxLength={30} /></div><div className="form-field"><label>Địa chỉ nhận hàng</label><textarea value={address} onChange={e => setAddress(e.target.value)} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành" rows={3} maxLength={500} /></div><div className="form-field"><label>Ghi chú <span>(không bắt buộc)</span></label><textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Màu base, yêu cầu thêm…" rows={3} maxLength={1200} /></div><label className="consent"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>{catalog.settings.privacyText}</span></label><button className="button coral full send-button" onClick={placeOrder} disabled={busy}>{busy ? 'Đang chuẩn bị mã…' : 'Đặt đơn'}</button>{busy && <div className="order-progress-card"><span className="order-progress-orbit">✦</span><div><b>{orderProgress || 'Đang tạo mã đơn…'}</b><small>Chờ Patchie ráp xong mockup và lưu đơn nha.</small></div><i className="order-progress-dots"><em></em><em></em><em></em></i></div>}{order && <div className="order-code-card"><span>Mã đơn của bạn</span><div className="order-code-row"><b>{order.id}</b></div><div className="copy-hint"><span>↗</span> Bấm nút bên dưới, Patchie sẽ copy toàn bộ đơn cho bạn</div><button type="button" className="button messenger-order-button" onClick={() => setMessengerPrompt(true)}>Xem lại nội dung đơn ↗</button></div>}<div className="tiny-note">Shop sẽ xem mockup các mặt trong admin và xác nhận trước khi chốt.</div></>}</aside></div>
+      <aside className={`panel request ${flowDone ? '' : 'request-locked'}`}><div className="panel-title"><div><small>03 / ĐẶT ĐƠN</small><h2>Thông tin nhận hàng</h2></div><span className="spark">✳</span></div>{!flowDone ? <div className="locked-note"><b>Hoàn tất mẫu trước</b><p>Sau đó lưu mẫu và gửi mã thiết kế cho Patchie qua kênh bạn chọn để trao đổi đơn hàng.</p></div> : <><p className="muted">Website chỉ lưu thiết kế và tạo mã mẫu. Thông tin liên hệ, giao nhận và thanh toán sẽ được trao đổi riêng với shop.</p><MiniPreview placed={placed} activeViews={activeViews} product={product} catalog={catalog} patchSizePercent={patchSizePercent} /><div className="price-summary"><div><span>Sản phẩm base</span><b>{money(product?.price)}</b></div><div><span>Patch × {placed.length}</span><b>{money(patchTotal)}</b></div><div className="total"><span>Tổng tạm tính</span><b>{money(orderTotal)}</b></div></div><div className="form-field"><label>Ghi chú <span>(không bắt buộc)</span></label><textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Màu base, yêu cầu thêm…" rows={3} maxLength={1200} /></div><button className="button coral full send-button" onClick={placeOrder} disabled={busy}>{busy ? 'Đang lưu mẫu…' : 'Lưu mẫu & lấy mã'}</button>{busy && <div className="order-progress-card"><span className="order-progress-orbit">✦</span><div><b>{orderProgress || 'Đang tạo mã đơn…'}</b><small>Chờ Patchie ráp xong mockup và lưu đơn nha.</small></div><i className="order-progress-dots"><em></em><em></em><em></em></i></div>}{order && <div className="order-code-card"><span>Mã đơn của bạn</span><div className="order-code-row"><b>{order.id}</b></div><div className="copy-hint"><span>↗</span> Bấm nút bên dưới, Patchie sẽ copy thông tin mẫu cho bạn</div><button type="button" className="button messenger-order-button" onClick={() => setMessengerPrompt(true)}>Xem nội dung mẫu ↗</button></div>}<div className="tiny-note">Gửi mã thiết kế cho Patchie để trao đổi thông tin đơn hàng.</div></>}</aside></div>
 
     {messengerPrompt && order && <DialogBoundary kind="order" {...{
       setMessengerPrompt,
@@ -1586,4 +1562,3 @@ export default function Home({
       catalog
     }} />}{celebrate && <><div className="confetti-burst" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></>}{toast && <div className="toast">{toast}</div>}</StudioContainer>;
 }
-
