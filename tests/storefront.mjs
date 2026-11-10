@@ -23,3 +23,10 @@ for(const template of ['stitched','sticker','minimal']){
  assert.ok(image.thumbnail.length<=51200);console.log(template,'thumbnail',image.thumbnail.length,'bytes');
 }
 console.log('Storefront validation, packing, image bounds and SSRF checks passed.');
+const {outlinedText}=await import('../lib/storefront-text.js');
+const vietnamese='BỘ SƯU TẬP PATCH · Góc phối xinh · Một số mẫu đại diện · Ắ Ằ Ẳ Ẵ Ặ Ấ Ầ Ẩ Ẫ Ậ Ế Ề Ể Ễ Ệ Ố Ồ Ổ Ỗ Ộ Ớ Ờ Ở Ỡ Ợ Ứ Ừ Ử Ữ Ự Ý Ỳ Ỷ Ỹ Ỵ Đ';
+const paths=await outlinedText(vietnamese,{x:10,y:60,size:30,fill:'#57406d'});
+assert.ok(paths.includes('<path'));assert.ok(!paths.includes('<text'));
+assert.equal(await outlinedText('Bộ sưu tập'.normalize('NFD'),{x:0,y:50,size:30,fill:'#000'}),await outlinedText('Bộ sưu tập',{x:0,y:50,size:30,fill:'#000'}));
+await assert.rejects(()=>outlinedText('🧸',{x:0,y:50,size:30,fill:'#000'}),/chưa hỗ trợ/);
+console.log('Bundled Vietnamese glyphs, Unicode normalization and font-free SVG passed.');
