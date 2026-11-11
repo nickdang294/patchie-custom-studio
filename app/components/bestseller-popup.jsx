@@ -30,8 +30,9 @@ export default function BestsellerPopup({onCustom,onClose}) {
       <header><span className="bestseller-eyebrow">PATCHIE'S LITTLE FAVORITES ✦</span><h2 id="bestseller-title">{data.title}</h2></header>
       <div className="bestseller-grid">{data.items.map(design=><article className="bestseller-card" key={design.id}>
         <div className="bestseller-image"><img src={design.thumbnail_url} width="420" height="420" alt={design.name} decoding="async" fetchPriority="low"/></div>
-        <h3>{design.name}</h3><button type="button" className="bestseller-custom" onClick={()=>{if(onCustom(design)===false)setError('Mẫu vừa thay đổi. Bạn tải lại trang để cập nhật nha.');}}>✦ Custom mẫu này</button>
+        <h3>{design.name}</h3>
         <ShopeeLink className="bestseller-shop" url={design.shopee_url} id={design.id} location="bestsellers">Mua ngay trên Shopee</ShopeeLink>
+        <button type="button" className="bestseller-custom" onClick={()=>{if(onCustom(design)===false)setError('Mẫu vừa thay đổi. Bạn tải lại trang để cập nhật nha.');}}>✦ Custom mẫu này</button>
       </article>)}</div>
       {error&&<p role="status">{error}</p>}<button type="button" className="bestseller-skip" onClick={()=>dismiss('skip_to_workshop')}>Tự phối theo gu của tui →</button>
     </div>
