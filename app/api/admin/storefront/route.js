@@ -16,7 +16,7 @@ export async function GET(request){const auth=await requireAdmin();if(auth.error
  }
  if(q.get('action')==='choices'){
   const table=q.get('type')==='patch'?'patches':q.get('type')==='collection'?'storefront_entries':'product_designs';
-  const fields=table==='patches'?'id,name,thumbnail_url,image_url':table==='product_designs'?'id,name,thumbnail_url,shopee_url':'id,name,thumbnail_url';
+  const fields=table==='patches'?'id,name,thumbnail_url,image_url':table==='product_designs'?'id,name,thumbnail_url,shopee_url,placements':'id,name,thumbnail_url,patch_items';
   let query=db.from(table).select(fields).order('name').order('id').limit(40);
   if(table==='storefront_entries')query=query.eq('kind','collection');
   const term=(q.get('q')||'').slice(0,80).replace(/[%_]/g,'');if(term)query=query.ilike('name',`%${term}%`);
@@ -49,3 +49,10 @@ export async function POST(request){const auth=await requireAdmin();if(auth.erro
   revalidateTag('storefront');return Response.json({item:data});
  }catch(error){await bucket.remove(paths);throw error;}
  }catch(e){return jsonError(e.message||'Không lưu được nội dung.',400);}}
+export async function DELETE(request){const auth=await requireAdmin();if(auth.error)return jsonError(auth.error,auth.status);
+ try{const id=new URL(request.url).searchParams.get('id');if(!uuid(id))return jsonError('Mã BST không hợp lệ.');const db=serviceDb();const {data:item,error:readError}=await db.from('storefront_entries').select('id,kind,image_url,thumbnail_url').eq('id',id).maybeSingle();if(readError)throw readError;if(!item||item.kind!=='collection')return jsonError('Không tìm thấy BST.',404);
+ const {data:linked,error:linkedError}=await db.from('storefront_entries').select('id').eq('kind','look').eq('related_collection_id',id);if(linkedError)throw linkedError;
+ if(linked?.length){const {error}=await db.from('storefront_entries').update({related_collection_id:null,updated_at:new Date().toISOString()}).in('id',linked.map(x=>x.id));if(error)throw error;}
+ const paths=[item.image_url,item.thumbnail_url].map(value=>{try{const u=new URL(value);const marker='/storage/v1/object/public/patch-assets/';return u.origin===new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin&&u.pathname.includes(marker)?decodeURIComponent(u.pathname.split(marker)[1]):null;}catch{return null;}}).filter(Boolean);
+ const {error:deleteError}=await db.from('storefront_entries').delete().eq('id',id);if(deleteError)throw deleteError;if(paths.length)await db.storage.from('patch-assets').remove(paths);revalidateTag('storefront');return Response.json({ok:true});
+ }catch(e){return jsonError(e.message||'Không xóa được BST.',500);}}
