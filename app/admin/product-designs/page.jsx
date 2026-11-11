@@ -9,7 +9,7 @@ function snapRotation(value) {
 import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductDesignAdmin() {
-  const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]);
+  const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]), [selectedDesignIds, setSelectedDesignIds] = useState([]), [bulkSaving, setBulkSaving] = useState(false);
   const [productId, setProductId] = useState(''), [name, setName] = useState(''), [shopeeUrl, setShopeeUrl] = useState(''), [patchSearch, setPatchSearch] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
   const [dragId, setDragId] = useState(''), [editingId, setEditingId] = useState(''), [editingCreatedAt, setEditingCreatedAt] = useState('');
   const [selectedUid, setSelectedUid] = useState('');
@@ -46,14 +46,29 @@ export default function ProductDesignAdmin() {
     if (!placements.length) return setMsg('Thêm ít nhất một patch.');
     setMsg('Đang tạo thumbnail và lưu mẫu…');
     try {
-      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, shopee_url: shopeeUrl.trim(), product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: 1, priority: Number(priority) }) });
+      const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: editingId || undefined, created_at: editingCreatedAt || undefined, name, shopee_url: shopeeUrl.trim(), product_id: productId, placements: placements.map(({ patch_id, view, x, y, rotation }) => ({ patch_id, view, x, y, rotation })), min_matches: 1, priority: Number(priority), active: editingId ? items.find(item => item.id === editingId)?.active !== false : true }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Không lưu được mẫu.');
       setItems(a => [data.item, ...a.filter(x => x.id !== data.item.id)]); setName(''); setShopeeUrl(''); setPlacements([]); setEditingId(''); setEditingCreatedAt(''); setMsg('Đã lưu mẫu phối.');
     } catch (error) { setMsg(error.message); }
   }
   function edit(item) { setEditingId(item.id); setEditingCreatedAt(item.created_at); setName(item.name); setShopeeUrl(item.shopee_url||''); setProductId(item.product_id); setPlacements(item.placements.map(p => ({ ...p, uid: crypto.randomUUID() }))); setPriority(item.priority || 0); setView('front'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-  async function remove(id) { if (!confirm('Xóa mẫu phối này và thumbnail?')) return; const response = await fetch(`/api/admin/product-designs?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.filter(x => x.id !== id)); }
-  async function toggle(item) { const response = await fetch('/api/admin/product-designs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...item, active: !item.active }) }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.map(x => x.id === item.id ? data.item : x)); }
+  async function remove(id) { if (!confirm('Xóa mẫu phối này và thumbnail?')) return; const response = await fetch(`/api/admin/product-designs?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); const data = await response.json(); if (!response.ok) return setMsg(data.error); setItems(a => a.filter(x => x.id !== id)); setSelectedDesignIds(current => current.filter(value => value !== id)); }
+  async function bulkSetActive(ids, active) {
+    if (!ids.length) return;
+    setBulkSaving(true); setMsg('');
+    try {
+      const response = await fetch('/api/admin/product-designs', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ids, active }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Không cập nhật được trạng thái mẫu.');
+      const updated = new Map((data.items || []).map(item => [item.id, item]));
+      setItems(current => current.map(item => updated.get(item.id) || item));
+      setSelectedDesignIds(current => current.filter(id => !updated.has(id)));
+      setMsg(`Đã ${active ? 'bật' : 'tắt'} ${updated.size} mẫu phối.`);
+    } catch (error) { setMsg(error.message); }
+    finally { setBulkSaving(false); }
+  }
+  async function toggle(item) { await bulkSetActive([item.id], !item.active); }
+  const allSelected = items.length > 0 && selectedDesignIds.length === items.length;
+  function toggleDesignSelection(id) { setSelectedDesignIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]); }
   return <main className="admin-shell">
     <header className="admin-top"><a className="brand" href="/admin">← Patchie Admin</a><a href="/">Mở Studio ↗</a></header>
     <div className="admin-heading" style={{marginTop:24}}><div><small>PATCHIE STUDIO</small><h1>Mẫu phối sẵn</h1></div></div>
@@ -87,6 +102,6 @@ export default function ProductDesignAdmin() {
         <button className="button dark">Lưu mẫu phối</button>
       </>}
     </form>
-    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2><div className="patch-admin-grid">{items.map(item=><article className="admin-patch" key={item.id}><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><label><input type="checkbox" checked={item.active} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}</section>
+    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2>{items.length>0&&<><div className="design-bulk-toolbar"><label><input type="checkbox" checked={allSelected} onChange={()=>setSelectedDesignIds(allSelected?[]:items.map(item=>item.id))}/> Chọn tất cả</label><span>{selectedDesignIds.length} mẫu đã chọn</span><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,true)}>Bật đã chọn</button><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,false)}>Tắt đã chọn</button><button type="button" className="design-clear-selection" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>setSelectedDesignIds([])}>Bỏ chọn</button></div><p className="admin-help">Chọn nhiều mẫu rồi bật hoặc tắt cùng lúc. Thao tác này chỉ đổi trạng thái hiển thị, không sửa thiết kế hay thumbnail.</p></>}<div className="patch-admin-grid">{items.map(item=><article className="admin-patch" key={item.id}><label className="design-select-check"><input type="checkbox" checked={selectedDesignIds.includes(item.id)} onChange={()=>toggleDesignSelection(item.id)}/> Chọn</label><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><label><input type="checkbox" checked={item.active} disabled={bulkSaving} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}</section>
   </main>;
 }

@@ -12,6 +12,18 @@ export async function GET() {
   return Response.json({ items: data || [] });
 }
 
+export async function PATCH(request) {
+  const auth = await requireAdmin();
+  if (auth.error) return jsonError(auth.error, auth.status);
+  let body;
+  try { body = await request.json(); } catch { return jsonError('Dữ liệu cập nhật không hợp lệ.'); }
+  const ids = Array.isArray(body?.ids) ? [...new Set(body.ids.map(id => String(id || '').trim()).filter(Boolean))].slice(0, 500) : [];
+  if (!ids.length || typeof body?.active !== 'boolean') return jsonError('Chọn ít nhất một mẫu và trạng thái bật/tắt.');
+  const { data, error } = await serviceDb().from('product_designs').update({ active: body.active, updated_at: new Date().toISOString() }).in('id', ids).select('*');
+  if (error) return jsonError(error.message, 500);
+  return Response.json({ items: data || [] });
+}
+
 export async function POST(request) {
   const auth = await requireAdmin();
   if (auth.error) return jsonError(auth.error, auth.status);
