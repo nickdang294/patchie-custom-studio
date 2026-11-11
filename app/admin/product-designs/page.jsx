@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function ProductDesignAdmin() {
   const [products, setProducts] = useState([]), [patches, setPatches] = useState([]), [items, setItems] = useState([]), [selectedDesignIds, setSelectedDesignIds] = useState([]), [bulkSaving, setBulkSaving] = useState(false);
+  const [stockFilter, setStockFilter] = useState('all');
   const [productId, setProductId] = useState(''), [name, setName] = useState(''), [shopeeUrl, setShopeeUrl] = useState(''), [patchSearch, setPatchSearch] = useState(''), [priority, setPriority] = useState(0), [view, setView] = useState('front'), [placements, setPlacements] = useState([]), [msg, setMsg] = useState('');
   const [dragId, setDragId] = useState(''), [editingId, setEditingId] = useState(''), [editingCreatedAt, setEditingCreatedAt] = useState('');
   const [selectedUid, setSelectedUid] = useState('');
@@ -67,8 +68,21 @@ export default function ProductDesignAdmin() {
     finally { setBulkSaving(false); }
   }
   async function toggle(item) { await bulkSetActive([item.id], !item.active); }
-  const allSelected = items.length > 0 && selectedDesignIds.length === items.length;
   function toggleDesignSelection(id) { setSelectedDesignIds(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]); }
+  const designAvailability = item => {
+    const ids = [...new Set((item.placements || []).map(p => String(p.patch_id)))];
+    return ids.length > 0 && ids.every(id => {
+      const patch = patches.find(p => String(p.id) === id);
+      return patch && Number(patch.stock_quantity ?? 20) > 0 && patch.release_status === 'released';
+    });
+  };
+  const availableCount = items.filter(designAvailability).length;
+  const filteredItems = items.filter(item => stockFilter === 'all' || (stockFilter === 'available' ? designAvailability(item) : !designAvailability(item)));
+  const allVisibleSelected = filteredItems.length > 0 && filteredItems.every(item => selectedDesignIds.includes(item.id));
+  function toggleVisibleSelection() {
+    const visibleIds = filteredItems.map(item => item.id);
+    setSelectedDesignIds(current => allVisibleSelected ? current.filter(id => !visibleIds.includes(id)) : [...new Set([...current, ...visibleIds])]);
+  }
   return <main className="admin-shell">
     <header className="admin-top"><a className="brand" href="/admin">← Patchie Admin</a><a href="/">Mở Studio ↗</a></header>
     <div className="admin-heading" style={{marginTop:24}}><div><small>PATCHIE STUDIO</small><h1>Mẫu phối sẵn</h1></div></div>
@@ -102,6 +116,6 @@ export default function ProductDesignAdmin() {
         <button className="button dark">Lưu mẫu phối</button>
       </>}
     </form>
-    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2>{items.length>0&&<><div className="design-bulk-toolbar"><label><input type="checkbox" checked={allSelected} onChange={()=>setSelectedDesignIds(allSelected?[]:items.map(item=>item.id))}/> Chọn tất cả</label><span>{selectedDesignIds.length} mẫu đã chọn</span><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,true)}>Bật đã chọn</button><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,false)}>Tắt đã chọn</button><button type="button" className="design-clear-selection" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>setSelectedDesignIds([])}>Bỏ chọn</button></div><p className="admin-help">Chọn nhiều mẫu rồi bật hoặc tắt cùng lúc. Thao tác này chỉ đổi trạng thái hiển thị, không sửa thiết kế hay thumbnail.</p></>}<div className="patch-admin-grid">{items.map(item=><article className="admin-patch" key={item.id}><label className="design-select-check"><input type="checkbox" checked={selectedDesignIds.includes(item.id)} onChange={()=>toggleDesignSelection(item.id)}/> Chọn</label><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><label><input type="checkbox" checked={item.active} disabled={bulkSaving} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}</section>
+    <section className="admin-card"><h2>Mẫu đã lưu ({items.length})</h2>{items.length>0&&<><div style={{display:'flex',gap:8,flexWrap:'wrap',margin:'12px 0 16px'}}>{[['all',`Tất cả · ${items.length}`],['available',`Patch còn hàng · ${availableCount}`],['out',`Có patch hết hàng · ${items.length-availableCount}`]].map(([key,label])=><button key={key} type="button" className={`button ${stockFilter===key?'dark':'light'}`} aria-pressed={stockFilter===key} onClick={()=>setStockFilter(key)}>{label}</button>)}</div><div className="design-bulk-toolbar"><label><input type="checkbox" checked={allVisibleSelected} onChange={toggleVisibleSelection}/> Chọn tất cả đang lọc</label><span>{selectedDesignIds.length} mẫu đã chọn</span><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,true)}>Bật đã chọn</button><button type="button" className="button light" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>bulkSetActive(selectedDesignIds,false)}>Tắt đã chọn</button><button type="button" className="design-clear-selection" disabled={!selectedDesignIds.length||bulkSaving} onClick={()=>setSelectedDesignIds([])}>Bỏ chọn</button></div><p className="admin-help">Mẫu được xếp “còn hàng” khi tất cả patch trong mẫu đều đang phát hành và có tồn kho. Chọn nhiều mẫu rồi bật hoặc tắt cùng lúc.</p></>}<div className="patch-admin-grid">{filteredItems.map(item=><article className="admin-patch" key={item.id}><label className="design-select-check"><input type="checkbox" checked={selectedDesignIds.includes(item.id)} onChange={()=>toggleDesignSelection(item.id)}/> Chọn</label><img src={item.thumbnail_url} alt={item.name}/><b>{item.name}</b><small>{products.find(p=>p.id===item.product_id)?.name || item.product_id}</small><small>Tạo: {new Date(item.created_at).toLocaleDateString('vi-VN')} · Sửa: {new Date(item.updated_at).toLocaleDateString('vi-VN')}</small><small style={{fontWeight:700,color:designAvailability(item)?'#347b44':'#a34d48'}}>{designAvailability(item)?'● Patch còn hàng':'● Có patch hết hàng / chưa mở bán'}</small><label><input type="checkbox" checked={item.active} disabled={bulkSaving} onChange={()=>toggle(item)}/> Đang bật</label><div style={{display:'flex',gap:6}}><button type="button" className="button light" onClick={()=>edit(item)}>Sửa</button><button type="button" className="delete-btn" onClick={()=>remove(item.id)}>Xóa</button></div></article>)}</div>{!items.length&&<p className="admin-help">Chưa có mẫu phối.</p>}{items.length>0&&!filteredItems.length&&<p className="admin-help">Không có mẫu trong nhóm này.</p>}</section>
   </main>;
 }
