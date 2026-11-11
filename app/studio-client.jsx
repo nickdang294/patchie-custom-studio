@@ -413,6 +413,10 @@ export default function Home({
     };
   }, []);
   const openProductDesignPreview = async design => {
+    trackEvent('Design Preview Opened', {
+      design_id: String(design?.id || ''),
+      source: 'workshop_suggestions'
+    });
     setDesignPreviewView(design.placements.some(item => item.view === 'front') ? 'front' : design.placements[0]?.view || 'front');
     closeWelcome();
     setSelectedProductDesign(design);
@@ -428,11 +432,15 @@ export default function Home({
       setDesignPreviewLoading(false);
     }
   };
-  const applyProductDesign = design => {
+  const applyProductDesign = (design, source = 'workshop_suggestions') => {
     if (!design) return;
     if(placed.length && !window.confirm('Thay thiết kế đang làm bằng mẫu này?'))return false;
     const target = catalog.products.find(p=>p.id===design.product_id);
     if(!target || !design.placements.every(item=>{const patch=catalog.patches.find(p=>p.id===item.patch_id);return patch && patchInStock(patch) && !patchIsComingSoon(patch) && patchFitsBase(patch,target);})) {show('Mẫu vừa thay đổi, bạn tải lại trang nhé.');return false;}
+    trackEvent('Design Applied to Workshop', {
+      design_id: String(design.id),
+      source
+    });
     if(target.id!==productId){setProductId(target.id);setSize(target.sizes?.length===1?target.sizes[0]:'');setHistory([]);}else remember();
     closeWelcome();setSelectedUid('');
     setPlaced(design.placements.map(item => ({
@@ -822,6 +830,14 @@ export default function Home({
     return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   }
   function removeDraggedPatch(uid) {
+    const removed = placed.find(item => item.uid === uid);
+    if (removed) {
+      const patch = catalog.patches.find(item => item.id === removed.patchId);
+      trackEvent('Patch Removed', {
+        patch_id: String(removed.patchId),
+        group: patch ? patchGroup(patch) : 'unknown'
+      });
+    }
     setPlaced(a => a.filter(x => x.uid !== uid));
     if (selectedUid === uid) setSelectedUid('');
   }
@@ -1016,6 +1032,13 @@ export default function Home({
   function clearView() {
     if (!activePlaced.length) return show('Mặt này chưa có patch.');
     remember();
+    activePlaced.forEach(item => {
+      const patch = catalog.patches.find(entry => entry.id === item.patchId);
+      trackEvent('Patch Removed', {
+        patch_id: String(item.patchId),
+        group: patch ? patchGroup(patch) : 'unknown'
+      });
+    });
     setPlaced(a => a.filter(x => (x.view || 'front') !== activeView));
     setSelectedUid('');
   }
@@ -1157,6 +1180,13 @@ export default function Home({
   function advanceStep(skipped = false) {
     if (skipped && activePlaced.length) {
       remember();
+      activePlaced.forEach(item => {
+        const patch = catalog.patches.find(entry => entry.id === item.patchId);
+        trackEvent('Patch Removed', {
+          patch_id: String(item.patchId),
+          group: patch ? patchGroup(patch) : 'unknown'
+        });
+      });
       setPlaced(a => a.filter(x => (x.view || 'front') !== activeView));
     }
     setSelectedUid('');
@@ -1394,6 +1424,10 @@ export default function Home({
       show('Shop chưa cài link Messenger trong admin.');
       return;
     }
+    trackEvent('Order Handoff Clicked', {
+      channel: 'messenger',
+      fulfilment: mode
+    });
     // Reserve the new tab during the click event, then copy the message before
     // navigating it. This keeps clipboard permission and popup behaviour reliable
     // on both desktop and mobile browsers.
@@ -1486,7 +1520,7 @@ export default function Home({
   }}>{!embedded && <StudioHeader brand={brand} />}
     {!embedded && <StudioHero brand={brand} />}
 
-    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={applyProductDesign} onClose={()=>{suggestionAutoScrollSuppressed.current=true;setHasIncoming(false);closeWelcome();}} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
+    {draftReady && hasIncoming && <Suspense fallback={null}><WorkshopIncoming catalog={catalog} productId={productId} apply={design=>applyProductDesign(design,'storefront')} onClose={()=>{suggestionAutoScrollSuppressed.current=true;setHasIncoming(false);closeWelcome();}} eligible={(p,b)=>patchInStock(p)&&!patchIsComingSoon(p)&&patchFitsBase(p,b)}/></Suspense>}
     {selectedProductDesign && <DialogBoundary kind="design" {...{
       setSelectedProductDesign,
       selectedProductDesign,
@@ -1497,7 +1531,7 @@ export default function Home({
       patchSizePercent:(patch,view)=>patchSizePercent(patch,view,previewProduct),
       activeViews:viewsForProduct(previewProduct,brand.productGroups),
       setDesignPreviewView,
-      applyProductDesign
+      applyProductDesign: design => applyProductDesign(design, 'workshop_suggestions')
     }} />}
 
     <div className="workspace"><aside className="panel picker"><div className="panel-title"><div><small>{brand.step1Label}</small><h2>{brand.step1Title}</h2></div><span className="counter">{placed.length}/12</span></div><BaseConfig selectedBaseKey={selectedBaseKey} setProductSheetGroup={setProductSheetGroup} product={product} money={money} productThumb={productThumb} setSelectSheet={setSelectSheet} colorVariants={colorVariants} productId={productId} changeProductColor={changeProductColor} sizes={sizes} size={size} setSize={setSize} sizeGuide={sizeGuide} /><p className="muted">Kích thước patch hiển thị theo số cm shop nhập trong admin.</p><PatchGroupSelect activePatchGroup={activePatchGroup} patchGroupOptions={patchGroupOptions} setSelectSheet={setSelectSheet} /><div className="patch-grid">{visiblePatches.length === 0 && <div className="patch-empty-state"><span aria-hidden="true">✦</span><b>{catalog.patches.length === 0 ? 'Tủ patch đang trống' : hasPatchSizeLimits ? 'Chưa có patch phù hợp kích thước' : 'Chưa có patch khả dụng trong nhóm này'}</b><small>{catalog.patches.length === 0 ? 'Shop sẽ cập nhật thêm patch sớm nha.' : 'Thử chọn nhóm khác hoặc quay lại sau nhé.'}</small></div>}{loadedPatchCards.map(p => {
@@ -1545,7 +1579,7 @@ export default function Home({
       sendOrderToMessenger,
       copied
     }} />}
-    {welcomeReady && !placed.length && !selectedProductDesign && !selectSheet && <Suspense fallback={null}><BestsellerPopup onClose={closeWelcome} onPreview={openProductDesignPreview} onCustom={applyProductDesign}/></Suspense>}
+    {welcomeReady && !placed.length && !selectedProductDesign && !selectSheet && <Suspense fallback={null}><BestsellerPopup onClose={closeWelcome} onPreview={openProductDesignPreview} onCustom={design=>applyProductDesign(design,'bestseller_popup')}/></Suspense>}
     <StudioFooter />{smartPositionPromptOpen && <DialogBoundary kind="smartPosition" {...{
       chooseSmartPosition
     }} />}{undoAsk && <DialogBoundary kind="undo" {...{
