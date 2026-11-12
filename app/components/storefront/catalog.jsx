@@ -22,7 +22,7 @@ export default function Catalog({kind,initial,initialGroup,brand,initialError}){
  useEffect(()=>{if(!selected||!dialog.current)return;const previous=document.activeElement;dialog.current.showModal();const overflow=document.documentElement.style.overflow;document.documentElement.style.overflow='hidden';return()=>{document.documentElement.style.overflow=overflow;previous?.focus?.({preventScroll:true});};},[Boolean(selected)]);
  function custom(){if(!detail)return;try{sessionStorage.setItem('patchie-workshop-incoming',JSON.stringify({id:detail.item.id}));trackEvent('Storefront Custom Clicked',{item_id:String(detail.item.id),kind:detail.item.kind});location.assign('/?from=storefront');}catch{setDetailError('Trình duyệt chưa cho lưu mẫu. Hãy cho phép bộ nhớ trang rồi thử lại.');}}
  const item=detail?.item;
- return <main className="sf-page"><SiteHeader brand={brand} active={kind==='collection'?'/patches':'/looks'}/>
+ return <main className={`sf-page sf-page-${kind}`}><SiteHeader brand={brand} active={kind==='collection'?'/patches':'/looks'}/>
  <section className="sf-hero"><small>PATCHIE · CHỌN CHÚT RIÊNG CHO MÌNH</small><h1>{title}<span>✳</span></h1><p>{kind==='collection'?'Một bộ patch, một thế giới đúng gu. Chọn bộ bạn mê, mua trọn bộ hoặc thử phối lên phụ kiện.':'Một chút cảm hứng cho món phụ kiện mỗi ngày. Mua mẫu có sẵn hoặc biến tấu theo gu của bạn.'}</p></section>
  <div className="sf-filters" aria-label="Lọc theo nhóm">{[{id:'',name:'Tất cả'},...groups].map(g=><button key={g.id} type="button" aria-pressed={group===g.id} onClick={()=>load(g.id)}>{g.name}</button>)}</div>
  {error&&<p role="alert">{error} <button onClick={()=>load(group,items.length>0)}>Thử lại</button></p>}
